@@ -1,0 +1,14 @@
+# Don't commit retail ROMs
+roms/retail/*
+
+# macOS
+.DS_Store
+
+# build artifacts
+/build
+
+# anese that's in the main directory
+/anese
+
+# don't want to push /bin yet
+/bin
