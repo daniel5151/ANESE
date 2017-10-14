@@ -1,0 +1,4804 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Microsoft FrontPage 4.0">
+  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+  <TITLE>6502 Reference</TITLE>
+  <LINK REL="StyleSheet" HREF="../obelisk.css" TYPE="text/css" media="screen,print">
+</HEAD>
+<BODY>
+<script type="text/javascript"><!--
+google_ad_client = "pub-0826595092783671";
+/* 6502 Header */
+google_ad_slot = "9208748029";
+google_ad_width = 728;
+google_ad_height = 90;
+//-->
+</script>
+<script type="text/javascript"
+src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+<HR>
+<H2>Instruction Reference</H2>
+
+<P>Click on any of following links to go straight to the information
+for that instruction.</P>
+
+<P><TABLE BORDER="1" CELLPADDING="0" CELLSPACING="0" WIDTH="450">
+  <TR>
+    <TD WIDTH="7%" HEIGHT="25">
+      <P><CENTER><A HREF="#ADC">ADC</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#AND">AND</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#ASL">ASL</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#BCC">BCC</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#BCS">BCS</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#BEQ">BEQ</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#BIT">BIT</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#BMI">BMI</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#BNE">BNE</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#BPL">BPL</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#BRK">BRK</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#BVC">BVC</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#BVS">BVS</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#CLC">CLC</A></CENTER></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="7%" HEIGHT="25">
+      <P><CENTER><A HREF="#CLD">CLD</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#CLI">CLI</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#CLV">CLV</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#CMP">CMP</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#CPX">CPX</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#CPY">CPY</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#DEC">DEC</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#DEX">DEX</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#DEY">DEY</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#EOR">EOR</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#INC">INC</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#INX">INX</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#INY">INY</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#JMP">JMP</A></CENTER></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="7%" HEIGHT="25">
+      <P><CENTER><A HREF="#JSR">JSR</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#LDA">LDA</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#LDX">LDX</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#LDY">LDY</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#LSR">LSR</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#NOP">NOP</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#ORA">ORA</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#PHA">PHA</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#PHP">PHP</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#PLA">PLA</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#PLP">PLP</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#ROL">ROL</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#ROR">ROR</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#RTI">RTI</A></CENTER></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="7%" HEIGHT="25">
+      <P><CENTER><A HREF="#RTS">RTS</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#SBC">SBC</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#SEC">SEC</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#SED">SED</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#SEI">SEI</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#STA">STA</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#STX">STX</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#STY">STY</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#TAX">TAX</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#TAY">TAY</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#TSX">TSX</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#TXA">TXA</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#TXS">TXS</A></CENTER></TD>
+    <TD WIDTH="7%">
+      <P><CENTER><A HREF="#TYA">TYA</A></CENTER></TD>
+  </TR>
+</TABLE>
+
+<H3><A NAME="ADC"></A>ADC - Add with Carry</H3>
+
+<P>A,Z,C,N = A+M+C</P>
+
+<P>This instruction adds the contents of a memory location to
+the accumulator together with the carry bit. If overflow occurs
+the carry bit is set, this enables multiple byte addition to be
+performed.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Set if overflow in bit 7</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if A = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Set if sign bit is incorrect</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE HEIGHT="228" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%" HEIGHT="25"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IMM">Immediate</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$69</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">2</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPG">Zero Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$65</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">3</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPX">Zero Page,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$75</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$6D</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="24"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$7D</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">4 (+1 if page crossed)</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABY">Absolute,Y</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$79</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4 (+1 if page crossed)</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IDX">(Indirect,X)</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$61</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">6</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="26"><A HREF="addressing.html#IDY">(Indirect),Y</A></TD>
+    <TD WIDTH="15%" HEIGHT="26">
+      <P><CENTER>$71</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="26">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="26">5 (+1 if page crossed)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#SBC">SBC</A></P>
+
+<H3><A NAME="AND"></A>AND - Logical AND</H3>
+
+<P>A,Z,N = A&amp;M</P>
+
+<P>A logical AND is performed, bit by bit, on the accumulator
+contents using the contents of a byte of memory.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Set if A = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Set if bit 7 set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE HEIGHT="229" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><A HREF="addressing.html#IMM">Immediate</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$29</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>2</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><A HREF="addressing.html#ZPG">Zero
+      Page</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$25</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>3</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><A HREF="addressing.html#ZPX">Zero
+      Page,X</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$35</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>4</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$2D</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>3</CENTER></TD>
+    <TD>4</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$3D</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>3</CENTER></TD>
+    <TD>4 (+1 if page crossed)</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><A HREF="addressing.html#ABY">Absolute,Y</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$39</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>3</CENTER></TD>
+    <TD>4 (+1 if page crossed)</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><A HREF="addressing.html#IDX">(Indirect,X)</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$21</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>6</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="26"><A HREF="addressing.html#IDY">(Indirect),Y</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$31</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>5 (+1 if page crossed)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#EOR">EOR</A>, <A HREF="#ORA">ORA</A></P>
+
+<H3><A NAME="ASL"></A>ASL - Arithmetic Shift Left</H3>
+
+<P>A,Z,C,N = M*2 or M,Z,C,N = M*2</P>
+
+<P>This operation shifts all the bits of the accumulator or memory
+contents one bit left. Bit 0 is set to 0 and bit 7 is placed in
+the carry flag. The effect of this operation is to multiply the
+memory contents by 2 (ignoring 2's complement considerations),
+setting the carry if the result will not fit in 8 bits.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="243">Set to contents of old bit 7</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="243">Set if A = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="243">Set if bit 7 of the result is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Accumulator</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$0A</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ZPG">Zero
+      Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$06</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">5</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ZPX">Zero
+      Page,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$16</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">6</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$0E</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">6</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$1E</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">7</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#LSR">LSR</A>, <A HREF="#ROL">ROL</A>, <A
+HREF="#ROR">ROR</A></P>
+
+<H3><A NAME="BCC"></A>BCC - Branch if Carry Clear</H3>
+
+<P>If the carry flag is clear then add the relative displacement
+to the program counter to cause a branch to a new location.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#REL">Relative</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$90</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">2 (+1 if branch succeeds<BR>
+      +2 if to a new page)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#BCS">BCS</A></P>
+
+<H3><A NAME="BCS"></A>BCS - Branch if Carry Set</H3>
+
+<P>If the carry flag is set then add the relative displacement
+to the program counter to cause a branch to a new location.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#REL">Relative</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$B0</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">2 (+1 if branch succeeds<BR>
+      +2 if to a new page)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#BCC">BCC</A></P>
+
+<H3><A NAME="BEQ"></A>BEQ - Branch if Equal</H3>
+
+<P>If the zero flag is set then add the relative displacement
+to the program counter to cause a branch to a new location.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#REL">Relative</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$F0</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">2 (+1 if branch succeeds<BR>
+      +2 if to a new page)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#BNE">BNE</A></P>
+
+<H3><A NAME="BIT"></A>BIT - Bit Test</H3>
+
+<P>A &amp; M, N = M7, V = M6</P>
+
+<P>This instructions is used to test if one or more bits are set
+in a target memory location. The mask pattern in A is ANDed with
+the value in memory to set or clear the zero flag, but the result
+is not kept. Bits 7 and 6 of the value from memory are copied
+into the N and V flags.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="243">Set if the result if the AND is zero</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="243">Set to bit 6 of the memory value</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="243">Set to bit 7 of the memory value</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ZPG">Zero
+      Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$24</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">3</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$2C</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">4</TD>
+  </TR>
+</TABLE>
+
+<H3><A NAME="BMI"></A>BMI - Branch if Minus</H3>
+
+<P>If the negative flag is set then add the relative displacement
+to the program counter to cause a branch to a new location.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#REL">Relative</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$30</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">2 (+1 if branch succeeds<BR>
+      +2 if to a new page)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#BPL">BPL</A></P>
+
+<H3><A NAME="BNE"></A>BNE - Branch if Not Equal</H3>
+
+<P>If the zero flag is clear then add the relative displacement
+to the program counter to cause a branch to a new location.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#REL">Relative</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$D0</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">2 (+1 if branch succeeds<BR>
+      +2 if to a new page)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#BEQ">BEQ</A></P>
+
+<H3><A NAME="BPL"></A>BPL - Branch if Positive</H3>
+
+<P>If the negative flag is clear then add the relative displacement
+to the program counter to cause a branch to a new location.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#REL">Relative</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$10</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">2 (+1 if branch succeeds<BR>
+      +2 if to a new page)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#BMI">BMI</A></P>
+
+<H3><A NAME="BRK"></A>BRK - Force Interrupt</H3>
+
+<P>The BRK instruction forces the generation of an interrupt request.
+The program counter and processor status are pushed on the stack
+then the IRQ interrupt vector at $FFFE/F is loaded into the PC
+and the break flag in the status set to one.</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="243">Set to 1</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$00</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">7</TD>
+  </TR>
+</TABLE>
+
+<P>The interpretation of a BRK depends on the operating system.
+On the BBC Microcomputer it is used by language ROMs to signal
+run time errors but it could be used for other purposes (e.g.
+calling operating system functions, etc.).</P>
+
+<H3><A NAME="BVC"></A>BVC - Branch if Overflow Clear</H3>
+
+<P>If the overflow flag is clear then add the relative displacement
+to the program counter to cause a branch to a new location.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#REL">Relative</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$50</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">2 (+1 if branch succeeds<BR>
+      +2 if to a new page)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#BVS">BVS</A></P>
+
+<H3><A NAME="BVS"></A>BVS - Branch if Overflow Set</H3>
+
+<P>If the overflow flag is set then add the relative displacement
+to the program counter to cause a branch to a new location.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#REL">Relative</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$70</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">2 (+1 if branch succeeds<BR>
+      +2 if to a new page)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#BVC">BVC</A></P>
+
+<H3><A NAME="CLC"></A>CLC - Clear Carry Flag</H3>
+
+<P>C = 0</P>
+
+<P>Set the carry flag to zero.</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="243">Set to 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$18</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#SEC">SEC</A></P>
+
+<H3><A NAME="CLD"></A>CLD - Clear Decimal Mode</H3>
+
+<P>D = 0</P>
+
+<P>Sets the decimal mode flag to zero.</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="243">Set to 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$D8</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P><B>NB</B>:<BR>
+The state of the decimal flag is uncertain when the CPU is powered
+up and it is not reset when an interrupt is generated. In both
+cases you should include an explicit CLD to ensure that the flag
+is cleared before performing addition or subtraction.</P>
+
+<P>See also: <A HREF="#SED">SED</A></P>
+
+<H3><A NAME="CLI"></A>CLI - Clear Interrupt Disable</H3>
+
+<P>I = 0</P>
+
+<P>Clears the interrupt disable flag allowing normal interrupt
+requests to be serviced.</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="243">Set to 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$58</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#SEI">SEI</A></P>
+
+<H3><A NAME="CLV"></A>CLV - Clear Overflow Flag</H3>
+
+<P>V = 0</P>
+
+<P>Clears the overflow flag.</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="243">Set to 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$B8</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<H3><A NAME="CMP"></A>CMP - Compare</H3>
+
+<P>Z,C,N = A-M</P>
+
+<P>This instruction compares the contents of the accumulator with
+another memory held value and sets the zero and carry flags as
+appropriate.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Set if A &gt;= M</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if A = M</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of the result is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE HEIGHT="228" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%" HEIGHT="25"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IMM">Immediate</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$C9</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">2</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPG">Zero Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$C5</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">3</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPX">Zero Page,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$D5</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$CD</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="24"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$DD</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">4 (+1 if page crossed)</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABY">Absolute,Y</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$D9</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4 (+1 if page crossed)</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IDX">(Indirect,X)</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$C1</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">6</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="26"><A HREF="addressing.html#IDY">(Indirect),Y</A></TD>
+    <TD WIDTH="15%" HEIGHT="26">
+      <P><CENTER>$D1</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="26">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="26">5 (+1 if page crossed)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#CPX">CPX</A>, <A HREF="#CPY">CPY</A></P>
+
+<H3><A NAME="CPX"></A>CPX - Compare X Register</H3>
+
+<P>Z,C,N = X-M</P>
+
+<P>This instruction compares the contents of the X register with
+another memory held value and sets the zero and carry flags as
+appropriate.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Set if X &gt;= M</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if X = M</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of the result is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%" HEIGHT="25"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IMM">Immediate</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$E0</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">2</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPG">Zero Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$E4</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">3</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$EC</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#CMP">CMP</A>, <A HREF="#CPY">CPY</A></P>
+
+<H3><A NAME="CPY"></A>CPY - Compare Y Register</H3>
+
+<P>Z,C,N = Y-M</P>
+
+<P>This instruction compares the contents of the Y register with
+another memory held value and sets the zero and carry flags as
+appropriate.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Set if Y &gt;= M</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if Y = M</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of the result is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%" HEIGHT="25"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IMM">Immediate</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$C0</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">2</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPG">Zero Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$C4</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">3</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$CC</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#CMP">CMP</A>, <A HREF="#CPX">CPX</A></P>
+
+<H3><A NAME="DEC"></A>DEC - Decrement Memory</H3>
+
+<P>M,Z,N = M-1</P>
+
+<P>Subtracts one from the value held at a specified memory location
+setting the zero and negative flags as appropriate.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if result is zero</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of the result is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%" HEIGHT="25"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPG">Zero Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$C6</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">5</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPX">Zero Page,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$D6</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">6</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$CE</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">6</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="24"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$DE</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">7</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#DEX">DEX</A>, <A HREF="#DEY">DEY</A></P>
+
+<H3><A NAME="DEX"></A>DEX - Decrement X Register</H3>
+
+<P>X,Z,N = X-1</P>
+
+<P>Subtracts one from the X register setting the zero and negative
+flags as appropriate.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if X is zero</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of X is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$CA</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#DEC">DEC</A>, <A HREF="#DEY">DEY</A></P>
+
+<H3><A NAME="DEY"></A>DEY - Decrement Y Register</H3>
+
+<P>Y,Z,N = Y-1</P>
+
+<P>Subtracts one from the Y register setting the zero and negative
+flags as appropriate.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if Y is zero</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of Y is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$88</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#DEC">DEC</A>, <A HREF="#DEX">DEX</A></P>
+
+<H3><A NAME="EOR"></A>EOR - Exclusive OR</H3>
+
+<P>A,Z,N = A^M</P>
+
+<P>An exclusive OR is performed, bit by bit, on the accumulator
+contents using the contents of a byte of memory.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Set if A = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Set if bit 7 set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE HEIGHT="229" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><A HREF="addressing.html#IMM">Immediate</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$49</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>2</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><A HREF="addressing.html#ZPG">Zero
+      Page</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$45</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>3</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><A HREF="addressing.html#ZPX">Zero
+      Page,X</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$55</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>4</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$4D</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>3</CENTER></TD>
+    <TD>4</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$5D</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>3</CENTER></TD>
+    <TD>4 (+1 if page crossed)</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><A HREF="addressing.html#ABY">Absolute,Y</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$59</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>3</CENTER></TD>
+    <TD>4 (+1 if page crossed)</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><A HREF="addressing.html#IDX">(Indirect,X)</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$41</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>6</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="26"><A HREF="addressing.html#IDY">(Indirect),Y</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$51</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>5 (+1 if page crossed)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#AND">AND</A>, <A HREF="#ORA">ORA</A></P>
+
+<H3><A NAME="INC"></A>INC - Increment Memory</H3>
+
+<P>M,Z,N = M+1</P>
+
+<P>Adds one to the value held at a specified memory location setting
+the zero and negative flags as appropriate.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if result is zero</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of the result is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%" HEIGHT="25"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPG">Zero Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$E6</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">5</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPX">Zero Page,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$F6</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">6</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$EE</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">6</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="24"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$FE</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">7</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#INX">INX</A>, <A HREF="#INY">INY</A></P>
+
+<H3><A NAME="INX"></A>INX - Increment X Register</H3>
+
+<P>X,Z,N = X+1</P>
+
+<P>Adds one to the X register setting the zero and negative flags
+as appropriate.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if X is zero</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of X is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$E8</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#INC">INC</A>, <A HREF="#INY">INY</A></P>
+
+<H3><A NAME="INY"></A>INY - Increment Y Register</H3>
+
+<P>Y,Z,N = Y+1</P>
+
+<P>Adds one to the Y register setting the zero and negative flags
+as appropriate.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if Y is zero</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of Y is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$C8</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#INC">INC</A>, <A HREF="#INX">INX</A></P>
+
+<H3><A NAME="JMP"></A>JMP - Jump</H3>
+
+<P>Sets the program counter to the address specified by the operand.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="179" HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$4C</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD WIDTH="179" HEIGHT="24">3</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IND">Indirect</A>&nbsp;</TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$6C</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD WIDTH="179" HEIGHT="24">5</TD>
+  </TR>
+</TABLE>
+
+<P>NB:<BR>
+An original 6502 has does not correctly fetch the target address
+if the indirect vector falls on a page boundary (e.g. $xxFF where
+xx is any value from $00 to $FF). In this case fetches the LSB
+from $xxFF as expected but takes the MSB from $xx00. This is fixed
+in some later chips like the 65SC02 so for compatibility always
+ensure the indirect vector is not at the end of the page.</P>
+
+<H3><A NAME="JSR"></A>JSR - Jump to Subroutine</H3>
+
+<P>The JSR instruction pushes the address (minus one) of the return
+point on to the stack and then sets the program counter to the
+target memory address.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="179" HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$20</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD WIDTH="179" HEIGHT="24">6</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#RTS">RTS</A></P>
+
+<H3><A NAME="LDA"></A>LDA - Load Accumulator</H3>
+
+<P>A,Z,N = M</P>
+
+<P>Loads a byte of memory into the accumulator setting the zero
+and negative flags as appropriate.</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if A = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of A is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE HEIGHT="228" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%" HEIGHT="25"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IMM">Immediate</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$A9</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">2</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPG">Zero Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$A5</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">3</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPX">Zero Page,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$B5</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$AD</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="24"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$BD</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">4 (+1 if page crossed)</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABY">Absolute,Y</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$B9</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4 (+1 if page crossed)</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IDX">(Indirect,X)</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$A1</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">6</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="26"><A HREF="addressing.html#IDY">(Indirect),Y</A></TD>
+    <TD WIDTH="15%" HEIGHT="26">
+      <P><CENTER>$B1</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="26">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="26">5 (+1 if page crossed)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#LDX">LDX</A>, <A HREF="#LDY">LDY</A></P>
+
+<H3><A NAME="LDX"></A>LDX - Load X Register</H3>
+
+<P>X,Z,N = M</P>
+
+<P>Loads a byte of memory into the X register setting the zero
+and negative flags as appropriate.</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if X = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of X is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%" HEIGHT="25"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IMM">Immediate</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$A2</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">2</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPG">Zero Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$A6</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">3</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPY">Zero Page,Y</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$B6</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$AE</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABY">Absolute,Y</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$BE</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4 (+1 if page crossed)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#LDA">LDA</A>, <A HREF="#LDY">LDY</A></P>
+
+<H3><A NAME="LDY"></A>LDY - Load Y Register</H3>
+
+<P>Y,Z,N = M</P>
+
+<P>Loads a byte of memory into the Y register setting the zero
+and negative flags as appropriate.</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if Y = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of Y is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%" HEIGHT="25"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IMM">Immediate</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$A0</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">2</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPG">Zero Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$A4</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">3</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPX">Zero Page,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$B4</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$AC</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$BC</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4 (+1 if page crossed)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#LDA">LDA</A>, <A HREF="#LDX">LDX</A></P>
+
+<H3><A NAME="LSR"></A>LSR - Logical Shift Right</H3>
+
+<P>A,C,Z,N = A/2 or M,C,Z,N = M/2</P>
+
+<P>Each of the bits in A or M is shift one place to the right.
+The bit that was in bit 0 is shifted into the carry flag. Bit
+7 is set to zero.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="243">Set to contents of old bit 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="243">Set if result = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="243">Set if bit 7 of the result is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Accumulator</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$4A</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ZPG">Zero
+      Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$46</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">5</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ZPX">Zero
+      Page,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$56</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">6</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$4E</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">6</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$5E</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">7</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#ASL">ASL</A>, <A HREF="#ROL">ROL</A>, <A
+HREF="#ROR">ROR</A></P>
+
+<H3><A NAME="NOP"></A>NOP - No Operation</H3>
+
+<P>The NOP instruction causes no changes to the processor other
+than the normal incrementing of the program counter to the next
+instruction.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$EA</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<H3><A NAME="ORA"></A>ORA - Logical Inclusive OR</H3>
+
+<P>A,Z,N = A|M</P>
+
+<P>An inclusive OR is performed, bit by bit, on the accumulator
+contents using the contents of a byte of memory.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Set if A = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Set if bit 7 set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE HEIGHT="229" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IMM">Immediate</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$09</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>2</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPG">Zero Page</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$05</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>3</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPX">Zero Page,X</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$15</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$0D</CENTER></TD>
+    <TD WIDTH="15%">
+      <P align="center">3</TD>
+    <TD>4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$1D</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>3</CENTER></TD>
+    <TD>4 (+1 if page crossed)</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABY">Absolute,Y</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$19</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>3</CENTER></TD>
+    <TD>4 (+1 if page crossed)</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IDX">(Indirect,X)</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$01</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>6</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="26"><A HREF="addressing.html#IDY">(Indirect),Y</A></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>$11</CENTER></TD>
+    <TD WIDTH="15%">
+      <P><CENTER>2</CENTER></TD>
+    <TD>5 (+1 if page crossed)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#AND">AND</A>, <A HREF="#EOR">EOR</A></P>
+
+<H3><A NAME="PHA"></A>PHA - Push Accumulator</H3>
+
+<P>Pushes a copy of the accumulator on to the stack.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$48</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">3</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#PLA">PLA</A></P>
+
+<H3><A NAME="PHP"></A>PHP - Push Processor Status</H3>
+
+<P>Pushes a copy of the status flags on to the stack.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$08</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">3</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#PLP">PLP</A></P>
+
+<H3><A NAME="PLA"></A>PLA - Pull Accumulator</H3>
+
+<P>Pulls an 8 bit value from the stack and into the accumulator.
+The zero and negative flags are set as appropriate.</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if A = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of A is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$68</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">4</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#PHA">PHA</A></P>
+
+<H3><A NAME="PLP"></A>PLP - Pull Processor Status</H3>
+
+<P>Pulls an 8 bit value from the stack and into the processor
+flags. The flags will take on new states as determined by the
+value pulled.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Set from stack</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Set from stack</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Set from stack</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Set from stack</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Set from stack</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Set from stack</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Set from stack</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$28</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">4</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#PHP">PHP</A></P>
+
+<H3><A NAME="ROL"></A>ROL - Rotate Left</H3>
+
+<P>Move each of the bits in either A or M one place to the left.
+Bit 0 is filled with the current value of the carry flag whilst
+the old bit 7 becomes the new carry flag value.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="243">Set to contents of old bit 7</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="243">Set if A = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="243">Set if bit 7 of the result is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Accumulator</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$2A</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ZPG">Zero
+      Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$26</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">5</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ZPX">Zero
+      Page,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$36</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">6</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$2E</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">6</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$3E</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">7</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#ASL">ASL</A>, <A HREF="#LSR">LSR</A>, <A
+HREF="#ROR">ROR</A></P>
+
+<H3><A NAME="ROR"></A>ROR - Rotate Right</H3>
+
+<P>Move each of the bits in either A or M one place to the right.
+Bit 7 is filled with the current value of the carry flag whilst
+the old bit 0 becomes the new carry flag value.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="243">Set to contents of old bit 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="243">Set if A = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="243">Set if bit 7 of the result is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Accumulator</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$6A</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ZPG">Zero
+      Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$66</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">5</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ZPX">Zero
+      Page,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$76</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="24">6</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$6E</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">6</TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$7E</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">7</TD>
+  </TR>
+</TABLE>
+
+<P>See also <A HREF="#ASL">ASL</A>, <A HREF="#LSR">LSR</A>, <A
+HREF="#ROL">ROL</A></P>
+
+<H3><A NAME="RTI"></A>RTI - Return from Interrupt</H3>
+
+<P>The RTI instruction is used at the end of an interrupt processing
+routine. It pulls the processor flags from the stack followed
+by the program counter.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Set from stack</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Set from stack</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Set from stack</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Set from stack</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Set from stack</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Set from stack</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Set from stack</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$40</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">6</TD>
+  </TR>
+</TABLE>
+
+<H3><A NAME="RTS"></A>RTS - Return from Subroutine</H3>
+
+<P>The RTS instruction is used at the end of a subroutine to return
+to the calling routine. It pulls the program counter (minus one)
+from the stack.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$60</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">6</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#JSR">JSR</A></P>
+
+<H3><A NAME="SBC"></A>SBC - Subtract with Carry</H3>
+
+<P>A,Z,C,N = A-M-(1-C)</P>
+
+<P>This instruction subtracts the contents of a memory location
+to the accumulator together with the not of the carry bit. If
+overflow occurs the carry bit is clear, this enables multiple
+byte subtraction to be performed.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Clear if overflow in bit 7</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if A = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Set if sign bit is incorrect</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE HEIGHT="228" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%" HEIGHT="25"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IMM">Immediate</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$E9</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">2</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPG">Zero Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$E5</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">3</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPX">Zero Page,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$F5</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$ED</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="24"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$FD</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">4 (+1 if page crossed)</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABY">Absolute,Y</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$F9</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4 (+1 if page crossed)</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IDX">(Indirect,X)</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$E1</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">6</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="26"><A HREF="addressing.html#IDY">(Indirect),Y</A></TD>
+    <TD WIDTH="15%" HEIGHT="26">
+      <P><CENTER>$F1</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="26">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="26">5 (+1 if page crossed)</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#ADC">ADC</A></P>
+
+<H3><A NAME="SEC"></A>SEC - Set Carry Flag</H3>
+
+<P>C = 1</P>
+
+<P>Set the carry flag to one.</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="243">Set to 1</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$38</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#CLC">CLC</A></P>
+
+<H3><A NAME="SED"></A>SED - Set Decimal Flag</H3>
+
+<P>D = 1</P>
+
+<P>Set the decimal mode flag to one.</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="243">Set to 1</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$F8</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#CLD">CLD</A></P>
+
+<H3><A NAME="SEI"></A>SEI - Set Interrupt Disable</H3>
+
+<P>I = 1</P>
+
+<P>Set the interrupt disable flag to one.</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="243">Set to 1</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="243">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$78</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#CLI">CLI</A></P>
+
+<H3><A NAME="STA"></A>STA - Store Accumulator</H3>
+
+<P>M = A</P>
+
+<P>Stores the contents of the accumulator into memory.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%" HEIGHT="25"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPG">Zero Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$85</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">3</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPX">Zero Page,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$95</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$8D</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="24"><A HREF="addressing.html#ABX">Absolute,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$9D</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="24">5</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABY">Absolute,Y</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$99</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">5</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#IDX">(Indirect,X)</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$81</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">6</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="26"><A HREF="addressing.html#IDY">(Indirect),Y</A></TD>
+    <TD WIDTH="15%" HEIGHT="26">
+      <P><CENTER>$91</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="26">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="26">6</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#STX">STX</A>, <A HREF="#STY">STY</A></P>
+
+<H3><A NAME="STX"></A>STX - Store X Register</H3>
+
+<P>M = X</P>
+
+<P>Stores the contents of the X register into memory.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%" HEIGHT="25"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPG">Zero Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$86</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">3</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPY">Zero Page,Y</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$96</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$8E</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#STA">STA</A>, <A HREF="#STY">STY</A></P>
+
+<H3><A NAME="STY"></A>STY - Store Y Register</H3>
+
+<P>M = Y</P>
+
+<P>Stores the contents of the Y register into memory.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="25"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD WIDTH="34%" HEIGHT="25"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPG">Zero Page</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$84</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">3</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ZPX">Zero Page,X</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$94</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>2</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="25"><A HREF="addressing.html#ABS">Absolute</A></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>$8C</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="25">
+      <P><CENTER>3</CENTER></TD>
+    <TD HEIGHT="25">4</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#STA">STA</A>, <A HREF="#STX">STX</A></P>
+
+<H3><A NAME="TAX"></A>TAX - Transfer Accumulator to X</H3>
+
+<P>X = A</P>
+
+<P>Copies the current contents of the accumulator into the X register
+and sets the zero and negative flags as appropriate.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if X = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of X is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$AA</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#TXA">TXA</A></P>
+
+<H3><A NAME="TAY"></A>TAY - Transfer Accumulator to Y</H3>
+
+<P>Y = A</P>
+
+<P>Copies the current contents of the accumulator into the Y register
+and sets the zero and negative flags as appropriate.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if Y = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of Y is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$A8</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#TAY">TYA</A></P>
+
+<H3><A NAME="TSX"></A>TSX - Transfer Stack Pointer to X</H3>
+
+<P>X = S</P>
+
+<P>Copies the current contents of the stack register into the
+X register and sets the zero and negative flags as appropriate.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if X = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of X is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$BA</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#TXS">TXS</A></P>
+
+<H3><A NAME="TXA"></A>TXA - Transfer X to Accumulator</H3>
+
+<P>A = X</P>
+
+<P>Copies the current contents of the X register into the accumulator
+and sets the zero and negative flags as appropriate.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if A = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of A is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$8A</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#TAX">TAX</A></P>
+
+<H3><A NAME="TXS"></A>TXS - Transfer X to Stack Pointer</H3>
+
+<P>S = X</P>
+
+<P>Copies the current contents of the X register into the stack
+register.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="35%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="180">Not affected</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$9A</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#TSX">TSX</A></P>
+
+<H3><A NAME="TYA"></A>TYA - Transfer Y to Accumulator</H3>
+
+<P>A = Y</P>
+
+<P>Copies the current contents of the Y register into the accumulator
+and sets the zero and negative flags as appropriate.</P>
+
+<P>Processor Status after use:</P>
+
+<P><TABLE HEIGHT="171" CELLSPACING="0" CELLPADDING="0" WIDTH="450"
+BORDER="1">
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#C">C</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#C">Carry Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#Z">Z</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#Z">Zero Flag</A></TD>
+    <TD WIDTH="50%">Set if A = 0</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#I">I</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#I">Interrupt Disable</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#D">D</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#D">Decimal Mode Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#B">B</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#B">Break Command</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#V">V</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#V">Overflow Flag</A></TD>
+    <TD WIDTH="50%">Not affected</TD>
+  </TR>
+  <TR>
+    <TD ALIGN="MIDDLE" WIDTH="5%" HEIGHT="24"><A HREF="registers.html#N">N</A></TD>
+    <TD WIDTH="45%"><A HREF="registers.html#N">Negative Flag</A></TD>
+    <TD WIDTH="50%">Set if bit 7 of A is set</TD>
+  </TR>
+</TABLE>
+
+<P><TABLE CELLSPACING="0" CELLPADDING="0" WIDTH="450" BORDER="1">
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><B>Addressing Mode</B></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Opcode</B></CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER><B>Bytes</B></CENTER></TD>
+    <TD HEIGHT="24"><B>Cycles</B></TD>
+  </TR>
+  <TR>
+    <TD WIDTH="30%" HEIGHT="24"><A HREF="addressing.html#IMP">Implied</A></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>$98</CENTER></TD>
+    <TD WIDTH="15%" HEIGHT="24">
+      <P><CENTER>1</CENTER></TD>
+    <TD HEIGHT="24">2</TD>
+  </TR>
+</TABLE>
+
+<P>See also: <A HREF="#TAY">TAY</A></P>
+
+<P><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0" WIDTH="100%"
+HEIGHT="30">
+  <TR>
+    <TD WIDTH="25%" BGCOLOR="#aaaaff">&nbsp;<A HREF="algorithms.html">&lt;&lt;
+      Back</A></TD>
+    <TD WIDTH="25%" BGCOLOR="#aaaaff">
+      <P><CENTER><A HREF="../index.html" TARGET="_parent">Home</A></CENTER></TD>
+    <TD WIDTH="25%" BGCOLOR="#aaaaff">
+      <P><CENTER><A HREF="index.html">Contents</A></CENTER></TD>
+    <TD ALIGN="RIGHT" WIDTH="25%" BGCOLOR="#aaaaff"><A HREF="downloads.html">Next
+      &gt;&gt;</A></TD>
+  </TR>
+</TABLE>
+<P>
+<HR>
+<script type="text/javascript"><!--
+google_ad_client = "pub-0826595092783671";
+/* 6502 Footer */
+google_ad_slot = "9966603696";
+google_ad_width = 728;
+google_ad_height = 90;
+//-->
+</script>
+<script type="text/javascript"
+src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+<HR>
+<script type="text/javascript"><!--
+google_ad_client = "pub-0826595092783671";
+/* 6502 Links */
+google_ad_slot = "4173075094";
+google_ad_width = 728;
+google_ad_height = 15;
+//-->
+</script>
+<script type="text/javascript"
+src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-9026746-2");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+<HR ALIGN=LEFT>This page was last updated on 17th February, 2008
+</BODY>
+</HTML>

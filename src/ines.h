@@ -8,9 +8,9 @@
 // https://wiki.nesdev.com/w/index.php/INES
 struct INES {
 private:
-  /* Raw ROM data */
-  uint8* raw_data;
-  uint32 data_len;
+  // Raw ROM data
+  const uint8* raw_data;
+        uint32 data_len;
 
 public:
   uint8 mapper; // Mapper number
@@ -19,12 +19,12 @@ public:
 
   // ROMs
   struct {
-    uint8* prg_rom; // start of prg_rom banks (16K each)
-    uint8* chr_rom; // start of chr_rom banks (8k each)
+    const uint8* prg_rom; // start of prg_rom banks (16K each)
+    const uint8* chr_rom; // start of chr_rom banks (8k each)
 
-    uint8* trn_rom; // start of Trainer
-    uint8* pci_rom; // start of PlayChoice INST-ROM
-    uint8* pc_prom; // start PlayChoice PROM
+    const uint8* trn_rom; // start of Trainer
+    const uint8* pci_rom; // start of PlayChoice INST-ROM
+    const uint8* pc_prom; // start PlayChoice PROM
   } roms;
 
   struct {
@@ -43,7 +43,5 @@ public:
   } flags;
 
   ~INES();
-  INES(std::istream& file);
-  INES(const INES& other);
-  INES& operator= (const INES& other);
+  INES(const uint8* data, uint32 data_len);
 };

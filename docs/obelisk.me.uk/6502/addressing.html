@@ -1,0 +1,231 @@
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Microsoft FrontPage 4.0">
+  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+  <TITLE>6502 Addressing Modes</TITLE>
+  <LINK REL="StyleSheet" HREF="../obelisk.css" TYPE="text/css" media="screen,print">
+</HEAD>
+<BODY>
+<script type="text/javascript"><!--
+google_ad_client = "pub-0826595092783671";
+/* 6502 Header */
+google_ad_slot = "9208748029";
+google_ad_width = 728;
+google_ad_height = 90;
+//-->
+</script>
+<script type="text/javascript"
+src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+<HR>
+<H2>Addressing Modes</H2>
+
+<P>The 6502 processor provides several ways in which memory locations
+can be addressed. Some instructions support several different
+modes while others may only support one. In addition the two index
+registers can not always be used interchangeably. This lack of
+orthogonality in the instruction set is one of the features that
+makes the 6502 trickier to program well.</P>
+
+<H3><A NAME="IMP"></A>Implicit</H3>
+
+<P>For many 6502 instructions the source and destination of the
+information to be manipulated is implied directly by the function
+of the instruction itself and no further operand needs to be specified.
+Operations like 'Clear Carry Flag' (<A HREF="reference.html#CLC">CLC</A>)
+and 'Return from Subroutine' (<A HREF="reference.html#RTS">RTS</A>)
+are implicit.</P>
+
+<H3><A NAME="IMP"></A>Accumulator</H3>
+
+<P>Some instructions have an option to operate directly upon the
+accumulator. The programmer specifies this by using a special
+operand value, 'A'. For example:</P>
+
+<PRE>        LSR A           ;Logical shift right one bit
+        ROR A           ;Rotate right one bit</PRE>
+
+<H3><A NAME="IMM"></A>Immediate</H3>
+
+<P>Immediate addressing allows the programmer to directly specify
+an 8 bit constant within the instruction. It is indicated by a
+'#' symbol followed by an numeric expression. For example:</P>
+
+<PRE>        LDA #10         ;Load 10 ($0A) into the accumulator
+        LDX #LO LABEL   ;Load the LSB of a 16 bit address into X
+        LDY #HI LABEL   ;Load the MSB of a 16 bit address into Y</PRE>
+
+<H3><A NAME="ZPG"></A>Zero Page</H3>
+
+<P>An instruction using zero page addressing mode has only an
+8 bit address operand. This limits it to addressing only the first
+256 bytes of memory (e.g. $0000 to $00FF) where the most significant
+byte of the address is always zero. In zero page mode only the
+least significant byte of the address is held in the instruction
+making it shorter by one byte (important for space saving) and
+one less memory fetch during execution (important for speed).</P>
+
+<P>An assembler will automatically select zero page addressing
+mode if the operand evaluates to a zero page address and the instruction
+supports the mode (not all do).</P>
+
+<PRE>        LDA $00         ;Load accumulator from $00
+        ASL ANSWER      ;Shift labelled location ANSWER left</PRE>
+
+<H3><A NAME="ZPX"></A>Zero Page,X</H3>
+
+<P>The address to be accessed by an instruction using indexed
+zero page addressing is calculated by taking the 8 bit zero page
+address from the instruction and adding the current value of the
+X register to it. For example if the X register contains $0F and
+the instruction LDA $80,X is executed then the accumulator will
+be loaded from $008F (e.g. $80 + $0F =&gt; $8F).</P>
+
+<P><B>NB</B>:<BR>
+The address calculation wraps around if the sum of the base address
+and the register exceed $FF. If we repeat the last example but
+with $FF in the X register then the accumulator will be loaded
+from $007F (e.g. $80 + $FF =&gt; $7F) and not $017F.</P>
+
+<PRE>        STY $10,X       ;Save the Y register at location on zero page
+        AND TEMP,X      ;Logical AND accumulator with a zero page value</PRE>
+
+<H3><A NAME="ZPY"></A>Zero Page,Y</H3>
+
+<P>The address to be accessed by an instruction using indexed
+zero page addressing is calculated by taking the 8 bit zero page
+address from the instruction and adding the current value of the
+Y register to it. This mode can only be used with the <A HREF="reference.html#LDX">LDX</A>
+and <A HREF="reference.html#STX">STX</A> instructions.</P>
+
+<PRE>        LDX $10,Y       ;Load the X register from a location on zero page
+        STX TEMP,Y      ;Store the X register in a location on zero page</PRE>
+
+<H3><A NAME="REL"></A>Relative</H3>
+
+<P>Relative addressing mode is used by branch instructions (e.g.
+<A HREF="reference.html#BEQ">BEQ</A>, <A HREF="reference.html#BNE">BNE</A>,
+etc.) which contain a signed 8 bit relative offset (e.g. -128
+to +127) which is added to program counter if the condition is
+true. As the program counter itself is incremented during instruction
+execution by two the effective address range for the target instruction
+must be with -126 to +129 bytes of the branch.</P>
+
+<PRE>        BEQ LABEL       ;Branch if zero flag set to LABEL
+        BNE *+4         ;Skip over the following 2 byte instruction</PRE>
+
+<H3><A NAME="ABS"></A>Absolute</H3>
+
+<P>Instructions using absolute addressing contain a full 16 bit
+address to identify the target location.</P>
+
+<PRE>        JMP $1234       ;Jump to location $1234
+        JSR WIBBLE      ;Call subroutine WIBBLE</PRE>
+
+<H3><A NAME="ABX"></A>Absolute,X</H3>
+
+<P>The address to be accessed by an instruction using X register
+indexed absolute addressing is computed by taking the 16 bit address
+from the instruction and added the contents of the X register.
+For example if X contains $92 then an STA $2000,X instruction
+will store the accumulator at $2092 (e.g. $2000 + $92).</P>
+
+ <PRE>        STA $3000,X     ;Store accumulator between $3000 and $30FF
+        ROR CRC,X       ;Rotate right one bit</PRE>
+
+<H3><A NAME="ABY"></A>Absolute,Y</H3>
+
+<P>The Y register indexed absolute addressing mode is the same
+as the previous mode only with the contents of the Y register
+added to the 16 bit address from the instruction.</P>
+
+<PRE>        AND $4000,Y     ;Perform a logical AND with a byte of memory
+        STA MEM,Y       ;Store accumulator in memory</PRE>
+
+<H3><A NAME="IND"></A>Indirect</H3>
+
+<P><A HREF="reference.html#JMP">JMP</A> is the only 6502 instruction
+to support indirection. The instruction contains a 16 bit address
+which identifies the location of the least significant byte of
+another 16 bit memory address which is the real target of the
+instruction.</P>
+
+<P>For example if location $0120 contains $FC and location $0121
+contains $BA then the instruction JMP ($0120) will cause the next
+instruction execution to occur at $BAFC (e.g. the contents of
+$0120 and $0121).</P>
+
+<PRE>        JMP ($FFFC)     ;Force a power on reset
+        JMP (TARGET)    ;Jump via a labelled memory area</PRE>
+
+<H3><A NAME="IDX"></A>Indexed Indirect</H3>
+
+<P>Indexed indirect addressing is normally used in conjunction with a table of address held on zero page. The address of the
+table is taken from the instruction and the X register added to
+it (with zero page wrap around) to give the location of the least
+significant byte of the target address.</P>
+
+ <PRE>        LDA ($40,X)     ;Load a byte indirectly from memory
+        STA (MEM,X)     ;Store accumulator indirectly into memory</PRE>
+
+<H3><A NAME="IDY"></A>Indirect Indexed</H3>
+
+<P>Indirect indirect addressing is the most common indirection
+mode used on the 6502. In instruction contains the zero page location
+of the least significant byte of 16 bit address. The Y register
+is dynamically added to this value to generated the actual target
+address for operation.</P>
+
+ <PRE>        LDA ($40),Y     ;Load a byte indirectly from memory
+        STA (DST),Y     ;Store accumulator indirectly into memory</PRE>
+
+<P><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0" WIDTH="100%"
+HEIGHT="30">
+  <TR>
+    <TD WIDTH="25%" BGCOLOR="#aaaaff">&nbsp;<A HREF="instructions.html">&lt;&lt;
+      Back</A></TD>
+    <TD WIDTH="25%" BGCOLOR="#aaaaff">
+      <P><CENTER><A HREF="../index.html" TARGET="_parent">Home</A></CENTER></TD>
+    <TD WIDTH="25%" BGCOLOR="#aaaaff">
+      <P><CENTER><A HREF="index.html">Contents</A></CENTER></TD>
+    <TD ALIGN="RIGHT" WIDTH="25%" BGCOLOR="#aaaaff"><A HREF="algorithms.html">Next
+      &gt;&gt;</A></TD>
+  </TR>
+</TABLE>
+<P>
+<HR>
+<script type="text/javascript"><!--
+google_ad_client = "pub-0826595092783671";
+/* 6502 Footer */
+google_ad_slot = "9966603696";
+google_ad_width = 728;
+google_ad_height = 90;
+//-->
+</script>
+<script type="text/javascript"
+src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+<HR>
+<script type="text/javascript"><!--
+google_ad_client = "pub-0826595092783671";
+/* 6502 Links */
+google_ad_slot = "4173075094";
+google_ad_width = 728;
+google_ad_height = 15;
+//-->
+</script>
+<script type="text/javascript"
+src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-9026746-2");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+<HR ALIGN=LEFT>This page was last updated on 28th December 2003
+</BODY>
+</HTML>

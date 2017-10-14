@@ -1,0 +1,176 @@
+<HTML>
+	<HEAD>
+		<TITLE>6502 Registers</TITLE>
+		<META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+		<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+		<LINK REL="StyleSheet" HREF="../obelisk.css" TYPE="text/css" media="screen,print">
+	</HEAD>
+	<BODY>
+<script type="text/javascript"><!--
+google_ad_client = "pub-0826595092783671";
+/* 6502 Header */
+google_ad_slot = "9208748029";
+google_ad_width = 728;
+google_ad_height = 90;
+//-->
+</script>
+<script type="text/javascript"
+src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+<HR>
+		<H2>The Registers</H2>
+		<P>The 6502 has only a small number of registers compared to other processor of the
+			same era. This makes it especially challenging to program as algorithms must
+			make efficient use of both registers and memory.</P>
+		<H3>Program Counter</H3>
+		<P>The program counter is a 16 bit register which points to the next instruction to
+			be executed. The value of program counter is modified automatically as
+			instructions are executed.</P>
+		<P>The value of the program counter can be modified by executing a jump, a relative
+			branch or a subroutine call to another memory address or by returning from a
+			subroutine or interrupt.</P>
+		<H3>Stack Pointer</H3>
+		<P>The processor supports a 256 byte stack located between $0100 and $01FF. The
+			stack pointer is an 8 bit register and holds the low 8 bits of the next free
+			location on the stack. The location of the stack is fixed and cannot be moved.</P>
+		<P>Pushing bytes to the stack causes the stack pointer to be decremented.
+			Conversely pulling bytes causes it to be incremented.</P>
+		<P>The CPU does not detect if the stack is overflowed by excessive pushing or
+			pulling operations and will most likely result in the program crashing.</P>
+		<H3>Accumulator</H3>
+		<P>The 8 bit accumulator is used all arithmetic and logical operations (with the
+			exception of increments and decrements). The contents of the accumulator can be
+			stored and retrieved either from memory or the stack.</P>
+		<P>Most complex operations will need to use the accumulator for arithmetic and
+			efficient optimisation of its use is a key feature of time critical routines.</P>
+		<H3>Index Register X</H3>
+		<P>The 8 bit index register is most commonly used to hold counters or offsets for
+			accessing memory. The value of the X register can be loaded and saved in
+			memory, compared with values held in memory or incremented and decremented.</P>
+		<P>The X register has one special function. It can be used to get a copy of the
+			stack pointer or change its value.</P>
+		<H3>Index Register Y</H3>
+		<P>The Y register is similar to the X register in that it is available for holding
+			counter or offsets memory access and supports the same set of memory load, save
+			and compare operations as wells as increments and decrements. It has no special
+			functions.</P>
+		<H3>Processor Status</H3>
+		<P>As instructions are executed a set of processor flags are set or clear to record
+			the results of the operation. This flags and some additional control flags are
+			held in a special status register. Each flag has a single bit within the
+			register.</P>
+		<P>Instructions exist to test the values of the various bits, to set or clear some
+			of them and to push or pull the entire set to or from the stack.</P>
+		<UL>
+			<LI>
+				<A NAME="C"></A>Carry Flag</LI>
+		</UL>
+		<BLOCKQUOTE>
+			<P>The carry flag is set if the last operation caused an overflow from bit 7 of the
+				result or an underflow from bit 0. This condition is set during arithmetic,
+				comparison and during logical shifts. It can be explicitly set using the 'Set
+				Carry Flag' (<A HREF="reference.html#SEC">SEC</A>) instruction and cleared with
+				'Clear Carry Flag' (<A HREF="reference.html#CLC">CLC</A>).</P>
+		</BLOCKQUOTE>
+		<UL>
+			<LI>
+				<A NAME="Z"></A>Zero Flag</LI>
+		</UL>
+		<BLOCKQUOTE>
+			<P>The zero flag is set if the result of the last operation as was zero.</P>
+		</BLOCKQUOTE>
+		<UL>
+			<LI>
+				<A NAME="I"></A>Interrupt Disable</LI>
+		</UL>
+		<BLOCKQUOTE>
+			<P>The interrupt disable flag is set if the program has executed a 'Set Interrupt
+				Disable' (<A HREF="reference.html#SEI">SEI</A>) instruction. While this flag is
+				set the processor will not respond to interrupts from devices until it is
+				cleared by a 'Clear Interrupt Disable' (<A HREF="reference.html#CLI">CLI</A>)
+				instruction.</P>
+		</BLOCKQUOTE>
+		<UL>
+			<LI>
+				<A NAME="D"></A>Decimal Mode</LI>
+		</UL>
+		<BLOCKQUOTE>
+			<P>While the decimal mode flag is set the processor will obey the rules of Binary
+				Coded Decimal (BCD) arithmetic during addition and subtraction. The flag can be
+				explicitly set using 'Set Decimal Flag' (<A HREF="reference.html#SED">SED</A>)
+				and cleared with 'Clear Decimal Flag' (<A HREF="reference.html#CLD">CLD</A>).</P>
+		</BLOCKQUOTE>
+		<UL>
+			<LI>
+				<A NAME="B"></A>Break Command</LI>
+		</UL>
+		<BLOCKQUOTE>
+			<P>The break command bit is set when a <A HREF="reference.html#BRK">BRK</A> instruction
+				has been executed and an interrupt has been generated to process it.</P>
+		</BLOCKQUOTE>
+		<UL>
+			<LI>
+				<A NAME="V"></A>Overflow Flag</LI>
+		</UL>
+		<BLOCKQUOTE>
+			<P>The overflow flag is set during arithmetic operations if the result has yielded
+				an invalid 2's complement result (e.g. adding to positive numbers and ending up
+				with a negative result: 64 + 64 =&gt; -128). It is determined by looking at the
+				carry between bits 6 and 7 and between bit 7 and the carry flag.</P>
+		</BLOCKQUOTE>
+		<UL>
+			<LI>
+				<A NAME="N"></A>Negative Flag</LI>
+		</UL>
+		<BLOCKQUOTE>
+			<P>The negative flag is set if the result of the last operation had bit 7 set to a
+				one.</P>
+		</BLOCKQUOTE>
+		<P><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0" WIDTH="100%" HEIGHT="30">
+				<TR>
+					<TD WIDTH="25%" BGCOLOR="#aaaaff">&nbsp;<A HREF="architecture.html">&lt;&lt; Back</A></TD>
+					<TD WIDTH="25%" BGCOLOR="#aaaaff">
+						<P><CENTER><A HREF="../index.html" TARGET="_parent">Home</A></CENTER>
+					</TD>
+					<TD WIDTH="25%" BGCOLOR="#aaaaff">
+						<P><CENTER><A HREF="index.html">Contents</A></CENTER>
+					</TD>
+					<TD ALIGN="right" WIDTH="25%" BGCOLOR="#aaaaff"><A HREF="instructions.html">Next
+							&gt;&gt;</A></TD>
+				</TR>
+			</TABLE>
+		</P>
+		<P>
+<HR>
+<script type="text/javascript"><!--
+google_ad_client = "pub-0826595092783671";
+/* 6502 Footer */
+google_ad_slot = "9966603696";
+google_ad_width = 728;
+google_ad_height = 90;
+//-->
+</script>
+<script type="text/javascript"
+src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+<HR>
+<script type="text/javascript"><!--
+google_ad_client = "pub-0826595092783671";
+/* 6502 Links */
+google_ad_slot = "4173075094";
+google_ad_width = 728;
+google_ad_height = 15;
+//-->
+</script>
+<script type="text/javascript"
+src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-9026746-2");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+<HR ALIGN="left">
+		This page was last updated on&nbsp;9th August 2003
+	</BODY>
+</HTML>

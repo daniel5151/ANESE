@@ -2,29 +2,16 @@
 
 #include <iostream>
 
-INES::INES(std::istream& data_stream) {
-  // Read in data from data_stream of unknown size
-  uint8* data = nullptr;
-
-  const uint CHUNK_SIZE = 0x4000;
-  for (uint chunk = 0; data_stream; chunk++) {
-    // Allocate new data
-    uint8* new_data = new uint8 [CHUNK_SIZE * (chunk + 1)];
-    data_len = CHUNK_SIZE * (chunk + 1);
-
-    // Copy old data into the new data
-    for (uint i = 0; i < CHUNK_SIZE * chunk; i++)
-      new_data[i] = data[i];
-
-    delete data;
-    data = new_data;
-
-    // Read another chunk into the data
-    data_stream.read((char*) data + CHUNK_SIZE * chunk, CHUNK_SIZE);
-  }
-
+INES::INES(const uint8* data, uint32 data_len) {
   // Hold on to the raw data (to be deleted later)
   this->raw_data = data;
+  this->data_len = data_len;
+
+  // Can't parse data if there is none ;)
+  if (data == nullptr) {
+    this->is_valid = false;
+    return;
+  }
 
   // Check that the data is iNES compatible
   this->is_valid = (data[0] == 'N' &&
@@ -38,6 +25,12 @@ INES::INES(std::istream& data_stream) {
 
   this->flags.prg_rom_pages = data[3];
   this->flags.chr_rom_pages = data[4];
+
+  // Can't use a ROM with no prg_rom!
+  if (this->flags.prg_rom_pages == 0) {
+    this->is_valid = false;
+    return;
+  }
 
   // 0       7
   // ---------
@@ -90,28 +83,4 @@ INES::INES(std::istream& data_stream) {
 
 INES::~INES() {
   delete raw_data;
-}
-
-INES& INES::operator= (const INES& other) {
-  if (this == &other) return *this;
-
-  // Allocate space to copy data into
-  this->raw_data = new uint8 [other.data_len];
-  this->data_len = other.data_len;
-
-  // Copy old data into the new data
-  for (uint i = 0; i < this->data_len; i++)
-    this->raw_data[i] = other.raw_data[i];
-
-  // Move over rest of data
-  this->mapper   = other.mapper;
-  this->flags    = other.flags;
-  this->roms     = other.roms;
-  this->is_valid = other.is_valid;
-
-  return *this;
-}
-
-INES::INES(const INES& other) {
-  *this = other;
 }
