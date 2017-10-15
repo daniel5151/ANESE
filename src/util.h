@@ -21,3 +21,6 @@ typedef int64_t int64;
 /// get nth bit from a number x
 template <typename T>
 inline bool nth_bit(T x, uint8 n) { return (x >> n) & 1; }
+
+// cartridge won't work unless this is called first
+#define BLOW_ON_CONTACTS(cartridge)

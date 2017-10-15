@@ -4,8 +4,9 @@ roms/retail/*
 # macOS
 .DS_Store
 
-# build artifacts
+# build and debugging artifacts
 /build
+/anese.dSYM
 
 # anese that's in the main directory
 /anese
