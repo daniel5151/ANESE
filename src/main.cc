@@ -23,10 +23,10 @@ int main(int argc, const char* argv[]) {
 
   // get length of file
   rom_file.seekg(0, rom_file.end);
-  uint32 data_len = rom_file.tellg();
+  u32 data_len = rom_file.tellg();
   rom_file.seekg(0, rom_file.beg);
 
-  uint8* data = new uint8 [data_len];
+  u8* data = new u8 [data_len];
 
   rom_file.read((char*) data, data_len);
 

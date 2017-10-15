@@ -9,27 +9,27 @@
 struct INES {
 private:
   // Raw ROM data
-  const uint8* raw_data;
-        uint32 data_len;
+  const u8* raw_data;
+        u32 data_len;
 
 public:
-  uint8 mapper; // Mapper number
+  u8 mapper; // Mapper number
 
   bool is_valid;
 
   // ROMs
   struct {
-    const uint8* prg_rom; // start of prg_rom banks (16K each)
-    const uint8* chr_rom; // start of chr_rom banks (8k each)
+    const u8* prg_rom; // start of prg_rom banks (16K each)
+    const u8* chr_rom; // start of chr_rom banks (8k each)
 
-    const uint8* trn_rom; // start of Trainer
-    const uint8* pci_rom; // start of PlayChoice INST-ROM
-    const uint8* pc_prom; // start PlayChoice PROM
+    const u8* trn_rom; // start of Trainer
+    const u8* pci_rom; // start of PlayChoice INST-ROM
+    const u8* pc_prom; // start PlayChoice PROM
   } roms;
 
   struct {
-    uint8 prg_rom_pages; // Num 16K program ROM pages
-    uint8 chr_rom_pages; // Num 8K character ROM pages
+    u8 prg_rom_pages; // Num 16K program ROM pages
+    u8 chr_rom_pages; // Num 8K character ROM pages
 
     bool mirror_type; // 0 = horizontal mirroring, 1 = vertical mirroring
     bool has_4screen; // Uses Four Screen Mode
@@ -43,5 +43,5 @@ public:
   } flags;
 
   ~INES();
-  INES(const uint8* data, uint32 data_len);
+  INES(const u8* data, u32 data_len);
 };

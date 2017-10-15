@@ -2,7 +2,7 @@
 
 #include "mappers/mapper.h"
 
-Cartridge::Cartridge(const uint8* data, uint32 data_len) {
+Cartridge::Cartridge(const u8* data, u32 data_len) {
   this->rom_data = new INES(data, data_len);
   this->mapper = Mapper::Factory(*this->rom_data);
 }
@@ -12,11 +12,11 @@ Cartridge::~Cartridge() {
   delete this->mapper;
 }
 
-uint8 Cartridge::read(uint16 addr) {
+u8 Cartridge::read(u16 addr) {
   return this->mapper->read(addr);
 }
 
-void Cartridge::write(uint16 addr, uint8 val) {
+void Cartridge::write(u16 addr, u8 val) {
   this->mapper->write(addr, val);
 }
 

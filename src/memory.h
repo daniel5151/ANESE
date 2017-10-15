@@ -5,6 +5,6 @@
 // 16 bit memory interface
 class Memory {
 public:
-  virtual uint8 read(uint16 addr) = 0;
-  virtual void write(uint16 addr, uint8 val) = 0;
+  virtual u8 read(u16 addr) = 0;
+  virtual void write(u16 addr, u8 val) = 0;
 };

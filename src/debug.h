@@ -17,8 +17,8 @@ private:
   Void_Memory() = default;
 
 public:
-  uint8 read(uint16 addr) override { return 0; };
-  void write(uint16 addr, uint8 val) override {};
+  u8 read(u16 addr) override { return 0; };
+  void write(u16 addr, u8 val) override {};
 
   static Void_Memory* Get() {
     static Void_Memory the_void;
@@ -42,7 +42,7 @@ public:
     mem(mem)
   {}
 
-  uint8 read(uint16 addr) override {
+  u8 read(u16 addr) override {
     if (this->mem == nullptr) {
       printf(
         "[%s] Underlying Memory is nullptr!\n",
@@ -52,12 +52,12 @@ public:
     }
 
     // only read once, to prevent side effects
-    uint8 val = this->mem->read(addr);
+    u8 val = this->mem->read(addr);
     printf("[%s] R 0x%04X -> 0x%X\n", this->label, addr, val);
     return val;
   };
 
-  void write(uint16 addr, uint8 val) override {
+  void write(u16 addr, u8 val) override {
     if (this->mem == nullptr) {
       printf(
         "[%s] Underlying Memory is nullptr!\n",

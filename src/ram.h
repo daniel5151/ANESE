@@ -7,12 +7,12 @@
 // (max 64K of RAM)
 class RAM final : public Memory {
 private:
-  uint8* ram;
-  uint32 size;
+  u8* ram;
+  u32 size;
 public:
-  RAM(uint32 ram_size);
+  RAM(u32 ram_size);
   ~RAM();
 
-  uint8 read(uint16 addr) override;
-  void write(uint16 addr, uint8 val) override;
+  u8 read(u16 addr) override;
+  void write(u16 addr, u8 val) override;
 };

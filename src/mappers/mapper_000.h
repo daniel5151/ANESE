@@ -9,6 +9,6 @@ public:
   Mapper_000(const INES& rom_file);
   ~Mapper_000();
 
-  uint8 read(uint16 addr) override;
-  void write(uint16 addr, uint8 val) override;
+  u8 read(u16 addr) override;
+  void write(u16 addr, u8 val) override;
 };

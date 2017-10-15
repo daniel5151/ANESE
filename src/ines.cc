@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-INES::INES(const uint8* data, uint32 data_len) {
+INES::INES(const u8* data, u32 data_len) {
   // Hold on to the raw data (to be deleted later)
   this->raw_data = data;
   this->data_len = data_len;

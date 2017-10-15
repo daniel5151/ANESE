@@ -13,10 +13,10 @@ private:
 
 public:
   ~Cartridge();
-  Cartridge(const uint8* data, uint32 data_len);
+  Cartridge(const u8* data, u32 data_len);
 
-  uint8 read(uint16 addr) override;
-  void write(uint16 addr, uint8 val) override;
+  u8 read(u16 addr) override;
+  void write(u16 addr, u8 val) override;
 
   bool isValid() const;
 };

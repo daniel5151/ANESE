@@ -29,7 +29,7 @@ CPU_MMU::CPU_MMU(
 // 0x4017           : Joy2 Data (Read) and APU thing (Write)
 // 0x4018 ... 0xFFFF: Cartridge ROM (may not be plugged in)
 
-uint8 CPU_MMU::read(uint16 addr) {
+u8 CPU_MMU::read(u16 addr) {
   switch (addr) {
   case 0x0000 ... 0x1FFF: return ram.read(addr % 0x1000);
   case 0x2000 ... 0x3FFF: return ppu.read(addr % 8 + 0x2000);
@@ -45,7 +45,7 @@ uint8 CPU_MMU::read(uint16 addr) {
   return 0;
 }
 
-void CPU_MMU::write(uint16 addr, uint8 val) {
+void CPU_MMU::write(u16 addr, u8 val) {
   switch (addr) {
   case 0x0000 ... 0x1FFF: return ram.write(addr % 0x1000, val);
   case 0x2000 ... 0x3FFF: return ppu.write(0x2000 + addr % 8, val);

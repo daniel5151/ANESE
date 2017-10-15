@@ -17,7 +17,7 @@ Mapper_000::Mapper_000(const INES& rom_file)
 
 Mapper_000::~Mapper_000() {}
 
-uint8 Mapper_000::read(uint16 addr) {
+u8 Mapper_000::read(u16 addr) {
   assert(addr >= 0x4020); // remove once mapping PPU
 
   switch (addr) {
@@ -30,7 +30,7 @@ uint8 Mapper_000::read(uint16 addr) {
   return 0x00; // default
 }
 
-void Mapper_000::write(uint16 addr, uint8 val) {
+void Mapper_000::write(u16 addr, u8 val) {
   assert(addr >= 0x4020); // remove once mapping PPU
 
   // 000 is a totally static mapper.

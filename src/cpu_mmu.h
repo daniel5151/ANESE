@@ -32,8 +32,8 @@ public:
     Memory* rom
   );
 
-  uint8 read(uint16 addr) override;
-  void write(uint16 addr, uint8 val) override;
+  u8 read(u16 addr) override;
+  void write(u16 addr, u8 val) override;
 
   void addCartridge(Memory* cart);
   void removeCartridge();
