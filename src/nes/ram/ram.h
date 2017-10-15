@@ -15,4 +15,6 @@ public:
 
   u8 read(u16 addr) override;
   void write(u16 addr, u8 val) override;
+
+  void clear();
 };

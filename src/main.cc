@@ -39,7 +39,7 @@ int main(int argc, const char* argv[]) {
     return -1;
   }
 
-  // Init NES
+  // Create a NES
   NES nes = NES ();
 
   // Slap in a cartridge
@@ -48,10 +48,13 @@ int main(int argc, const char* argv[]) {
   rom_cart->blowOnContacts();
   nes.loadCartridge(rom_cart);
 
+  // Power up the NES
+  nes.power_cycle();
+
   /* play vidya */
   nes.start();
 
-  // Throw away the Cartridge :(
+  // Throw away the Cartridge
   delete rom_cart;
 
   return 0;

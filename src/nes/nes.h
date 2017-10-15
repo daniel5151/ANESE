@@ -4,47 +4,61 @@
 #include "common/util.h"
 #include "cpu_mmu.h"
 #include "ram/ram.h"
+#include "cpu/cpu.h"
 
 // Core NES class.
 // - Owns all NES core resources (but NOT the cartridge)
 // - Runs CPU, PPU, APU
 class NES {
 private:
-  /*============================
-  =            Data            =
-  ============================*/
+  /*================================
+  =            Hardware            =
+  ================================*/
 
   /*----------  Borrowed Resources  -----------*/
+  // Not owned by NES
 
   Cartridge* cart;
 
-  /*------------  Owned Resources  ------------*/
+  /*----------  Volatile Resources  -----------*/
+  // Fixed components, but have state
 
-  // CPU* cpu;
-  RAM*     cpu_ram;
-  CPU_MMU* cpu_mmu;
-
+  // Processors
+  CPU* cpu;
   // PPU* ppu;
+
+  // RAM
+  RAM* cpu_ram;
   // RAM* ppu_ram;
+
+  // Joypads
+  // JOY* joy;
+
+  /*-----------  Static Resources  ------------*/
+  // Fixed, non-stateful "wiring"
+
+  CPU_MMU* cpu_mmu;
   // PPU_MMU* ppu_mmu;
 
   // DMA* dma;
 
-  // JOY* joy;
-
-  /*-----------------  Flags  -----------------*/
+  /*=====================================
+  =            Emulator Vars            =
+  =====================================*/
 
   bool is_running;
 
-  /*=====  End of Data  ======*/
 public:
   NES();
   ~NES();
 
   bool loadCartridge(Cartridge* cart);
 
-  void start();
-  void stop();
+  void power_cycle(); // Set all volatile components to default power_on state
+  void reset();       // Set all volatile components to default reset state
+
+  void start(); // Begin execution
+  void stop();  // Stop Execution
 
   bool isRunning() const;
 };

@@ -31,7 +31,7 @@ CPU_MMU::CPU_MMU(
 
 u8 CPU_MMU::read(u16 addr) {
   switch (addr) {
-  case 0x0000 ... 0x1FFF: return ram.read(addr % 0x1000);
+  case 0x0000 ... 0x1FFF: return ram.read(addr % 0x800);
   case 0x2000 ... 0x3FFF: return ppu.read(addr % 8 + 0x2000);
   case 0x4000 ... 0x4013: return apu.read(addr);
   case 0x4014           : return dma.read(addr);
@@ -47,7 +47,7 @@ u8 CPU_MMU::read(u16 addr) {
 
 void CPU_MMU::write(u16 addr, u8 val) {
   switch (addr) {
-  case 0x0000 ... 0x1FFF: return ram.write(addr % 0x1000, val);
+  case 0x0000 ... 0x1FFF: return ram.write(addr % 0x800, val);
   case 0x2000 ... 0x3FFF: return ppu.write(0x2000 + addr % 8, val);
   case 0x4000 ... 0x4013: return apu.write(addr, val);
   case 0x4014           : return dma.write(addr, val);

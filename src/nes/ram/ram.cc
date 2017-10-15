@@ -12,12 +12,12 @@ RAM::RAM(u32 ram_size) {
   this->ram = new u8 [ram_size];
 
   // Init RAM
-  for (u32 addr = 0; addr < ram_size; addr++)
+  for (u32 addr = 0; addr < this->size; addr++)
     this->ram[addr] = 0x00;
 }
 
 RAM::~RAM() {
-  delete this->ram;
+  delete[] this->ram;
 }
 
 u8 RAM::read(u16 addr) {
@@ -30,4 +30,10 @@ void RAM::write(u16 addr, u8 val) {
   assert(addr < this->size);
 
   this->ram[addr] = val;
+}
+
+void RAM::clear() {
+  // Reset RAM to default values
+  for (u32 addr = 0; addr < this->size; addr++)
+    this->ram[addr] = 0x00;
 }
