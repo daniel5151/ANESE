@@ -1,7 +1,7 @@
 #include "nes.h"
 
 #include "cpu_mmu.h"
-#include "debug.h"
+#include "common/debug.h"
 
 NES::NES() {
   this->cart = nullptr;

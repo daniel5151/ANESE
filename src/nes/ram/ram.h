@@ -1,7 +1,7 @@
 #pragma once
 
-#include "memory.h"
-#include "util.h"
+#include "common/interfaces/memory.h"
+#include "common/util.h"
 
 // Dead simple 16 bit RAM ADT
 // (max 64K of RAM)

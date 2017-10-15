@@ -1,6 +1,6 @@
 #pragma once
 
-#include "util.h"
+#include "common/util.h"
 
 // 16 bit memory interface
 class Memory {

@@ -2,7 +2,7 @@
 
 #include <istream>
 
-#include "util.h"
+#include "common/util.h"
 
 // iNES file container
 // https://wiki.nesdev.com/w/index.php/INES

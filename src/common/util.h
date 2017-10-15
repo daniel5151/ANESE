@@ -1,6 +1,6 @@
-#include <cstdint>
-
 #pragma once
+
+#include <cstdint>
 
 /* Type Aliases */
 
@@ -18,9 +18,6 @@ typedef int64_t i64;
 
 /* Helper functions */
 
-/// get nth bit from a number x
+// get nth bit from a number x
 template <typename T>
 inline bool nth_bit(T x, u8 n) { return (x >> n) & 1; }
-
-// cartridge won't work unless this is called first
-#define BLOW_ON_CONTACTS(cartridge)

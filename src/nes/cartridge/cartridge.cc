@@ -24,3 +24,9 @@ void Cartridge::write(u16 addr, u8 val) {
 bool Cartridge::isValid() const {
   return this->rom_data->is_valid && this->mapper != nullptr;
 }
+
+void Cartridge::blowOnContacts() const {
+  // *huff puff puff puff*
+
+  // Yeah, that aughta do it.
+}

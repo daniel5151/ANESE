@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ines.h"
+#include "common/interfaces/memory.h"
+#include "common/util.h"
+#include "formats/ines.h"
 #include "mappers/mapper.h"
-#include "memory.h"
-#include "util.h"
 
 // Contains Mapper and iNES cartridge
 class Cartridge final : public Memory {
@@ -19,4 +19,7 @@ public:
   void write(u16 addr, u8 val) override;
 
   bool isValid() const;
+
+  // Critical importance
+  void blowOnContacts() const;
 };

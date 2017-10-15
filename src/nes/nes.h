@@ -1,9 +1,9 @@
 #pragma once
 
-#include "cartridge.h"
+#include "cartridge/cartridge.h"
+#include "common/util.h"
 #include "cpu_mmu.h"
-#include "ram.h"
-#include "util.h"
+#include "ram/ram.h"
 
 // Core NES class.
 // - Owns all NES core resources (but NOT the cartridge)

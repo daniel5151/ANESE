@@ -1,9 +1,9 @@
 #pragma once
 
-#include "util.h"
-#include "memory.h"
-#include "ram.h"
-#include "cartridge.h"
+#include "cartridge/cartridge.h"
+#include "common/interfaces/memory.h"
+#include "common/util.h"
+#include "ram/ram.h"
 
 // CPU Memory Map (MMU)
 // NESdoc.pdf

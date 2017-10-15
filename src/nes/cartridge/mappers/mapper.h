@@ -1,8 +1,8 @@
 #pragma once
 
-#include "util.h"
-#include "../ines.h"
-#include "../memory.h"
+#include "../formats/ines.h"
+#include "common/interfaces/memory.h"
+#include "common/util.h"
 
 // Mapper Interface
 

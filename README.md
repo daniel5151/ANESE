@@ -36,6 +36,8 @@ hit here and there.
     - [ ] 004
     - [ ] 005
     - [ ] 006
+    - ...
+  - Add support for more ROM formats (not just iNES)
   - Add `const` throughout the codebase?
 
 - Fun Bonuses

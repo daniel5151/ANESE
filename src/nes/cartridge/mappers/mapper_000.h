@@ -1,7 +1,7 @@
 #pragma once
 
+#include "common/util.h"
 #include "mapper.h"
-#include "util.h"
 
 // http://wiki.nesdev.com/w/index.php/NROM
 class Mapper_000 final : public Mapper {

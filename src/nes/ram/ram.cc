@@ -2,8 +2,6 @@
 
 #include <assert.h>
 
-#include "util.h"
-
 RAM::RAM(u32 ram_size) {
   // Don't allocate more memory than addressable by a u16
   if (ram_size > 0xFFFF + 1) {

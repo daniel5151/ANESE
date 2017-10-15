@@ -1,7 +1,6 @@
-#include "util.h"
-#include "ines.h"
-#include "cartridge.h"
-#include "nes.h"
+#include "common/util.h"
+#include "nes/cartridge/cartridge.h"
+#include "nes/nes.h"
 
 #include <iostream>
 #include <fstream>
@@ -45,8 +44,8 @@ int main(int argc, const char* argv[]) {
 
   // Slap in a cartridge
   // (don't forget to blow on it)
-  BLOW_ON_CONTACTS(rom_cart);
-  BLOW_ON_CONTACTS(rom_cart);
+  rom_cart->blowOnContacts();
+  rom_cart->blowOnContacts();
   nes.loadCartridge(rom_cart);
 
   /* play vidya */

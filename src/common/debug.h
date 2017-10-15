@@ -7,7 +7,8 @@
 #include <cassert>
 #include <cstdio>
 
-#include "memory.h"
+#include "interfaces/memory.h"
+#include "util.h"
 
 // Void Memory Singleton
 // Returns 0 on read

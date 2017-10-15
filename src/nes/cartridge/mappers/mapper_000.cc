@@ -1,6 +1,6 @@
-#include <cassert>
-
 #include "mapper_000.h"
+
+#include <cassert>
 
 Mapper_000::Mapper_000(const INES& rom_file)
 : Mapper(rom_file)
