@@ -52,7 +52,13 @@ int main(int argc, const char* argv[]) {
   nes.power_cycle();
 
   /* play vidya */
-  nes.start();
+  for (;;) {
+    nes.step();
+
+    if (nes.isRunning() == false) {
+      break;
+    }
+  }
 
   // Throw away the Cartridge
   delete rom_cart;

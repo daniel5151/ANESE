@@ -57,8 +57,7 @@ public:
   void power_cycle(); // Set all volatile components to default power_on state
   void reset();       // Set all volatile components to default reset state
 
-  void start(); // Begin execution
-  void stop();  // Stop Execution
+  void step(); // Step processors
 
   bool isRunning() const;
 };

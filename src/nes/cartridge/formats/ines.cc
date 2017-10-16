@@ -32,7 +32,7 @@ INES::INES(const u8* data, u32 data_len) {
     return;
   }
 
-  // 0       7
+  // 7       0
   // ---------
   // NNNN FTBM
 
@@ -42,12 +42,12 @@ INES::INES(const u8* data, u32 data_len) {
   // B: has_battery
   // M: mirror_type (0 = horizontal, 1 = vertical)
 
-  this->flags.has_4screen = nth_bit(data[5], 4);
-  this->flags.has_trainer = nth_bit(data[5], 5);
-  this->flags.has_battery = nth_bit(data[5], 6);
-  this->flags.mirror_type = nth_bit(data[5], 7);
+  this->flags.has_4screen = nth_bit(data[5], 3);
+  this->flags.has_trainer = nth_bit(data[5], 2);
+  this->flags.has_battery = nth_bit(data[5], 1);
+  this->flags.mirror_type = nth_bit(data[5], 0);
 
-  // 0       7
+  // 7       0
   // ---------
   // NNNN xxPV
 
@@ -56,9 +56,9 @@ INES::INES(const u8* data, u32 data_len) {
   // V: is_VS
   // x: is_NES2 (when xx == 10)
 
-  this->flags.is_NES2 = nth_bit(data[6], 4) && !nth_bit(data[6], 5);
-  this->flags.is_PC10 = nth_bit(data[6], 6);
-  this->flags.is_VS   = nth_bit(data[6], 7);
+  this->flags.is_NES2 = nth_bit(data[6], 3) && !nth_bit(data[6], 2);
+  this->flags.is_PC10 = nth_bit(data[6], 1);
+  this->flags.is_VS   = nth_bit(data[6], 0);
 
   this->mapper = data[5] >> 4 & (data[6] & 0x00FF);
 
