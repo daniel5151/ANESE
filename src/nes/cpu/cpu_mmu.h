@@ -1,9 +1,9 @@
 #pragma once
 
-#include "cartridge/cartridge.h"
 #include "common/interfaces/memory.h"
 #include "common/util.h"
-#include "ram/ram.h"
+#include "nes/cartridge/cartridge.h"
+#include "nes/ram/ram.h"
 
 // CPU IMemory Map (MMU)
 // NESdoc.pdf
@@ -11,7 +11,7 @@
 // https://wiki.nesdev.com/w/index.php/2A03
 class CPU_MMU final : public IMemory {
 private:
-  // Fixed Referenced (these will never be invalidated)
+  // Fixed References (these will never be invalidated)
   IMemory& ram;
   IMemory& ppu;
   IMemory& apu;

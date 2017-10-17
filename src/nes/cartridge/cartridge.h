@@ -8,8 +8,8 @@
 // Contains Mapper and iNES cartridge
 class Cartridge final : public IMemory {
 private:
-  const INES* rom_data;
-  Mapper* mapper;
+  const INES*   const rom_data; // ROM file data does not change
+        Mapper* const mapper;
 
 public:
   ~Cartridge();

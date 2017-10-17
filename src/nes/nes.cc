@@ -1,6 +1,6 @@
 #include "nes.h"
 
-#include "cpu_mmu.h"
+#include "cpu/cpu_mmu.h"
 #include "common/debug.h"
 
 // The constructor creates the individual NES components, and "wires them up"

@@ -2,10 +2,10 @@
 
 #include "mappers/mapper.h"
 
-Cartridge::Cartridge(const u8* data, u32 data_len) {
-  this->rom_data = new INES(data, data_len);
-  this->mapper = Mapper::Factory(*this->rom_data);
-}
+Cartridge::Cartridge(const u8* data, u32 data_len)
+: rom_data(new INES(data, data_len)),
+  mapper(Mapper::Factory(*this->rom_data))
+{}
 
 Cartridge::~Cartridge() {
   delete this->rom_data;

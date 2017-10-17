@@ -2,9 +2,9 @@
 
 #include "cartridge/cartridge.h"
 #include "common/util.h"
-#include "cpu_mmu.h"
-#include "ram/ram.h"
 #include "cpu/cpu.h"
+#include "cpu/cpu_mmu.h"
+#include "ram/ram.h"
 
 // Core NES class.
 // - Owns all NES core resources (but NOT the cartridge)
