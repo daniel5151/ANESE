@@ -43,6 +43,8 @@ private:
     u8 y; // Index Y
   } reg;
 
+  // instructions and addressing modes are defined in instructions.h
+
   /*----------  Emulation Vars  ----------*/
 
   u64 cycles;  // Cycles elapsed
