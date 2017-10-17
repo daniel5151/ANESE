@@ -6,7 +6,7 @@
 
 // Mapper Interface
 
-class Mapper : public Memory {
+class Mapper : public IMemory {
 protected:
   const INES& rom_file; // Owned by Cartridge
 
@@ -16,8 +16,11 @@ public:
   Mapper(const INES& rom_file) : rom_file(rom_file) {};
   virtual ~Mapper() {};
 
+  // <IMemory>
   virtual u8 read(u16 addr) = 0;
+  virtual u8 peek(u16 addr) const = 0;
   virtual void write(u16 addr, u8 val) = 0;
+  // <IMemory/>
 
   // creates correct mapper given an iNES object
   static Mapper* Factory(const INES& rom_file);

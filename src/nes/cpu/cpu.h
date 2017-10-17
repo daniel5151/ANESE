@@ -18,7 +18,7 @@ public:
 private:
   /*----------  Hardware  ----------*/
 
-  Memory& mem; // Memory
+  IMemory& mem; // IMemory
 
   struct { // Registers
     // -- Special Registers -- //
@@ -50,7 +50,7 @@ private:
 
   /*--------------  Helpers  -------------*/
 
-  // Read / Write from Memory
+  // Read / Write from IMemory
   u8  read     (u16 addr);
   u16 read_16  (u16 addr);
   void write   (u16 addr, u8  val);
@@ -64,7 +64,7 @@ private:
 
 public:
   ~CPU();
-  CPU(Memory& mem);
+  CPU(IMemory& mem);
 
   void power_cycle();
   void reset();

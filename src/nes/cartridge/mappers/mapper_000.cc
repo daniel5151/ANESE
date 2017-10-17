@@ -18,6 +18,13 @@ Mapper_000::Mapper_000(const INES& rom_file)
 Mapper_000::~Mapper_000() {}
 
 u8 Mapper_000::read(u16 addr) {
+  // 000 is a static mapper
+  // reading has no side-effects
+  // read and peek are thus equivalent
+  return this->peek(addr);
+}
+
+u8 Mapper_000::peek(u16 addr) const {
   assert(addr >= 0x4020); // remove once mapping PPU
 
   switch (addr) {
@@ -31,8 +38,6 @@ u8 Mapper_000::read(u16 addr) {
 }
 
 void Mapper_000::write(u16 addr, u8 val) {
-  assert(addr >= 0x4020); // remove once mapping PPU
-
-  // 000 is a totally static mapper.
+  // 000 is a static mapper.
   // No registers, no siwtching, no nothing.
 }

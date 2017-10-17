@@ -21,14 +21,17 @@ RAM::~RAM() {
 }
 
 u8 RAM::read(u16 addr) {
-  assert(addr < this->size);
+  // RAM has no side-effects
+  return this->peek(addr);
+}
 
+u8 RAM::peek(u16 addr) const {
+  assert(addr < this->size);
   return this->ram[addr];
 }
 
 void RAM::write(u16 addr, u8 val) {
   assert(addr < this->size);
-
   this->ram[addr] = val;
 }
 

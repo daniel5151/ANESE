@@ -3,13 +3,13 @@
 #include <assert.h>
 
 CPU_MMU::CPU_MMU(
-  Memory& ram,
-  Memory& ppu,
-  Memory& apu,
-  Memory& dma,
-  Memory& joy,
+  IMemory& ram,
+  IMemory& ppu,
+  IMemory& apu,
+  IMemory& dma,
+  IMemory& joy,
 
-  Memory* rom
+  IMemory* rom
 )
 : ram(ram),
   ppu(ppu),
@@ -45,6 +45,23 @@ u8 CPU_MMU::read(u16 addr) {
   return 0;
 }
 
+// unfortunately, I have to duplicate this map for peek
+u8 CPU_MMU::peek(u16 addr) const {
+  switch (addr) {
+  case 0x0000 ... 0x1FFF: return ram.peek(addr % 0x800);
+  case 0x2000 ... 0x3FFF: return ppu.peek(addr % 8 + 0x2000);
+  case 0x4000 ... 0x4013: return apu.peek(addr);
+  case 0x4014           : return dma.peek(addr);
+  case 0x4015           : return apu.peek(addr);
+  case 0x4016           : return joy.peek(addr);
+  case 0x4017           : return joy.peek(addr); // not APU
+  case 0x4018 ... 0xFFFF: return rom ? rom->peek(addr) : 0x0;
+  }
+
+  assert(false);
+  return 0;
+}
+
 void CPU_MMU::write(u16 addr, u8 val) {
   switch (addr) {
   case 0x0000 ... 0x1FFF: return ram.write(addr % 0x800, val);
@@ -53,12 +70,12 @@ void CPU_MMU::write(u16 addr, u8 val) {
   case 0x4014           : return dma.write(addr, val);
   case 0x4015           : return apu.write(addr, val);
   case 0x4016           : return joy.write(addr, val);
-  case 0x4017           : return apu.write(addr, val);
+  case 0x4017           : return apu.write(addr, val); // not JOY
   case 0x4018 ... 0xFFFF: return rom ? rom->write(addr, val) : void();
   }
 
   assert(false);
 }
 
-void CPU_MMU::addCartridge(Memory *cart) { this->rom = cart;    }
-void CPU_MMU::removeCartridge()          { this->rom = nullptr; }
+void CPU_MMU::addCartridge(IMemory *cart) { this->rom = cart;    }
+void CPU_MMU::removeCartridge()           { this->rom = nullptr; }
