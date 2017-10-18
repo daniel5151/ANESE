@@ -60,7 +60,7 @@ INES::INES(const u8* data, u32 data_len) {
   this->flags.is_PC10 = nth_bit(data[6], 1);
   this->flags.is_VS   = nth_bit(data[6], 0);
 
-  this->mapper = data[5] >> 4 & (data[6] & 0x00FF);
+  this->mapper = data[5] >> 4 & (data[6] & 0xFF00);
 
   // Find base addresses for the various ROM sections in the data
   // iNES is laid out as follows:

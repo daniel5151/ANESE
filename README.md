@@ -6,6 +6,20 @@ for fun and learning.
 I am aiming for clean, readable code, even if that means taking a performance
 hit here and there.
 
+## Building
+
+ANESE uses CMake, so make sure you have it installed.
+
+```bash
+# in ANESE root
+mkdir build
+cd build
+cmake ..
+make
+```
+
+Building on Windows has been tested with VS 2017.
+
 ## TODO
 
 - Key Milestones

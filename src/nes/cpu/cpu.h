@@ -47,7 +47,7 @@ private:
 
   /*----------  Emulation Vars  ----------*/
 
-  u64 cycles;  // Cycles elapsed
+  u32 cycles;  // Cycles elapsed
   State state; // CPU state
 
   /*--------------  Helpers  -------------*/
