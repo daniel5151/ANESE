@@ -13,6 +13,7 @@ namespace Instructions {
 
 namespace Instr {
 enum Instr {
+  INVALID,
   // What each opcode does is explained in cpu.cc
   ADC, AND, ASL, BCC, BCS, BEQ, BIT, BMI,
   BNE, BPL, BRK, BVC, BVS, CLC, CLD, CLI,
@@ -21,13 +22,12 @@ enum Instr {
   LSR, NOP, ORA, PHA, PHP, PLA, PLP, ROL,
   ROR, RTI, RTS, SBC, SEC, SED, SEI, STA,
   STX, STY, TAX, TAY, TSX, TXA, TXS, TYA,
-
-  INVALID
 };
 }
 
 namespace AddrM {
 enum AddrM {
+  INVALID,
   abs_, absX, absY, // Absolute (Indexed)
   ind_, indY, Xind, // Indirect (Indexed)
   zpg_, zpgX, zpgY, // Zero Page (Indexed)
@@ -35,8 +35,6 @@ enum AddrM {
   imm,  // Immediate
   impl, // Implied
   rel,  // Relative
-
-  INVALID
 };
 }
 
@@ -72,15 +70,16 @@ struct Opcode {
   { Instr::instr , AddrM::addrm , cycles , true , #instr, #addrm }
 
 // https://stackoverflow.com/a/11763277
+#define EXPAND( x ) x
 #define GET_MACRO(_1,_2,_3,_4,_5,NAME,...) NAME
-#define O(...) GET_MACRO(__VA_ARGS__, \
+#define O(...) EXPAND(GET_MACRO(__VA_ARGS__, \
   /* Use different macros based on # of arguments */ \
   /* 5 */ DEFN_OPCODE_PG_CROSS, \
   /* 4 */ DEFN_OPCODE, \
   /* 3 */ ,\
   /* 2 */ ,\
   /* 1 */ DEFN_UNIMPL \
-)(__VA_ARGS__)
+)(__VA_ARGS__))
 
 // Main Opcode lookup table
 static constexpr Opcode Opcodes[256] = {

@@ -124,7 +124,7 @@ u8 CPU::step() {
   Instructions::Opcode opcode = Instructions::Opcodes[op];
 
   // ... NESTEST DEBUG ... //
-  char INITIAL_STATE[32];
+  char INITIAL_STATE[64];
   sprintf(INITIAL_STATE, "A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%3u\n",
     this->reg.a,
     this->reg.x,

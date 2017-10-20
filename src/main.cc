@@ -13,7 +13,7 @@ int main(int argc, const char* argv[]) {
   }
 
   // open ROM from file
-  std::ifstream rom_file (argv[1]);
+  std::ifstream rom_file (argv[1], std::ios::binary);
 
   if (!rom_file.is_open()) {
     std::cerr << "could not open '" << argv[1] << "'\n";
