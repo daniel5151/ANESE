@@ -33,7 +33,7 @@ int main(int argc, const char* argv[]) {
   Cartridge* rom_cart = new Cartridge (data, data_len);
 
   if (rom_cart->isValid()) {
-    std::cout << "iNES file loaded successfully!\n";
+    std::cerr << "iNES file loaded successfully!\n";
   } else {
     std::cerr << "Given file was not an iNES file!\n";
     return -1;

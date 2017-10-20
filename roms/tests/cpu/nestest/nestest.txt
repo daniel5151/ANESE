@@ -18,10 +18,10 @@ and registers.  Some of these tests are very difficult, and so far,
 Nesten and Nesticle failed it.  Nintendulator passes, as does a real
 NES (naturally).  I haven't tested it with any more emualtors yet.
 
-I attempted to check the states of all flags after most instructions. 
+I attempted to check the states of all flags after most instructions.
 For example, CPY and CMP shouldn't affect the overflow flag, while SBC
 and ADC should.  Likewise, all forms of wrapping ARE tested for- zeropage
-wrapping being the tests most emulators fail.  
+wrapping being the tests most emulators fail.
 
 i.e.
 
@@ -56,7 +56,7 @@ instead.
 
 NSF player testing:
 
-This ROM is set up to be usable inside an NSF player.  It outputs the 
+This ROM is set up to be usable inside an NSF player.  It outputs the
 results of the test audially.  <to be finished>
 
 ---
@@ -65,14 +65,14 @@ Emulator authors:
 
 This test program, when run on "automation", (i.e. set your program counter
 to 0c000h) will perform all tests in sequence and shove the results of
-the tests into locations 02h and 03h.  
+the tests into locations 02h and 03h.
 
 ---
 
 Final notes:
 
 The hex numbers shown on the screen (or stored in the above mentioned
-memory locations) are of the LAST test that failed in the group tested. 
+memory locations) are of the LAST test that failed in the group tested.
 This means, there could be multiple failures in one or more groups.  This
 wasn't the best solution, but since there are close to 400 tests performed,
 any other way wouldn't have had acceptable memory usage.  So long as your
@@ -109,7 +109,7 @@ branch tests
 
 flag tests
 ----------
-011h - PHP/flags failure (bits set) 
+011h - PHP/flags failure (bits set)
 012h - PHP/flags failure (bits clear)
 013h - PHP/flags failure (misc bit states)
 014h - PLP/flags failure (misc bit states)
@@ -542,7 +542,7 @@ SAX - "invalid" opcode tests
 08Dh - SAX absolute failure
 08Eh - SAX zp,y failure
 08Fh - SAX zp,y failure
- 
+
 SBC - "invalid" opcode test
 ---------------------------
 090h - SBC failure
@@ -703,22 +703,22 @@ RRA - "invalid" opcode tests
 
 
 
-001h - 
-002h - 
-003h - 
-004h - 
-005h - 
-006h - 
-007h - 
-008h - 
-009h - 
-00Ah - 
-00Bh - 
-00Ch - 
-00Dh - 
-00Eh - 
-00Fh - 
-010h - 
+001h -
+002h -
+003h -
+004h -
+005h -
+006h -
+007h -
+008h -
+009h -
+00Ah -
+00Bh -
+00Ch -
+00Dh -
+00Eh -
+00Fh -
+010h -
 
 
 Todo:  check to see if decimal mode is missing on CPU

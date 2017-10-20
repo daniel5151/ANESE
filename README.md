@@ -32,12 +32,12 @@ Building on Windows has been tested with VS 2017.
   - [x] Create Cartridges (iNES + Mapper interface)
   - [ ] CPU
     - [x] Set Up Memory Map
-    - [ ] Core Loop / Basic Functionality
+    - [x] Core Loop / Basic Functionality
       - Read / Write RAM
       - Addressing Modes
       - Fetch - Decode - Execute
+    - [ ] All Opcodes Implemented
     - [ ] Handle Interrupts
-    - [ ] Implementing Opcodes
   - [ ] PPU
     - [ ] Set Up Memory Map
     - TBD
