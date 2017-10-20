@@ -1,0 +1,256 @@
+$00  BRK  impl  7
+$01  ORA  Xind  6
+$02  ------------
+$03  ------------
+$04  ------------
+$05  ORA  zpg   3
+$06  ASL  zpg   5
+$07  ------------
+$08  PHP  impl  3
+$09  ORA  imm   2
+$0A  ASL  acc   2
+$0B  ------------
+$0C  ------------
+$0D  ORA  abs   4
+$0E  ASL  abs   6
+$0F  ------------
+$10  BPL  rel   2
+$11  ORA  indY  5 (+1 if page crossed)
+$12  ------------
+$13  ------------
+$14  ------------
+$15  ORA  zpgX  4
+$16  ASL  zpgX  6
+$17  ------------
+$18  CLC  impl  2
+$19  ORA  absY  4 (+1 if page crossed)
+$1A  ------------
+$1B  ------------
+$1C  ------------
+$1D  ORA  absX  4 (+1 if page crossed)
+$1E  ASL  absX  7
+$1F  ------------
+$20  JSR  abs   6
+$21  AND  Xind  6
+$22  ------------
+$23  ------------
+$24  BIT  zpg   3
+$25  AND  zpg   3
+$26  ROL  zpg   5
+$27  ------------
+$28  PLP  impl  4
+$29  AND  imm   2
+$2A  ROL  acc   2
+$2B  ------------
+$2C  BIT  abs   4
+$2D  AND  abs   4
+$2E  ROL  abs   6
+$2F  ------------
+$30  BMI  rel   2
+$31  AND  indY  5 (+1 if page crossed)
+$32  ------------
+$33  ------------
+$34  ------------
+$35  AND  zpgX  4
+$36  ROL  zpgX  6
+$37  ------------
+$38  SEC  impl  2
+$39  AND  absY  4 (+1 if page crossed)
+$3A  ------------
+$3B  ------------
+$3C  ------------
+$3D  AND  absX  4 (+1 if page crossed)
+$3E  ROL  absX  7
+$3F  ------------
+$40  RTI  impl  6
+$41  EOR  Xind  6
+$42  ------------
+$43  ------------
+$44  ------------
+$45  EOR  zpg   3
+$46  LSR  zpg   5
+$47  ------------
+$48  PHA  impl  3
+$49  EOR  imm   2
+$4A  LSR  acc   2
+$4B  ------------
+$4C  JMP  abs   3
+$4D  EOR  abs   4
+$4E  LSR  abs   6
+$4F  ------------
+$50  BVC  rel   2
+$51  EOR  indY  5 (+1 if page crossed)
+$52  ------------
+$53  ------------
+$54  ------------
+$55  EOR  zpgX  4
+$56  LSR  zpgX  6
+$57  ------------
+$58  CLI  impl  2
+$59  EOR  absY  4 (+1 if page crossed)
+$5A  ------------
+$5B  ------------
+$5C  ------------
+$5D  EOR  absX  4 (+1 if page crossed)
+$5E  LSR  absX  7
+$5F  ------------
+$60  RTS  impl  6
+$61  ADC  Xind  6
+$62  ------------
+$63  ------------
+$64  ------------
+$65  ADC  zpg   3
+$66  ROR  zpg   5
+$67  ------------
+$68  PLA  impl  4
+$69  ADC  imm   2
+$6A  ROR  acc   2
+$6B  ------------
+$6C  JMP  ind   5
+$6D  ADC  abs   4
+$6E  ROR  abs   6
+$6F  ------------
+$70  BVS  rel   2
+$71  ADC  indY  5 (+1 if page crossed)
+$72  ------------
+$73  ------------
+$74  ------------
+$75  ADC  zpgX  4
+$76  ROR  zpgX  6
+$77  ------------
+$78  SEI  impl  2
+$79  ADC  absY  4 (+1 if page crossed)
+$7A  ------------
+$7B  ------------
+$7C  ------------
+$7D  ADC  absX  4 (+1 if page crossed)
+$7E  ROR  absX  7
+$7F  ------------
+$80  ------------
+$81  STA  Xind  6
+$82  ------------
+$83  ------------
+$84  STY  zpg   3
+$85  STA  zpg   3
+$86  STX  zpg   3
+$87  ------------
+$88  DEY  impl  2
+$89  ------------
+$8A  TXA  impl  2
+$8B  ------------
+$8C  STY  abs   4
+$8D  STA  abs   4
+$8E  STX  abs   4
+$8F  ------------
+$90  BCC  rel   2
+$91  STA  indY  6
+$92  ------------
+$93  ------------
+$94  STY  zpgX  4
+$95  STA  zpgX  4
+$96  STX  zpgY  4
+$97  ------------
+$98  TYA  impl  2
+$99  STA  absY  5
+$9A  TXS  impl  2
+$9B  ------------
+$9C  ------------
+$9D  STA  absX  5
+$9E  ------------
+$9F  ------------
+$A0  LDY  imm   2
+$A1  LDA  Xind  6
+$A2  LDX  imm   2
+$A3  ------------
+$A4  LDY  zpg   3
+$A5  LDA  zpg   3
+$A6  LDX  zpg   3
+$A7  ------------
+$A8  TAY  impl  2
+$A9  LDA  imm   2
+$AA  TAX  impl  2
+$AB  ------------
+$AC  LDY  abs   4
+$AD  LDA  abs   4
+$AE  LDX  abs   4
+$AF  ------------
+$B0  BCS  rel   2
+$B1  LDA  indY  5 (+1 if page crossed)
+$B2  ------------
+$B3  ------------
+$B4  LDY  zpgX  4
+$B5  LDA  zpgX  4
+$B6  LDX  zpgY  4
+$B7  ------------
+$B8  CLV  impl  2
+$B9  LDA  absY  4 (+1 if page crossed)
+$BA  TSX  impl  2
+$BB  ------------
+$BC  LDY  absX  4 (+1 if page crossed)
+$BD  LDA  absX  4 (+1 if page crossed)
+$BE  LDX  absY  4 (+1 if page crossed)
+$BF  ------------
+$C0  CPY  imm   2
+$C1  CMP  Xind  6
+$C2  ------------
+$C3  ------------
+$C4  CPY  zpg   3
+$C5  CMP  zpg   3
+$C6  DEC  zpg   5
+$C7  ------------
+$C8  INY  impl  2
+$C9  CMP  imm   2
+$CA  DEX  impl  2
+$CB  ------------
+$CC  CPY  abs   4
+$CD  CMP  abs   4
+$CE  DEC  abs   6
+$CF  ------------
+$D0  BNE  rel   2
+$D1  CMP  indY  5 (+1 if page crossed)
+$D2  ------------
+$D3  ------------
+$D4  ------------
+$D5  CMP  zpgX  4
+$D6  DEC  zpgX  6
+$D7  ------------
+$D8  CLD  impl  2
+$D9  CMP  absY  4 (+1 if page crossed)
+$DA  ------------
+$DB  ------------
+$DC  ------------
+$DD  CMP  absX  4 (+1 if page crossed)
+$DE  DEC  absX  7
+$DF  ------------
+$E0  CPX  imm   2
+$E1  SBC  Xind  6
+$E2  ------------
+$E3  ------------
+$E4  CPX  zpg   3
+$E5  SBC  zpg   3
+$E6  INC  zpg   5
+$E7  ------------
+$E8  INX  impl  2
+$E9  SBC  imm   2
+$EA  NOP  impl  2
+$EB  ------------
+$EC  CPX  abs   4
+$ED  SBC  abs   4
+$EE  INC  abs   6
+$EF  ------------
+$F0  BEQ  rel   2
+$F1  SBC  indY  5 (+1 if page crossed)
+$F2  ------------
+$F3  ------------
+$F4  ------------
+$F5  SBC  zpgX  4
+$F6  INC  zpgX  6
+$F7  ------------
+$F8  SED  impl  2
+$F9  SBC  absY  4 (+1 if page crossed)
+$FA  ------------
+$FB  ------------
+$FC  ------------
+$FD  SBC  absX  4 (+1 if page crossed)
+$FE  INC  absX  7
+$FF  ------------

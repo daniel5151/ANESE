@@ -26,18 +26,18 @@ CPU_MMU::CPU_MMU(
 // 0x4014           : DMA
 // 0x4015           : APU register
 // 0x4016           : Joy1 Data (Read) and Joystick Strobe (Write)
-// 0x4017           : Joy2 Data (Read) and APU thing (Write)
+// 0x4017           : Joy2 Data (Read) and APU thing       (Write)
 // 0x4018 ... 0xFFFF: Cartridge ROM (may not be plugged in)
 
 u8 CPU_MMU::read(u16 addr) {
-       if (addr >= 0x0000 && addr <= 0x1FFF) return ram.read(addr % 0x800);
-  else if (addr >= 0x2000 && addr <= 0x3FFF) return ppu.read(addr % 8 + 0x2000);
-  else if (addr >= 0x4000 && addr <= 0x4013) return apu.read(addr);
-  else if (addr == 0x4014                  ) return dma.read(addr);
-  else if (addr == 0x4015                  ) return apu.read(addr);
-  else if (addr == 0x4016                  ) return joy.read(addr);
-  else if (addr >= 0x4017                  ) return joy.read(addr);
-  else if (addr >= 0x4018 && addr <= 0xFFFF) return rom ? rom->read(addr) : 0x0;
+  if (in_range(addr, 0x0000, 0x1FFF)) return ram.read(addr % 0x800);
+  if (in_range(addr, 0x2000, 0x3FFF)) return ppu.read(addr % 8 + 0x2000);
+  if (in_range(addr, 0x4000, 0x4013)) return apu.read(addr);
+  if (in_range(addr, 0x4014        )) return dma.read(addr);
+  if (in_range(addr, 0x4015        )) return apu.read(addr);
+  if (in_range(addr, 0x4016        )) return joy.read(addr);
+  if (in_range(addr, 0x4017        )) return joy.read(addr);
+  if (in_range(addr, 0x4018, 0xFFFF)) return rom ? rom->read(addr) : 0x0;
 
   assert(false);
   return 0;
@@ -45,28 +45,28 @@ u8 CPU_MMU::read(u16 addr) {
 
 // unfortunately, I have to duplicate this map for peek
 u8 CPU_MMU::peek(u16 addr) const {
-       if (addr >= 0x0000 && addr <= 0x1FFF) return ram.peek(addr % 0x800);
-  else if (addr >= 0x2000 && addr <= 0x3FFF) return ppu.peek(addr % 8 + 0x2000);
-  else if (addr >= 0x4000 && addr <= 0x4013) return apu.peek(addr);
-  else if (addr == 0x4014                  ) return dma.peek(addr);
-  else if (addr == 0x4015                  ) return apu.peek(addr);
-  else if (addr == 0x4016                  ) return joy.peek(addr);
-  else if (addr == 0x4017                  ) return joy.peek(addr); // not APU
-  else if (addr >= 0x4018 && addr <= 0xFFFF) return rom ? rom->peek(addr) : 0x0;
+  if (in_range(addr, 0x0000, 0x1FFF)) return ram.peek(addr % 0x800);
+  if (in_range(addr, 0x2000, 0x3FFF)) return ppu.peek(addr % 8 + 0x2000);
+  if (in_range(addr, 0x4000, 0x4013)) return apu.peek(addr);
+  if (in_range(addr, 0x4014        )) return dma.peek(addr);
+  if (in_range(addr, 0x4015        )) return apu.peek(addr);
+  if (in_range(addr, 0x4016        )) return joy.peek(addr);
+  if (in_range(addr, 0x4017        )) return joy.peek(addr); // not APU
+  if (in_range(addr, 0x4018, 0xFFFF)) return rom ? rom->peek(addr) : 0x0;
 
   assert(false);
   return 0;
 }
 
 void CPU_MMU::write(u16 addr, u8 val) {
-       if (addr >= 0x0000 && addr <= 0x1FFF) return ram.write(addr % 0x800, val);
-  else if (addr >= 0x2000 && addr <= 0x3FFF) return ppu.write(0x2000 + addr % 8, val);
-  else if (addr >= 0x4000 && addr <= 0x4013) return apu.write(addr, val);
-  else if (addr == 0x4014                  ) return dma.write(addr, val);
-  else if (addr == 0x4015                  ) return apu.write(addr, val);
-  else if (addr == 0x4016                  ) return joy.write(addr, val);
-  else if (addr == 0x4017                  ) return apu.write(addr, val); // not JOY
-  else if (addr >= 0x4018 && addr <= 0xFFFF) return rom ? rom->write(addr, val) : void();
+  if (in_range(addr, 0x0000, 0x1FFF)) return ram.write(addr % 0x800, val);
+  if (in_range(addr, 0x2000, 0x3FFF)) return ppu.write(0x2000 + addr % 8, val);
+  if (in_range(addr, 0x4000, 0x4013)) return apu.write(addr, val);
+  if (in_range(addr, 0x4014        )) return dma.write(addr, val);
+  if (in_range(addr, 0x4015        )) return apu.write(addr, val);
+  if (in_range(addr, 0x4016        )) return joy.write(addr, val);
+  if (in_range(addr, 0x4017        )) return apu.write(addr, val); // not JOY
+  if (in_range(addr, 0x4018, 0xFFFF)) return rom? rom->write(addr, val) :void();
 
   assert(false);
 }

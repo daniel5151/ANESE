@@ -1,190 +1,345 @@
 #pragma once
 
-#include <cassert>
-
 #include "common/util.h"
 
 namespace Instructions {
 
-enum Instr : u8 {
-  INVALID,
+// I am using namespaced enums instead of enum classes so that I can use
+// `using namepsace Instructions::Instr and Instructions::AddrM` in functions
+// that make heavy use of them.
+//
+// The alternative is enum switch statements where every single case has to have
+// Instr:: and AddrM:: appended to the front of it.
 
-  // Instructions are determined by their
-  // aaa and cc bits, with the middle bbb
-  // bits determining the addressing mode
+namespace Instr {
+enum Instr {
+  // What each opcode does is explained in cpu.cc
+  ADC, AND, ASL, BCC, BCS, BEQ, BIT, BMI,
+  BNE, BPL, BRK, BVC, BVS, CLC, CLD, CLI,
+  CLV, CMP, CPX, CPY, DEC, DEX, DEY, EOR,
+  INC, INX, INY, JMP, JSR, LDA, LDX, LDY,
+  LSR, NOP, ORA, PHA, PHP, PLA, PLP, ROL,
+  ROR, RTI, RTS, SBC, SEC, SED, SEI, STA,
+  STX, STY, TAX, TAY, TSX, TXA, TXS, TYA,
 
-  //       aaa000cc
-  ADC =  0b01100001,
-  AND =  0b00100001,
-  ASL =  0b00000010,
-  BCC =  0b10000000,
-  BCS =  0b10100000,
-  BEQ =  0b11100000,
-  BIT =  0b00100000,
-  BMI =  0b00100000,
-  BNE =  0b11000000,
-  BPL =  0b00000000,
-  BRK =  0b00000000,
-  BVC =  0b01000000,
-  BVS =  0b01100000,
-  CLC =  0b00000000,
-  CLD =  0b11000000,
-  CLI =  0b01000000,
-  CLV =  0b10100000,
-  CMP =  0b11000001,
-  CPX =  0b11100000,
-  CPY =  0b11000000,
-  DEC =  0b11000010,
-  DEX =  0b11000010,
-  DEY =  0b10000000,
-  EOR =  0b01000001,
-  INC =  0b11100010,
-  INX =  0b11100000,
-  INY =  0b11000000,
-  JMP =  0b01000000,
-  JSR =  0b00100000,
-  LDA =  0b10100001,
-  LDX =  0b10100010,
-  LDY =  0b10100000,
-  LSR =  0b01000010,
-  NOP =  0b11100010,
-  ORA =  0b00000001,
-  PHA =  0b01000000,
-  PHP =  0b00000000,
-  PLA =  0b01100000,
-  PLP =  0b00100000,
-  ROL =  0b00100010,
-  ROR =  0b01100010,
-  RTI =  0b01000000,
-  RTS =  0b01100000,
-  SBC =  0b11100001,
-  SEC =  0b00100000,
-  SED =  0b11100000,
-  SEI =  0b01100000,
-  STA =  0b10000001,
-  STX =  0b10000010,
-  STY =  0b10000000,
-  TAX =  0b10100010,
-  TAY =  0b10100000,
-  TSX =  0b10100010,
-  TXA =  0b10000010,
-  TXS =  0b10000010,
-  TYA =  0b10000000,
+  INVALID
+};
+}
 
-  // And lastly, this asshole...
-  // He clashes with RTS.
-  // So now I need a whole new function to deal with this quirk...
-  //
-  // So you know what? fuck him.
-  // He doesn't get a value.
-  // You know what he gets?
-  // Fack all, that's what >:(
-  JMP_I = u8(0xFACA11)
+namespace AddrM {
+enum AddrM {
+  abs_, absX, absY, // Absolute (Indexed)
+  ind_, indY, Xind, // Indirect (Indexed)
+  zpg_, zpgX, zpgY, // Zero Page (Indexed)
+  acc,  // Accumulator
+  imm,  // Immediate
+  impl, // Implied
+  rel,  // Relative
+
+  INVALID
+};
+}
+
+struct Opcode {
+  Instr::Instr instr;  // Instruction Enum
+  AddrM::AddrM addrm;  // Addressing Mode Enum
+  u8           cycles; // Base cycles
+  bool check_pg_cross; // If there shoudl be an extra cycle on page cross
+
+  const char* instr_name; // Instruction Name
+  const char* addrm_type; // Addressing Mode Name
 };
 
-inline Instr op_to_instr(u8 op) {
-  if (op == 0b01101100) // fuck JMP_I
-    return Instr::JMP_I;
-  return Instr(op & 0b11100011);
-}
+// This ugly mess of macro magic makes the Opcode definition list look a lot
+// nicer comapred to the raw alternative.
+// Just compare a raw definition to a corresponding macro'd definition:
+//
+// raw:   /* 0x11 */ { Instr::ORA , AddrM::indY , 5 , true }
+// macro: O( 0x11 , ORA , ind_ , 5 , * )
+//
+// Clean, eh?
 
-enum class AddrM : u8 {
-  INVALID,
+// Defines a invalid Opcode
+#define DEFN_UNIMPL(byte) \
+  { Instr::INVALID , AddrM::INVALID , 0 , false , "KIL", "----" }
 
-  Absolute,
-  AbsoluteX,
-  AbsoluteY,
-  Accumulator,
-  Immediate,
-  Implicit,
-  IndexedY,
-  XIndexed,
-  Relative,
-  ZeroPage,
-  ZeroPageX,
-  ZeroPageY,
+// Defines a reguar Opcode
+#define DEFN_OPCODE(opcode, instr, addrm, cycles) \
+  { Instr::instr , AddrM::addrm , cycles , false , #instr, #addrm }
 
-  // And lastly, this asshole
-  Indirect, // used by JMP_I
+// Defines a Opcode that takes 1 extra cycle when reading memory across pages
+#define DEFN_OPCODE_PG_CROSS(opcode, instr, addrm, cycles, page_cross) \
+  { Instr::instr , AddrM::addrm , cycles , true , #instr, #addrm }
+
+// https://stackoverflow.com/a/11763277
+#define GET_MACRO(_1,_2,_3,_4,_5,NAME,...) NAME
+#define O(...) GET_MACRO(__VA_ARGS__, \
+  /* Use different macros based on # of arguments */ \
+  /* 5 */ DEFN_OPCODE_PG_CROSS, \
+  /* 4 */ DEFN_OPCODE, \
+  /* 3 */ ,\
+  /* 2 */ ,\
+  /* 1 */ DEFN_UNIMPL \
+)(__VA_ARGS__)
+
+// Main Opcode lookup table
+static constexpr Opcode Opcodes[256] = {
+O( 0x00 , BRK , impl , 7     ),
+O( 0x01 , ORA , Xind,  6     ),
+O( 0x02                      ),
+O( 0x03                      ),
+O( 0x04                      ),
+O( 0x05 , ORA , zpg_ , 3     ),
+O( 0x06 , ASL , zpg_ , 5     ),
+O( 0x07                      ),
+O( 0x08 , PHP , impl , 3     ),
+O( 0x09 , ORA , imm  , 2     ),
+O( 0x0A , ASL , acc  , 2     ),
+O( 0x0B                      ),
+O( 0x0C                      ),
+O( 0x0D , ORA , abs_ , 4     ),
+O( 0x0E , ASL , abs_ , 6     ),
+O( 0x0F                      ),
+O( 0x10 , BPL , rel  , 2     ),
+O( 0x11 , ORA , ind_ , 5 , * ),
+O( 0x12                      ),
+O( 0x13                      ),
+O( 0x14                      ),
+O( 0x15 , ORA , zpgX , 4     ),
+O( 0x16 , ASL , zpgX , 6     ),
+O( 0x17                      ),
+O( 0x18 , CLC , impl , 2     ),
+O( 0x19 , ORA , absY , 4 , * ),
+O( 0x1A                      ),
+O( 0x1B                      ),
+O( 0x1C                      ),
+O( 0x1D , ORA , absX , 4 , * ),
+O( 0x1E , ASL , absX , 7     ),
+O( 0x1F                      ),
+O( 0x20 , JSR , abs_ , 6     ),
+O( 0x21 , AND , Xind,  6     ),
+O( 0x22                      ),
+O( 0x23                      ),
+O( 0x24 , BIT , zpg_ , 3     ),
+O( 0x25 , AND , zpg_ , 3     ),
+O( 0x26 , ROL , zpg_ , 5     ),
+O( 0x27                      ),
+O( 0x28 , PLP , impl , 4     ),
+O( 0x29 , AND , imm  , 2     ),
+O( 0x2A , ROL , acc  , 2     ),
+O( 0x2B                      ),
+O( 0x2C , BIT , abs_ , 4     ),
+O( 0x2D , AND , abs_ , 4     ),
+O( 0x2E , ROL , abs_ , 6     ),
+O( 0x2F                      ),
+O( 0x30 , BMI , rel  , 2     ),
+O( 0x31 , AND , ind_ , 5 , * ),
+O( 0x32                      ),
+O( 0x33                      ),
+O( 0x34                      ),
+O( 0x35 , AND , zpgX , 4     ),
+O( 0x36 , ROL , zpgX , 6     ),
+O( 0x37                      ),
+O( 0x38 , SEC , impl , 2     ),
+O( 0x39 , AND , absY , 4 , * ),
+O( 0x3A                      ),
+O( 0x3B                      ),
+O( 0x3C                      ),
+O( 0x3D , AND , absX , 4 , * ),
+O( 0x3E , ROL , absX , 7     ),
+O( 0x3F                      ),
+O( 0x40 , RTI , impl , 6     ),
+O( 0x41 , EOR , Xind,  6     ),
+O( 0x42                      ),
+O( 0x43                      ),
+O( 0x44                      ),
+O( 0x45 , EOR , zpg_ , 3     ),
+O( 0x46 , LSR , zpg_ , 5     ),
+O( 0x47                      ),
+O( 0x48 , PHA , impl , 3     ),
+O( 0x49 , EOR , imm  , 2     ),
+O( 0x4A , LSR , acc  , 2     ),
+O( 0x4B                      ),
+O( 0x4C , JMP , abs_ , 3     ),
+O( 0x4D , EOR , abs_ , 4     ),
+O( 0x4E , LSR , abs_ , 6     ),
+O( 0x4F                      ),
+O( 0x50 , BVC , rel  , 2     ),
+O( 0x51 , EOR , ind_ , 5 , * ),
+O( 0x52                      ),
+O( 0x53                      ),
+O( 0x54                      ),
+O( 0x55 , EOR , zpgX , 4     ),
+O( 0x56 , LSR , zpgX , 6     ),
+O( 0x57                      ),
+O( 0x58 , CLI , impl , 2     ),
+O( 0x59 , EOR , absY , 4 , * ),
+O( 0x5A                      ),
+O( 0x5B                      ),
+O( 0x5C                      ),
+O( 0x5D , EOR , absX , 4 , * ),
+O( 0x5E , LSR , absX , 7     ),
+O( 0x5F                      ),
+O( 0x60 , RTS , impl , 6     ),
+O( 0x61 , ADC , Xind,  6     ),
+O( 0x62                      ),
+O( 0x63                      ),
+O( 0x64                      ),
+O( 0x65 , ADC , zpg_ , 3     ),
+O( 0x66 , ROR , zpg_ , 5     ),
+O( 0x67                      ),
+O( 0x68 , PLA , impl , 4     ),
+O( 0x69 , ADC , imm  , 2     ),
+O( 0x6A , ROR , acc  , 2     ),
+O( 0x6B                      ),
+O( 0x6C , JMP , ind_, 5     ),
+O( 0x6D , ADC , abs_ , 4     ),
+O( 0x6E , ROR , abs_ , 6     ),
+O( 0x6F                      ),
+O( 0x70 , BVS , rel  , 2     ),
+O( 0x71 , ADC , ind_ , 5 , * ),
+O( 0x72                      ),
+O( 0x73                      ),
+O( 0x74                      ),
+O( 0x75 , ADC , zpgX , 4     ),
+O( 0x76 , ROR , zpgX , 6     ),
+O( 0x77                      ),
+O( 0x78 , SEI , impl , 2     ),
+O( 0x79 , ADC , absY , 4 , * ),
+O( 0x7A                      ),
+O( 0x7B                      ),
+O( 0x7C                      ),
+O( 0x7D , ADC , absX , 4 , * ),
+O( 0x7E , ROR , absX , 7     ),
+O( 0x7F                      ),
+O( 0x80                      ),
+O( 0x81 , STA , Xind,  6     ),
+O( 0x82                      ),
+O( 0x83                      ),
+O( 0x84 , STY , zpg_ , 3     ),
+O( 0x85 , STA , zpg_ , 3     ),
+O( 0x86 , STX , zpg_ , 3     ),
+O( 0x87                      ),
+O( 0x88 , DEY , impl , 2     ),
+O( 0x89                      ),
+O( 0x8A , TXA , impl , 2     ),
+O( 0x8B                      ),
+O( 0x8C , STY , abs_ , 4     ),
+O( 0x8D , STA , abs_ , 4     ),
+O( 0x8E , STX , abs_ , 4     ),
+O( 0x8F                      ),
+O( 0x90 , BCC , rel  , 2     ),
+O( 0x91 , STA , ind_ , 6     ),
+O( 0x92                      ),
+O( 0x93                      ),
+O( 0x94 , STY , zpgX , 4     ),
+O( 0x95 , STA , zpgX , 4     ),
+O( 0x96 , STX , zpgY , 4     ),
+O( 0x97                      ),
+O( 0x98 , TYA , impl , 2     ),
+O( 0x99 , STA , absY , 5     ),
+O( 0x9A , TXS , impl , 2     ),
+O( 0x9B                      ),
+O( 0x9C                      ),
+O( 0x9D , STA , absX , 5     ),
+O( 0x9E                      ),
+O( 0x9F                      ),
+O( 0xA0 , LDY , imm  , 2     ),
+O( 0xA1 , LDA , Xind,  6     ),
+O( 0xA2 , LDX , imm  , 2     ),
+O( 0xA3                      ),
+O( 0xA4 , LDY , zpg_ , 3     ),
+O( 0xA5 , LDA , zpg_ , 3     ),
+O( 0xA6 , LDX , zpg_ , 3     ),
+O( 0xA7                      ),
+O( 0xA8 , TAY , impl , 2     ),
+O( 0xA9 , LDA , imm  , 2     ),
+O( 0xAA , TAX , impl , 2     ),
+O( 0xAB                      ),
+O( 0xAC , LDY , abs_ , 4     ),
+O( 0xAD , LDA , abs_ , 4     ),
+O( 0xAE , LDX , abs_ , 4     ),
+O( 0xAF                      ),
+O( 0xB0 , BCS , rel  , 2     ),
+O( 0xB1 , LDA , ind_ , 5 , * ),
+O( 0xB2                      ),
+O( 0xB3                      ),
+O( 0xB4 , LDY , zpgX , 4     ),
+O( 0xB5 , LDA , zpgX , 4     ),
+O( 0xB6 , LDX , zpgY , 4     ),
+O( 0xB7                      ),
+O( 0xB8 , CLV , impl , 2     ),
+O( 0xB9 , LDA , absY , 4 , * ),
+O( 0xBA , TSX , impl , 2     ),
+O( 0xBB                      ),
+O( 0xBC , LDY , absX , 4 , * ),
+O( 0xBD , LDA , absX , 4 , * ),
+O( 0xBE , LDX , absY , 4 , * ),
+O( 0xBF                      ),
+O( 0xC0 , CPY , imm  , 2     ),
+O( 0xC1 , CMP , Xind,  6     ),
+O( 0xC2                      ),
+O( 0xC3                      ),
+O( 0xC4 , CPY , zpg_ , 3     ),
+O( 0xC5 , CMP , zpg_ , 3     ),
+O( 0xC6 , DEC , zpg_ , 5     ),
+O( 0xC7                      ),
+O( 0xC8 , INY , impl , 2     ),
+O( 0xC9 , CMP , imm  , 2     ),
+O( 0xCA , DEX , impl , 2     ),
+O( 0xCB                      ),
+O( 0xCC , CPY , abs_ , 4     ),
+O( 0xCD , CMP , abs_ , 4     ),
+O( 0xCE , DEC , abs_ , 6     ),
+O( 0xCF                      ),
+O( 0xD0 , BNE , rel  , 2     ),
+O( 0xD1 , CMP , ind_ , 5 , * ),
+O( 0xD2                      ),
+O( 0xD3                      ),
+O( 0xD4                      ),
+O( 0xD5 , CMP , zpgX , 4     ),
+O( 0xD6 , DEC , zpgX , 6     ),
+O( 0xD7                      ),
+O( 0xD8 , CLD , impl , 2     ),
+O( 0xD9 , CMP , absY , 4 , * ),
+O( 0xDA                      ),
+O( 0xDB                      ),
+O( 0xDC                      ),
+O( 0xDD , CMP , absX , 4 , * ),
+O( 0xDE , DEC , absX , 7     ),
+O( 0xDF                      ),
+O( 0xE0 , CPX , imm  , 2     ),
+O( 0xE1 , SBC , Xind,  6     ),
+O( 0xE2                      ),
+O( 0xE3                      ),
+O( 0xE4 , CPX , zpg_ , 3     ),
+O( 0xE5 , SBC , zpg_ , 3     ),
+O( 0xE6 , INC , zpg_ , 5     ),
+O( 0xE7                      ),
+O( 0xE8 , INX , impl , 2     ),
+O( 0xE9 , SBC , imm  , 2     ),
+O( 0xEA , NOP , impl , 2     ),
+O( 0xEB                      ),
+O( 0xEC , CPX , abs_ , 4     ),
+O( 0xED , SBC , abs_ , 4     ),
+O( 0xEE , INC , abs_ , 6     ),
+O( 0xEF                      ),
+O( 0xF0 , BEQ , rel  , 2     ),
+O( 0xF1 , SBC , ind_ , 5 , * ),
+O( 0xF2                      ),
+O( 0xF3                      ),
+O( 0xF4                      ),
+O( 0xF5 , SBC , zpgX , 4     ),
+O( 0xF6 , INC , zpgX , 6     ),
+O( 0xF7                      ),
+O( 0xF8 , SED , impl , 2     ),
+O( 0xF9 , SBC , absY , 4 , * ),
+O( 0xFA                      ),
+O( 0xFB                      ),
+O( 0xFC                      ),
+O( 0xFD , SBC , absX , 4 , * ),
+O( 0xFE , INC , absX , 7     ),
+O( 0xFF                      ),
 };
 
-// See docs/personal_research/6502_sorted.txt
-inline AddrM op_to_addrm(u8 op) {
-  // Let's make using the AddrM enum less unruly...
-  #define MODE(_mode_) AddrM::_mode_
-
-  static const AddrM cc_bbb_to_addrmode [3][8] = {
-    /* cc == 00 */
-    {
-      /* bbb == 000 */ MODE( Immediate   ),
-      /* bbb == 001 */ MODE( ZeroPage    ),
-      /* bbb == 010 */ MODE( Implicit    ),
-      /* bbb == 011 */ MODE( Absolute    ),
-      /* bbb == 100 */ MODE( Relative    ),
-      /* bbb == 101 */ MODE( ZeroPageX   ),
-      /* bbb == 110 */ MODE( Implicit    ),
-      /* bbb == 111 */ MODE( AbsoluteX   )
-    },
-    /* cc == 01 */
-    {
-      /* bbb == 000 */ MODE( XIndexed    ),
-      /* bbb == 001 */ MODE( ZeroPage    ),
-      /* bbb == 010 */ MODE( Immediate   ),
-      /* bbb == 011 */ MODE( Absolute    ),
-      /* bbb == 100 */ MODE( IndexedY    ),
-      /* bbb == 101 */ MODE( ZeroPageX   ),
-      /* bbb == 110 */ MODE( AbsoluteY   ),
-      /* bbb == 111 */ MODE( AbsoluteX   )
-    },
-    /* cc == 10 */
-    {
-      /* bbb == 000 */ MODE( Immediate   ),
-      /* bbb == 001 */ MODE( ZeroPage    ),
-      /* bbb == 010 */ MODE( Accumulator ),
-      /* bbb == 011 */ MODE( Absolute    ),
-      /* bbb == 100 */ MODE( INVALID     ),
-      /* bbb == 101 */ MODE( ZeroPageX   ),
-      /* bbb == 110 */ MODE( Implicit    ),
-      /* bbb == 111 */ MODE( AbsoluteX   )
-    }
-  };
-
-  const u8 bbb = (op & 0b00011100) >> 2;
-  const u8 cc  = (op & 0b00000011) >> 0;
-
-  assert(cc != 0b11); // this should never happen
-
-  // The 6502 is a mean sonafabitch, and sometimes, for no apparent reason, it
-  // implements a instruction that doesn't fit the otherwise clean opcode
-  // structure.
-  // We handle these "asshole" instructions here:
-  //
-  // BRK  00  000 000 00  Implicit
-  // JSR  20  001 000 00  Absolute
-  // RTI  40  010 000 00  Implicit
-  // RTS  60  011 000 00  Implicit
-  //
-  // LDX  be  101 111 10  AbsoluteY // grouped with AbsoluteX
-  // STX  96  100 101 10  ZeroPageY // grouped with ZeroPageX
-  // LDX  b6  101 101 10  ZeroPageY // grouped with ZeroPageX
-  //
-  // And of course, this asshole, who is the *only* Indirect instruction _smh_
-  //
-  // JMP_I  6c  011 011 00  Indirect
-
-
-  switch (Instr(op & 0b11100011)) {
-  case Instr::BRK: return MODE( Implicit );
-  case Instr::RTI: return MODE( Implicit );
-  case Instr::RTS: return MODE( Implicit );
-  case Instr::JSR: return MODE( Absolute );
-
-  // And of course, this asshole
-  case Instr::JMP_I: return MODE( Indirect );
-  default: return cc_bbb_to_addrmode[cc][bbb];
-  }
-
-  #undef MODE
-}
-
-}
+} // Instructions

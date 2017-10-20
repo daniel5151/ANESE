@@ -3,8 +3,13 @@
 ANESE (Another NES Emulator) is a Nintendo Entertainment System Emulator written
 for fun and learning.
 
-I am aiming for clean, readable code, even if that means taking a performance
-hit here and there.
+ANESE strives to be a accurate NES emulator, even at the expense of performance.
+
+I am aiming for clean, performant C++11 code, with a emphasis on readability.
+
+Also, for the sake of future cross-platform support, I am trying to keep the
+code portable across compilers, and not reliant on any gcc / clang specific
+features.
 
 ## Building
 
@@ -31,8 +36,8 @@ Building on Windows has been tested with VS 2017.
       - Read / Write RAM
       - Addressing Modes
       - Fetch - Decode - Execute
-    - [ ] Opcodes
     - [ ] Handle Interrupts
+    - [ ] Implementing Opcodes
   - [ ] PPU
     - [ ] Set Up Memory Map
     - TBD

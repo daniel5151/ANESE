@@ -21,3 +21,9 @@ typedef int64_t i64;
 // get nth bit from a number x
 template <typename T>
 inline bool nth_bit(T x, u8 n) { return (x >> n) & 1; }
+
+// check if number is in range
+template <typename T, typename T2>
+bool in_range(T x, T2 min, T2 max) { return x >= min && x <= max; }
+template <typename T, typename T2>
+bool in_range(T x, T2 val) { return x == val; }

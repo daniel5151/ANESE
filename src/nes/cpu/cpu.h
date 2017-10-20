@@ -3,6 +3,7 @@
 #include "common/util.h"
 #include "common/interfaces/memory.h"
 #include "common/bitfield.h"
+#include "instructions.h"
 
 // MOS 6502 (no BCD)
 // https://wiki.nesdev.com/w/index.php/CPU
@@ -52,21 +53,28 @@ private:
 
   /*--------------  Helpers  -------------*/
 
+  // Fetch arguments for current instruction
+  u16 get_instr_args(Instructions::Opcode& addrm);
+
   // Read / Write from IMemory
-  u8  read     (u16 addr);
-  u16 read_16  (u16 addr);
-  void write   (u16 addr, u8  val);
-  void write_16(u16 addr, u16 val);
+  u8  mem_read    (u16 addr);
+  u16 mem_read16  (u16 addr);
+  void mem_write  (u16 addr, u8  val);
+  void mem_write16(u16 addr, u16 val);
 
   // Push / Pop from Stack
-  u8   s_pull   ();
-  u16  s_pull_16();
-  void s_push   (u8  val);
-  void s_push_16(u16 val);
+  u8   s_pull  ();
+  u16  s_pull16();
+  void s_push  (u8  val);
+  void s_push16(u16 val);
+
+  // Branch
+  void branch(u8 offset);
 
 public:
   ~CPU();
   CPU(IMemory& mem);
+  void init_next();
 
   void power_cycle();
   void reset();
