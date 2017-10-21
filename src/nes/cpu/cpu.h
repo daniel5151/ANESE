@@ -53,23 +53,20 @@ private:
 
   /*--------------  Helpers  -------------*/
 
-  // Fetch arguments for current instruction
-  u16 get_instr_args(Instructions::Opcode& addrm);
+  u16 get_operand_addr(Instructions::Opcode& addrm);
 
-  // Read / Write from IMemory
-  u8  mem_read    (u16 addr);
-  u16 mem_read16  (u16 addr);
-  void mem_write  (u16 addr, u8  val);
-  void mem_write16(u16 addr, u16 val);
+  // Read / Write from mem
+  u8  mem_read       (u16 addr); // read 1 byte
+  u16 mem_read16     (u16 addr); // read 2 bytes
+  u16 mem_read16_zpg (u16 addr); // read 2 bytes, handling zero page bug
+  void mem_write     (u16 addr, u8  val); // write 1 byte
+  void mem_write16   (u16 addr, u16 val); // write 2 bytes
 
   // Push / Pop from Stack
   u8   s_pull  ();
   u16  s_pull16();
   void s_push  (u8  val);
   void s_push16(u16 val);
-
-  // Branch
-  void branch(u8 offset);
 
 public:
   ~CPU();
