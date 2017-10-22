@@ -1,0 +1,8 @@
+2013-11-10
+* Instructions on main screen
+* Added derivative test
+* Added poll rate test
+* Greatly expanded the manual
+
+0.01 (2013-11-08)
+* initial release
