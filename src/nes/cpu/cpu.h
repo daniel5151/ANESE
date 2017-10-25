@@ -53,7 +53,7 @@ private:
 
   /*--------------  Helpers  -------------*/
 
-  u16 get_operand_addr(Instructions::Opcode& addrm);
+  u16 get_operand_addr(const Instructions::Opcode& opcode);
 
   // Read / Write from mem
   u8  mem_read       (u16 addr); // read 1 byte
@@ -67,6 +67,11 @@ private:
   u16  s_pull16();
   void s_push  (u8  val);
   void s_push16(u16 val);
+
+  /*-------------  Testing  --------------*/
+
+  // print nestest golden-log formatted CPU log data
+  void nestest(const Instructions::Opcode& opcode) const;
 
 public:
   ~CPU();
