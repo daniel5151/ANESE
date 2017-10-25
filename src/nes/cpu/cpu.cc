@@ -56,33 +56,29 @@ CPU::State CPU::getState() const { return this->state; }
 u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
   using namespace Instructions;
   using namespace Instructions::AddrM;
-  u16 retval;
 
-  // To make debugging NESTEST easier, add temp macros to assign argV and argA
-  // on demand
-  u8  argV;
-  u16 argA;
-  #define read_argV() (argV =  this->mem_read  (this->reg.pc))
-  #define read_argA() (argA = (this->mem_read16(this->reg.pc)))
+  u16 addr; // this is what we are trying to find...
 
-  // Define temporary macro to slim down bulky, repeating switch statement code
-  #define M(mode, inc_pc, ...) \
-    case mode: { retval = __VA_ARGS__; this->reg.pc += inc_pc; } break;
+  // To keep switch-statement code clean, define some temporary macros that
+  // read 8 and 1 bit arguments (respectively)
+  #define arg8  (this->mem_read(this->reg.pc++))
+  #define arg16 (this->mem_read(this->reg.pc++) \
+              | (this->mem_read(this->reg.pc++) << 8))
 
   switch(opcode.addrm) {
-    M(abs_, 2, read_argA()                                                )
-    M(absX, 2, read_argA() + this->reg.x                                  )
-    M(absY, 2, read_argA() + this->reg.y                                  )
-    M(ind_, 2, this->mem_read16_zpg(read_argA())                          )
-    M(indY, 1, this->mem_read16_zpg(read_argV()) + this->reg.y            )
-    M(Xind, 1, this->mem_read16_zpg((read_argV() + this->reg.x) & 0xFF)   )
-    M(zpg_, 1, read_argV()                                                )
-    M(zpgX, 1, (read_argV() + this->reg.x) & 0xFF                         )
-    M(zpgY, 1, (read_argV() + this->reg.y) & 0xFF                         )
-    M(rel , 1, this->reg.pc                                               )
-    M(imm , 1, this->reg.pc                                               )
-    M(acc , 0, this->reg.a                                                )
-    M(impl, 0, u8(0xFACA11) /* no args! return fack all :D */             )
+    case abs_: addr = arg16;                                             break;
+    case absX: addr = arg16 + this->reg.x;                               break;
+    case absY: addr = arg16 + this->reg.y;                               break;
+    case ind_: addr = this->mem_read16_zpg(arg16);                       break;
+    case indY: addr = this->mem_read16_zpg(arg8) + this->reg.y;          break;
+    case Xind: addr = this->mem_read16_zpg((arg8 + this->reg.x) & 0xFF); break;
+    case zpg_: addr = arg8;                                              break;
+    case zpgX: addr = (arg8 + this->reg.x) & 0xFF;                       break;
+    case zpgY: addr = (arg8 + this->reg.y) & 0xFF;                       break;
+    case rel : addr = this->reg.pc++;                                    break;
+    case imm : addr = this->reg.pc++;                                    break;
+    case acc : addr = this->reg.a;                                       break;
+    case impl: addr = u8(0xFACA11);/* no args! return fack all :D */     break;
     case INVALID:
       fprintf(stderr, "Invalid Addressing Mode! Double check table!\n");
       fprintf(stderr, "%02X\n", this->mem.peek(0x02));
@@ -90,35 +86,25 @@ u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
       break;
   }
 
-  // Undefine switch statement macros
-  #undef M
-  #undef read_argA
-  #undef read_argV
+  // Undefine temporary switch statement macros
+  #undef arg16
+  #undef arg8
 
   // Check to see if we need to add extra cycles due to crossing pages
   if (opcode.check_pg_cross == true) {
-    if (opcode.instr == Instr::LDA && opcode.addrm == indY) {
-      if (this->mem.peek(argV) + this->reg.y > 0xFF) {
-        this->cycles += 1;
-      }
-    } else
-
-    if ((opcode.instr == Instr::LDA ||
-         opcode.instr == Instr::LDX) && opcode.addrm == absY) {
-      if ((argA & 0xFF00) != ((argA + this->reg.y) & 0xFF00)) {
-        this->cycles += 1;
-      }
-    } else
-
-    // We know a page boundary was crossed when the calculated addr was of the
-    // form $xxFF, since trying to read a 16 bit address from memory at that
-    // address would cross into the next page (eg: $12FF -> $1300 crosses pages)
-    if ((argA & 0xFF) == 0xFF) {
-      this->cycles += 1;
+    // I checked, the only instructions affected by this are those with the
+    // following 3 addressing modes. No need to handle any of the other modes
+    #define is_pg_cross(a,b) ((a & 0xFF00) != (b & 0xFF00))
+    switch (opcode.addrm) {
+    case absX: this->cycles += is_pg_cross(addr - this->reg.x, addr); break;
+    case absY: this->cycles += is_pg_cross(addr - this->reg.y, addr); break;
+    case indY: this->cycles += is_pg_cross(addr - this->reg.y, addr); break;
+    default: break;
     }
+    #undef is_pg_cross
   }
 
-  return retval;
+  return addr;
 }
 
 u8 CPU::step() {
@@ -425,18 +411,14 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
   { // open a new scope to use AddrM namespace
   using namespace Instructions::AddrM;
 
-  #define mem_peek16(x)      \
-    (this->mem.peek(x + 0) | \
-    (this->mem.peek(x + 1) << 8))
-
   #define mem_peek16_zpg(x)  \
     (this->mem.peek(x + 0) | \
     (this->mem.peek((x & 0xFF00) | (x + 1 & 0x00FF)) << 8))
 
   // Evaluate a few useful values
-  u8  argV1    = this->mem.peek(this->reg.pc + 0);
-  u8  argV2    = this->mem.peek(this->reg.pc + 1);
-  u16 argA     = mem_peek16    (this->reg.pc);
+  u8  arg8_1 = this->mem.peek(this->reg.pc + 0);
+  u8  arg8_2 = this->mem.peek(this->reg.pc + 1);
+  u16 arg16  = arg8_1 | (arg8_2 << 8);
 
   // Print operand bytes
   const char* iname = opcode.instr_name;
@@ -445,7 +427,7 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
     case absX:
     case absY:
     case ind_:
-      printf("%02X %02X", argV1, argV2);
+      printf("%02X %02X", arg8_1, arg8_2);
       break;
     case indY:
     case Xind:
@@ -454,89 +436,84 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
     case zpgY:
     case rel :
     case imm :
-      printf("%02X   "  , argV1);
+      printf("%02X   "  , arg8_1);
       break;
     default:
       printf("     ");
       break;
   }
 
-  // Followed by Instruction Name
+  // Print Instruction Name
   printf("  %s ", iname);
 
-
   // Decode addressing mode
-  // Define temporary macro to slim down bulky, repeating switch statement code
-  #define M(mode, inc_pc, ...) \
-    case mode: { retval = __VA_ARGS__; this->reg.pc += inc_pc; } break;
-
   switch(opcode.addrm) {
-    case abs_: addr = argA;                                         break;
-    case absX: addr = argA + this->reg.x;                           break;
-    case absY: addr = argA + this->reg.y;                           break;
-    case ind_: addr = mem_peek16_zpg(argA);                         break;
-    case indY: addr = mem_peek16_zpg(argV1) + this->reg.y;          break;
-    case Xind: addr = mem_peek16_zpg((argV1 + this->reg.x) & 0xFF); break;
-    case zpg_: addr = argV1;                                        break;
-    case zpgX: addr = (argV1 + this->reg.x) & 0xFF;                 break;
-    case zpgY: addr = (argV1 + this->reg.y) & 0xFF;                 break;
-    case rel : addr = this->reg.pc;                                 break;
-    case imm : addr = this->reg.pc;                                 break;
-    case acc : addr = this->reg.a;                                  break;
-    case impl: addr = u8(0xFACA11);                                 break;
+    case abs_: addr = arg16;                                         break;
+    case absX: addr = arg16 + this->reg.x;                           break;
+    case absY: addr = arg16 + this->reg.y;                           break;
+    case ind_: addr = mem_peek16_zpg(arg16);                         break;
+    case indY: addr = mem_peek16_zpg(arg8_1) + this->reg.y;          break;
+    case Xind: addr = mem_peek16_zpg((arg8_1 + this->reg.x) & 0xFF); break;
+    case zpg_: addr = arg8_1;                                        break;
+    case zpgX: addr = (arg8_1 + this->reg.x) & 0xFF;                 break;
+    case zpgY: addr = (arg8_1 + this->reg.y) & 0xFF;                 break;
+    case rel : addr = this->reg.pc;                                  break;
+    case imm : addr = this->reg.pc;                                  break;
+    case acc : addr = this->reg.a;                                   break;
+    case impl: addr = u8(0xFACA11);                                  break;
     default: break;
   }
 
   // Print specific instrucion operands for each addressing mode
   switch(opcode.addrm) {
   case abs_: sprintf(instr_buf, "$%04X = %02X",
-              argA,
-              this->mem.peek(argA)
+                             arg16,
+              this->mem.peek(arg16)
             ); break;
   case absX: sprintf(instr_buf, "$%04X,X @ %04X = %02X",
-                             argA,
-                         u16(argA + this->reg.x),
-              this->mem.peek(argA + this->reg.x)
+                             arg16,
+                         u16(arg16 + this->reg.x),
+              this->mem.peek(arg16 + this->reg.x)
             ); break;
   case absY: sprintf(instr_buf, "$%04X,Y @ %04X = %02X",
-                             argA,
-                         u16(argA + this->reg.y),
-              this->mem.peek(argA + this->reg.y)
+                             arg16,
+                         u16(arg16 + this->reg.y),
+              this->mem.peek(arg16 + this->reg.y)
             ); break;
   case indY: sprintf(instr_buf, "($%02X),Y = %04X @ %04X = %02X",
-                                            argV1,
-                             mem_peek16_zpg(argV1),
-                         u16(mem_peek16_zpg(argV1) + this->reg.y),
-              this->mem.peek(mem_peek16_zpg(argV1) + this->reg.y)
+                                            arg8_1,
+                             mem_peek16_zpg(arg8_1),
+                         u16(mem_peek16_zpg(arg8_1) + this->reg.y),
+              this->mem.peek(mem_peek16_zpg(arg8_1) + this->reg.y)
             ); break;
   case Xind: sprintf(instr_buf, "($%02X,X) @ %02X = %04X = %02X",
-                                                             argV1,
-                                            u8(this->reg.x + argV1),
-                             mem_peek16_zpg(u8(this->reg.x + argV1)),
-              this->mem.peek(mem_peek16_zpg(u8(this->reg.x + argV1)))
+                                                             arg8_1,
+                                            u8(this->reg.x + arg8_1),
+                             mem_peek16_zpg(u8(this->reg.x + arg8_1)),
+              this->mem.peek(mem_peek16_zpg(u8(this->reg.x + arg8_1)))
             ); break;
   case ind_: sprintf(instr_buf, "($%04X) = %04X",
-                             argA,
-              mem_peek16_zpg(argA)
+                             arg16,
+              mem_peek16_zpg(arg16)
             ); break;
   case zpg_: sprintf(instr_buf, "$%02X = %02X",
-                             argV1,
-              this->mem.peek(argV1)
+                             arg8_1,
+              this->mem.peek(arg8_1)
             ); break;
   case zpgX: sprintf(instr_buf, "$%02X,X @ %02X = %02X",
-                                argV1,
-                             u8(argV1 + this->reg.x),
-              this->mem.peek(u8(argV1 + this->reg.x))
+                                arg8_1,
+                             u8(arg8_1 + this->reg.x),
+              this->mem.peek(u8(arg8_1 + this->reg.x))
             ); break;
   case zpgY: sprintf(instr_buf, "$%02X,Y @ %02X = %02X",
-                                argV1,
-                             u8(argV1 + this->reg.y),
-              this->mem.peek(u8(argV1 + this->reg.y))
+                                arg8_1,
+                             u8(arg8_1 + this->reg.y),
+              this->mem.peek(u8(arg8_1 + this->reg.y))
             ); break;
-  case rel : sprintf(instr_buf, "$%04X", this->reg.pc + 1 + i8(argV1)); break;
-  case imm : sprintf(instr_buf, "#$%02X", argV1); break;
-  case acc : sprintf(instr_buf, ""); break;
-  case impl: sprintf(instr_buf, ""); break;
+  case rel : sprintf(instr_buf, "$%04X", this->reg.pc + 1 + i8(arg8_1)); break;
+  case imm : sprintf(instr_buf, "#$%02X", arg8_1);                       break;
+  case acc : sprintf(instr_buf, "");                                     break;
+  case impl: sprintf(instr_buf, "");                                     break;
   default: sprintf(instr_buf, ""); break;
   }
 
@@ -574,4 +551,6 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
                            // PPU runs 3x as fast as CPU
                            // ergo, multiply cycles by 3 should be fineee
   );
+
+  #undef mem_peek16_zpg
 }

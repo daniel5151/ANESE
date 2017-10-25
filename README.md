@@ -36,8 +36,9 @@ Building on Windows has been tested with VS 2017.
       - Read / Write RAM
       - Addressing Modes
       - Fetch - Decode - Execute
-    - [ ] All Opcodes Implemented
+    - [x] Official Opcodes Implemented
     - [ ] Handle Interrupts
+    - [ ] Unofficial Opcodes Implemented (?)
   - [ ] PPU
     - [ ] Set Up Memory Map
     - TBD
@@ -45,7 +46,7 @@ Building on Windows has been tested with VS 2017.
     - TBD
 
 - Ongoing Tasks
-  - Better error handling (something like Result in Rust)
+  - Better error handling (something like Result in Rust maybe?)
     - [ ] Remove asserts
   - Implement more Mappers
     - [ ] 000
@@ -56,10 +57,10 @@ Building on Windows has been tested with VS 2017.
     - [ ] 005
     - [ ] 006
     - ...
-  - Add support for more ROM formats (not just iNES)
   - Add `const` throughout the codebase?
 
 - Fun Bonuses
   - [ ] Write a NES rom to simulate TV static, and have that run if no ROM is
         chosen
   - [ ] LibRetro support
+  - [ ] Add support for more ROM formats (not just iNES)
