@@ -33,13 +33,14 @@ Building on Windows has been tested with VS 2017.
   - [ ] CPU
     - [x] Set Up Memory Map
     - [x] Core Loop / Basic Functionality
-      - Read / Write RAM
-      - Addressing Modes
-      - Fetch - Decode - Execute
+      - [x] Read / Write RAM
+      - [x] Addressing Modes
+      - [x] Fetch - Decode - Execute
     - [x] Official Opcodes Implemented
     - [ ] Handle Interrupts
     - [ ] Unofficial Opcodes Implemented (?)
   - [ ] PPU
+    - [ ] Set Up Basic Rendering Context (SDL)
     - [ ] Set Up Memory Map
     - TBD
   - [ ] APU
