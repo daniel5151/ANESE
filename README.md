@@ -7,11 +7,20 @@ ANESE strives to be a accurate NES emulator, even at the expense of performance.
 
 I am aiming for clean, performant C++11 code, with a emphasis on readability.
 
-Also, for the sake of future cross-platform support, I am trying to keep the
-code portable across compilers, and not reliant on any gcc / clang specific
-features.
+Also, for the sake of _cross-platform_ support, I am trying to keep the code
+portable and standard conforming.
 
 ## Building
+
+ANESE has some external dependencies
+
+- **SDL2** (rendering layer)
+  - _Linux_: Varies, but for Ubuntu it's `apt-get install libsdl2-dev`
+  - _MacOS_: `brew install SDL2`
+  - _Windows_:
+    - Download dev libs from [here](https://www.libsdl.org/download-2.0.php)
+    - Modfiy the `SDL2_MORE_INCLUDE_DIR` variable in `CMakeLists.txt` to point
+      to the SDL2 dev libs
 
 ANESE uses CMake, so make sure you have it installed.
 
@@ -24,6 +33,12 @@ make
 ```
 
 Building on Windows has been tested with VS 2017.
+
+## Running
+
+Simple as `anese [rom_file]`
+
+On Windows, make sure the executable can find SDL2.dll.
 
 ## TODO
 
