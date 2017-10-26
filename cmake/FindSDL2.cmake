@@ -1,3 +1,5 @@
+# Slighlty modified by Daniel Prilik
+#
 # Locate SDL2 library
 # This module defines
 # SDL2_LIBRARY, the name of the library to link against
@@ -118,6 +120,7 @@ FIND_PATH(SDL2_INCLUDE_DIR SDL.h
   /opt/local # DarwinPorts
   /opt/csw # Blastwave
   /opt
+  ${SDL2_MORE_INCLUDE_DIR}
 )
 
 # Lookup the 64 bit libs on x64
@@ -133,6 +136,7 @@ IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
     /opt/local
     /opt/csw
     /opt
+    ${SDL2_MORE_INCLUDE_DIR}
   )
 # On 32bit build find the 32bit libs
 ELSE(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -147,6 +151,7 @@ ELSE(CMAKE_SIZEOF_VOID_P EQUAL 8)
     /opt/local
     /opt/csw
     /opt
+    ${SDL2_MORE_INCLUDE_DIR}
   )
 ENDIF(CMAKE_SIZEOF_VOID_P EQUAL 8)
 
@@ -170,6 +175,7 @@ IF(NOT SDL2_BUILDING_LIBRARY)
         /opt/local
         /opt/csw
         /opt
+        ${SDL2_MORE_INCLUDE_DIR}
         )
       # On 32bit build find the 32bit libs
     ELSE(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -185,6 +191,7 @@ IF(NOT SDL2_BUILDING_LIBRARY)
         /opt/local
         /opt/csw
         /opt
+        ${SDL2_MORE_INCLUDE_DIR}
         )
     ENDIF(CMAKE_SIZEOF_VOID_P EQUAL 8)
   ENDIF(NOT ${SDL2_INCLUDE_DIR} MATCHES ".framework")

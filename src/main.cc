@@ -7,7 +7,7 @@
 
 #include <SDL.h>
 
-int main(int argc, const char* argv[]) {
+int main(int argc, char* argv[]) {
   // Parse args
   if (argc < 2) {
     std::cerr << "usage: anese [.nes]\n";
