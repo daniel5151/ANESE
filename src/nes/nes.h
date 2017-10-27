@@ -47,6 +47,7 @@ private:
   =====================================*/
 
   bool is_running;
+  u32 clock_cycles;
 
 public:
   NES();
@@ -57,7 +58,7 @@ public:
   void power_cycle(); // Set all volatile components to default power_on state
   void reset();       // Set all volatile components to default reset state
 
-  void step(); // Step processors
+  void step_frame(); // Step processors
 
   bool isRunning() const;
 };

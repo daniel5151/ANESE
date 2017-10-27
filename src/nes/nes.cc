@@ -37,6 +37,7 @@ NES::NES() {
 
   /*----------  Emulator Vars  ----------*/
   this->is_running = false;
+  this->clock_cycles = 0;
 }
 
 NES::~NES() {
@@ -76,12 +77,29 @@ void NES::reset() {
   // this->ppu->reset();
 }
 
-void NES::step() {
-  u8 cpu_cycles = this->cpu->step();
+void NES::step_frame() {
+  // We need to run this thing until the PPU has a full frame ready to spit out
 
-  if (this->cpu->getState() == CPU::State::Halted) {
-    this->is_running = false;
-  }
+  // Once the PPU is implemented, I will add a boolean to the return value of
+  // the PPU step method, and I will use that to determine when to break out of
+  // the loop.
+
+  // Right now though, i'm going to be a bum and just run the CPU for the
+  // equivalent ammount of time :P
+  // - PPU renders 262 scanlines per frame
+  // - Each scanline lasts for 341 PPU clock cycles
+  // - 1 CPU cycle = 3 PPU cycles
+  constexpr u32 CPU_CYCLES_PER_FRAME = 262 * 341 / 3;
+
+  // for (u32 orig_cycles = this->clock_cycles; (this->clock_cycles - orig_cycles) / CPU_CYCLES_PER_FRAME == 0;) {
+    u8 cpu_cycles = this->cpu->step();
+
+    if (this->cpu->getState() == CPU::State::Halted) {
+      this->is_running = false;
+    }
+
+    this->clock_cycles += cpu_cycles * 3;
+  // }
 }
 
 bool NES::isRunning() const { return this->is_running; }

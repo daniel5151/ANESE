@@ -3,12 +3,17 @@
 ANESE (Another NES Emulator) is a Nintendo Entertainment System Emulator written
 for fun and learning.
 
-ANESE strives to be a accurate NES emulator, even at the expense of performance.
+ANESE strives to be a accurate NES emulator, but not _too_ accurate. i.e: cycle
+accuracy yes, but things like bus-conflicts and other hardware minutia... no.
 
 I am aiming for clean, performant C++11 code, with a emphasis on readability.
 
 Also, for the sake of _cross-platform_ support, I am trying to keep the code
 portable and standard conforming.
+
+Lastly, I actively avoiding looking at the source codes of other NES emulators,
+since IMO, doing so would make the challenge of writing your own a lot less fun
+:smile:
 
 ## Building
 
@@ -74,6 +79,7 @@ On Windows, make sure the executable can find SDL2.dll.
     - [ ] 006
     - ...
   - Add `const` throughout the codebase?
+  - Better cmake scripts
 
 - Fun Bonuses
   - [ ] Write a NES rom to simulate TV static, and have that run if no ROM is
