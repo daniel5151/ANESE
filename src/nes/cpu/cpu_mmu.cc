@@ -3,13 +3,13 @@
 #include <assert.h>
 
 CPU_MMU::CPU_MMU(
-  IMemory& ram,
-  IMemory& ppu,
-  IMemory& apu,
-  IMemory& dma,
-  IMemory& joy,
+  Memory& ram,
+  Memory& ppu,
+  Memory& apu,
+  Memory& dma,
+  Memory& joy,
 
-  IMemory* rom
+  Memory* rom
 )
 : ram(ram),
   ppu(ppu),
@@ -71,5 +71,5 @@ void CPU_MMU::write(u16 addr, u8 val) {
   assert(false);
 }
 
-void CPU_MMU::addCartridge(IMemory *cart) { this->rom = cart;    }
-void CPU_MMU::removeCartridge()           { this->rom = nullptr; }
+void CPU_MMU::addCartridge(Memory* cart) { this->rom = cart;    }
+void CPU_MMU::removeCartridge()          { this->rom = nullptr; }

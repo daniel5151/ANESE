@@ -8,7 +8,7 @@
 
 CPU::~CPU() {}
 
-CPU::CPU(IMemory& mem)
+CPU::CPU(Memory& mem)
 : mem(mem)
 {
   this->power_cycle();
@@ -25,7 +25,7 @@ void CPU::power_cycle() {
   this->reg.s = 0xFD;
 
   // Read initial PC from reset vector
-  // this->reg.pc = this->mem_read16(0xFFFC);
+  // this->reg.pc = this->mem.read16(0xFFFC);
 
   // >> SET TO 0xC000 to do nestest.rom
   this->reg.pc = 0xC000;
@@ -41,7 +41,7 @@ void CPU::reset() {
   this->reg.p.i = 1;
 
   // Read from reset vector
-  // this->reg.pc = this->mem_read16(0xFFFC);
+  // this->reg.pc = this->mem.read16(0xFFFC);
 
   // >> SET TO 0xC000 to do nestest.rom
   this->reg.pc = 0xC000;
@@ -61,17 +61,17 @@ u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
 
   // To keep switch-statement code clean, define some temporary macros that
   // read 8 and 1 bit arguments (respectively)
-  #define arg8  (this->mem_read(this->reg.pc++))
-  #define arg16 (this->mem_read(this->reg.pc++) \
-              | (this->mem_read(this->reg.pc++) << 8))
+  #define arg8  (this->mem.read(this->reg.pc++))
+  #define arg16 (this->mem.read(this->reg.pc++) \
+              | (this->mem.read(this->reg.pc++) << 8))
 
   switch(opcode.addrm) {
     case abs_: addr = arg16;                                             break;
     case absX: addr = arg16 + this->reg.x;                               break;
     case absY: addr = arg16 + this->reg.y;                               break;
-    case ind_: addr = this->mem_read16_zpg(arg16);                       break;
-    case indY: addr = this->mem_read16_zpg(arg8) + this->reg.y;          break;
-    case Xind: addr = this->mem_read16_zpg((arg8 + this->reg.x) & 0xFF); break;
+    case ind_: addr = this->mem.read16_zpg(arg16);                       break;
+    case indY: addr = this->mem.read16_zpg(arg8) + this->reg.y;          break;
+    case Xind: addr = this->mem.read16_zpg((arg8 + this->reg.x) & 0xFF); break;
     case zpg_: addr = arg8;                                              break;
     case zpgX: addr = (arg8 + this->reg.x) & 0xFF;                       break;
     case zpgY: addr = (arg8 + this->reg.y) & 0xFF;                       break;
@@ -109,7 +109,7 @@ u8 CPU::step() {
   u32 old_cycles = this->cycles;
 
   // Fetch current opcode
-  u8 op = this->mem_read(this->reg.pc++);
+  u8 op = this->mem.read(this->reg.pc++);
 
   // Lookup info about opcode
   Instructions::Opcode opcode = Instructions::Opcodes[op];
@@ -133,7 +133,7 @@ u8 CPU::step() {
   // Branch if condition is satisfied
   #define branch(cond)                                                 \
     if (!cond) break;                                                  \
-    i8 offset = i8(this->mem_read(addr));                              \
+    i8 offset = i8(this->mem.read(addr));                              \
     /* Extra cycle on succesful branch */                              \
     this->cycles += 1;                                                 \
     /* Check if extra cycles due to jumping across pages */            \
@@ -144,10 +144,10 @@ u8 CPU::step() {
   switch (opcode.instr) {
     case JMP: { this->reg.pc = addr;
               } break;
-    case LDX: { this->reg.x = this->mem_read(addr);
+    case LDX: { this->reg.x = this->mem.read(addr);
                 set_zn(this->reg.x);
               } break;
-    case STX: { this->mem_write(addr, this->reg.x);
+    case STX: { this->mem.write(addr, this->reg.x);
               } break;
     case JSR: { this->s_push16(this->reg.pc - 1);
                 this->reg.pc = addr;
@@ -166,10 +166,10 @@ u8 CPU::step() {
               } break;
     case BNE: { branch(!this->reg.p.z);
               } break;
-    case LDA: { this->reg.a = this->mem_read(addr);
+    case LDA: { this->reg.a = this->mem.read(addr);
                 set_zn(this->reg.a);
               } break;
-    case STA: { this->mem_write(addr, this->reg.a);
+    case STA: { this->mem.write(addr, this->reg.a);
               } break;
     case BIT: { u8 mem = this->mem.read(addr);
                 this->reg.p.z = (this->reg.a & mem) == 0;
@@ -184,7 +184,7 @@ u8 CPU::step() {
               } break;
     case RTS: { this->reg.pc = this->s_pull16() + 1;
               } break;
-    case AND: { this->reg.a &= this->mem_read(addr);
+    case AND: { this->reg.a &= this->mem.read(addr);
                 set_zn(this->reg.a);
               } break;
     case SEI: { this->reg.p.i = 1;
@@ -196,7 +196,7 @@ u8 CPU::step() {
     case PLA: { this->reg.a = this->s_pull();
                 set_zn(this->reg.a);
               } break;
-    case CMP: { u8 val = this->mem_read(addr);
+    case CMP: { u8 val = this->mem.read(addr);
                 this->reg.p.c = this->reg.a >= val;
                 set_zn(this->reg.a - val);
               } break;
@@ -208,16 +208,16 @@ u8 CPU::step() {
               } break;
     case BMI: { branch(this->reg.p.n);
               } break;
-    case ORA: { this->reg.a |= this->mem_read(addr);
+    case ORA: { this->reg.a |= this->mem.read(addr);
                 set_zn(this->reg.a);
               } break;
     case CLV: { this->reg.p.v = 0;
               } break;
-    case EOR: { this->reg.a ^= this->mem_read(addr);
+    case EOR: { this->reg.a ^= this->mem.read(addr);
                 set_zn(this->reg.a);
               } break;
     // Fuck ADC
-    case ADC: { u8  val = this->mem_read(addr);
+    case ADC: { u8  val = this->mem.read(addr);
                 u16 sum = this->reg.a + val + !!this->reg.p.c;
                 this->reg.p.c = sum > 0xFF;
                 this->reg.p.z = u8(sum) == 0;
@@ -229,7 +229,7 @@ u8 CPU::step() {
                 this->reg.a = u8(sum);
               } break;
     // Fuck SBC
-    case SBC: { u8  val = this->mem_read(addr);
+    case SBC: { u8  val = this->mem.read(addr);
                 u16 sum = this->reg.a + ~val + !!this->reg.p.c;
                 this->reg.p.c = !(sum > 0xFF);
                 this->reg.p.z = u8(sum) == 0;
@@ -240,14 +240,14 @@ u8 CPU::step() {
                 this->reg.p.n = nth_bit(u8(sum), 7);
                 this->reg.a = u8(sum);
               } break;
-    case LDY: { this->reg.y = this->mem_read(addr);
+    case LDY: { this->reg.y = this->mem.read(addr);
                 set_zn(this->reg.y);
               } break;
-    case CPY: { u8 val = this->mem_read(addr);
+    case CPY: { u8 val = this->mem.read(addr);
                 this->reg.p.c = this->reg.y >= val;
                 set_zn(this->reg.y - val);
               } break;
-    case CPX: { u8 val = this->mem_read(addr);
+    case CPX: { u8 val = this->mem.read(addr);
                 this->reg.p.c = this->reg.x >= val;
                 set_zn(this->reg.x - val);
               } break;
@@ -263,7 +263,7 @@ u8 CPU::step() {
     case DEX: { this->reg.x--;
                 set_zn(this->reg.x);
               } break;
-    case STY: { this->mem_write(addr, this->reg.y);
+    case STY: { this->mem.write(addr, this->reg.y);
               } break;
     case TAY: { this->reg.y = this->reg.a;
                 set_zn(this->reg.y);
@@ -287,18 +287,18 @@ u8 CPU::step() {
               } break;
     case BRK: { this->s_push16(this->reg.pc);
                 this->s_push(this->reg.p.raw);
-                this->reg.pc = this->mem_read16(0xFFFE);
+                this->reg.pc = this->mem.read16(0xFFFE);
               } break;
     case LSR: { if (opcode.addrm == Instructions::AddrM::acc) {
                   this->reg.p.c = nth_bit(this->reg.a, 0);
                   this->reg.a >>= 1;
                   set_zn(this->reg.a);
                 } else {
-                  u8 val = this->mem_read(addr);
+                  u8 val = this->mem.read(addr);
                   this->reg.p.c = nth_bit(val, 0);
                   val >>= 1;
                   set_zn(val);
-                  this->mem_write(addr, val);
+                  this->mem.write(addr, val);
                 }
               } break;
     case ASL: { if (opcode.addrm == Instructions::AddrM::acc) {
@@ -306,11 +306,11 @@ u8 CPU::step() {
                   this->reg.a <<= 1;
                   set_zn(this->reg.a);
                 } else {
-                  u8 val = this->mem_read(addr);
+                  u8 val = this->mem.read(addr);
                   this->reg.p.c = nth_bit(val, 7);
                   val <<= 1;
                   set_zn(val);
-                  this->mem_write(addr, val);
+                  this->mem.write(addr, val);
                 }
               } break;
     case ROR: { if (opcode.addrm == Instructions::AddrM::acc) {
@@ -319,12 +319,12 @@ u8 CPU::step() {
                   this->reg.p.c = old_bit_0;
                   set_zn(this->reg.a);
                 } else {
-                  u8 val = this->mem_read(addr);
+                  u8 val = this->mem.read(addr);
                   bool old_bit_0 = nth_bit(val, 0);
                   val = (val >> 1) | (!!this->reg.p.c << 7);
                   this->reg.p.c = old_bit_0;
                   set_zn(val);
-                  this->mem_write(addr, val);
+                  this->mem.write(addr, val);
                 }
               } break;
     case ROL: { if (opcode.addrm == Instructions::AddrM::acc) {
@@ -333,23 +333,23 @@ u8 CPU::step() {
                   this->reg.p.c = old_bit_0;
                   set_zn(this->reg.a);
                 } else {
-                  u8 val = this->mem_read(addr);
+                  u8 val = this->mem.read(addr);
                   bool old_bit_0 = nth_bit(val, 7);
                   val = (val << 1) | !!this->reg.p.c;
                   this->reg.p.c = old_bit_0;
                   set_zn(val);
-                  this->mem_write(addr, val);
+                  this->mem.write(addr, val);
                 }
               } break;
-    case INC: { u8 val = this->mem_read(addr);
+    case INC: { u8 val = this->mem.read(addr);
                 val++;
                 set_zn(val);
-                this->mem_write(addr, val);
+                this->mem.write(addr, val);
               } break;
-    case DEC: { u8 val = this->mem_read(addr);
+    case DEC: { u8 val = this->mem.read(addr);
                 val--;
                 set_zn(val);
-                this->mem_write(addr, val);
+                this->mem.write(addr, val);
               } break;
     default:
       fprintf(stderr, "Unimplemented Instruction!\n");
@@ -363,26 +363,8 @@ u8 CPU::step() {
 
 /*----------  Helpers  ----------*/
 
-u8   CPU::mem_read (u16 addr)         { return this->mem.read(addr); }
-void CPU::mem_write(u16 addr, u8 val) { this->mem.write(addr, val);  }
-
-u16 CPU::mem_read16(u16 addr) {
-  return this->mem_read(addr + 0) |
-        (this->mem_read(addr + 1) << 8);
-}
-
-u16 CPU::mem_read16_zpg(u16 addr) {
-  return this->mem_read(addr + 0) |
-        (this->mem_read((addr & 0xFF00) | (addr + 1 & 0x00FF)) << 8);
-}
-
-void CPU::mem_write16(u16 addr, u16 val) {
-  this->mem_write(addr + 0, val);
-  this->mem_write(addr + 1, val);
-}
-
-u8   CPU::s_pull()       { return this->mem_read(0x0100 + ++this->reg.s); }
-void CPU::s_push(u8 val) { this->mem_write(0x0100 + this->reg.s--, val);  }
+u8   CPU::s_pull()       { return this->mem.read(0x0100 + ++this->reg.s); }
+void CPU::s_push(u8 val) { this->mem.write(0x0100 + this->reg.s--, val);  }
 
 u16 CPU::s_pull16() {
   u16 lo = this->s_pull();
@@ -412,14 +394,10 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
   { // open a new scope to use AddrM namespace
   using namespace Instructions::AddrM;
 
-  #define mem_peek16_zpg(x)  \
-    (this->mem.peek(x + 0) | \
-    (this->mem.peek((x & 0xFF00) | (x + 1 & 0x00FF)) << 8))
-
   // Evaluate a few useful values
-  u8  arg8_1 = this->mem.peek(this->reg.pc + 0);
+  u8  arg8   = this->mem.peek(this->reg.pc + 0);
   u8  arg8_2 = this->mem.peek(this->reg.pc + 1);
-  u16 arg16  = arg8_1 | (arg8_2 << 8);
+  u16 arg16  = arg8 | (arg8_2 << 8);
 
   // Print operand bytes
   const char* iname = opcode.instr_name;
@@ -428,7 +406,7 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
     case absX:
     case absY:
     case ind_:
-      printf("%02X %02X", arg8_1, arg8_2);
+      printf("%02X %02X", arg8, arg8_2);
       break;
     case indY:
     case Xind:
@@ -437,7 +415,7 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
     case zpgY:
     case rel :
     case imm :
-      printf("%02X   "  , arg8_1);
+      printf("%02X   "  , arg8);
       break;
     default:
       printf("     ");
@@ -449,19 +427,19 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
 
   // Decode addressing mode
   switch(opcode.addrm) {
-    case abs_: addr = arg16;                                         break;
-    case absX: addr = arg16 + this->reg.x;                           break;
-    case absY: addr = arg16 + this->reg.y;                           break;
-    case ind_: addr = mem_peek16_zpg(arg16);                         break;
-    case indY: addr = mem_peek16_zpg(arg8_1) + this->reg.y;          break;
-    case Xind: addr = mem_peek16_zpg((arg8_1 + this->reg.x) & 0xFF); break;
-    case zpg_: addr = arg8_1;                                        break;
-    case zpgX: addr = (arg8_1 + this->reg.x) & 0xFF;                 break;
-    case zpgY: addr = (arg8_1 + this->reg.y) & 0xFF;                 break;
-    case rel : addr = this->reg.pc;                                  break;
-    case imm : addr = this->reg.pc;                                  break;
-    case acc : addr = this->reg.a;                                   break;
-    case impl: addr = u8(0xFACA11);                                  break;
+    case abs_: addr = arg16;                                             break;
+    case absX: addr = arg16 + this->reg.x;                               break;
+    case absY: addr = arg16 + this->reg.y;                               break;
+    case ind_: addr = this->mem.peek16_zpg(arg16);                       break;
+    case indY: addr = this->mem.peek16_zpg(arg8) + this->reg.y;          break;
+    case Xind: addr = this->mem.peek16_zpg((arg8 + this->reg.x) & 0xFF); break;
+    case zpg_: addr = arg8;                                              break;
+    case zpgX: addr = (arg8 + this->reg.x) & 0xFF;                       break;
+    case zpgY: addr = (arg8 + this->reg.y) & 0xFF;                       break;
+    case rel : addr = this->reg.pc;                                      break;
+    case imm : addr = this->reg.pc;                                      break;
+    case acc : addr = this->reg.a;                                       break;
+    case impl: addr = u8(0xFACA11);                                      break;
     default: break;
   }
 
@@ -482,40 +460,40 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
               this->mem.peek(arg16 + this->reg.y)
             ); break;
   case indY: sprintf(instr_buf, "($%02X),Y = %04X @ %04X = %02X",
-                                            arg8_1,
-                             mem_peek16_zpg(arg8_1),
-                         u16(mem_peek16_zpg(arg8_1) + this->reg.y),
-              this->mem.peek(mem_peek16_zpg(arg8_1) + this->reg.y)
+                                                  arg8,
+                             this->mem.peek16_zpg(arg8),
+                         u16(this->mem.peek16_zpg(arg8) + this->reg.y),
+              this->mem.peek(this->mem.peek16_zpg(arg8) + this->reg.y)
             ); break;
   case Xind: sprintf(instr_buf, "($%02X,X) @ %02X = %04X = %02X",
-                                                             arg8_1,
-                                            u8(this->reg.x + arg8_1),
-                             mem_peek16_zpg(u8(this->reg.x + arg8_1)),
-              this->mem.peek(mem_peek16_zpg(u8(this->reg.x + arg8_1)))
+                                                                   arg8,
+                                                  u8(this->reg.x + arg8),
+                             this->mem.peek16_zpg(u8(this->reg.x + arg8)),
+              this->mem.peek(this->mem.peek16_zpg(u8(this->reg.x + arg8)))
             ); break;
   case ind_: sprintf(instr_buf, "($%04X) = %04X",
-                             arg16,
-              mem_peek16_zpg(arg16)
+                                   arg16,
+              this->mem.peek16_zpg(arg16)
             ); break;
   case zpg_: sprintf(instr_buf, "$%02X = %02X",
-                             arg8_1,
-              this->mem.peek(arg8_1)
+                             arg8,
+              this->mem.peek(arg8)
             ); break;
   case zpgX: sprintf(instr_buf, "$%02X,X @ %02X = %02X",
-                                arg8_1,
-                             u8(arg8_1 + this->reg.x),
-              this->mem.peek(u8(arg8_1 + this->reg.x))
+                                arg8,
+                             u8(arg8 + this->reg.x),
+              this->mem.peek(u8(arg8 + this->reg.x))
             ); break;
   case zpgY: sprintf(instr_buf, "$%02X,Y @ %02X = %02X",
-                                arg8_1,
-                             u8(arg8_1 + this->reg.y),
-              this->mem.peek(u8(arg8_1 + this->reg.y))
+                                arg8,
+                             u8(arg8 + this->reg.y),
+              this->mem.peek(u8(arg8 + this->reg.y))
             ); break;
-  case rel : sprintf(instr_buf, "$%04X", this->reg.pc + 1 + i8(arg8_1)); break;
-  case imm : sprintf(instr_buf, "#$%02X", arg8_1);                       break;
-  case acc : sprintf(instr_buf, "");                                     break;
-  case impl: sprintf(instr_buf, "");                                     break;
-  default: sprintf(instr_buf, ""); break;
+  case rel : sprintf(instr_buf, "$%04X", this->reg.pc + 1 + i8(arg8));   break;
+  case imm : sprintf(instr_buf, "#$%02X", arg8);                         break;
+  case acc : sprintf(instr_buf, " ");                                    break;
+  case impl: sprintf(instr_buf, " ");                                    break;
+  default: sprintf(instr_buf, " "); break;
   }
 
   } // close AddrM scope
@@ -552,6 +530,4 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
                            // PPU runs 3x as fast as CPU
                            // ergo, multiply cycles by 3 should be fineee
   );
-
-  #undef mem_peek16_zpg
 }

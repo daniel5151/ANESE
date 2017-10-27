@@ -6,7 +6,7 @@
 #include "mappers/mapper.h"
 
 // Contains Mapper and iNES cartridge
-class Cartridge final : public IMemory {
+class Cartridge final : public Memory {
 private:
   const INES*   const rom_data; // ROM file data does not change
         Mapper* const mapper;
@@ -15,11 +15,11 @@ public:
   ~Cartridge();
   Cartridge(const u8* data, u32 data_len);
 
-  // <IMemory>
+  // <Memory>
   u8 read(u16 addr)       override;
   u8 peek(u16 addr) const override;
   void write(u16 addr, u8 val) override;
-  // </IMemory>
+  // </Memory>
 
   bool isValid() const;
 

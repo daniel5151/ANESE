@@ -19,7 +19,7 @@ public:
 private:
   /*----------  Hardware  ----------*/
 
-  IMemory& mem; // IMemory
+  Memory& mem; // Memory
 
   struct { // Registers
     // -- Special Registers -- //
@@ -75,7 +75,7 @@ private:
 
 public:
   ~CPU();
-  CPU(IMemory& mem);
+  CPU(Memory& mem);
   void init_next();
 
   void power_cycle();

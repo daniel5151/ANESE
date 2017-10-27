@@ -5,39 +5,39 @@
 #include "nes/cartridge/cartridge.h"
 #include "nes/ram/ram.h"
 
-// CPU IMemory Map (MMU)
+// CPU Memory Map (MMU)
 // NESdoc.pdf
 // https://wiki.nesdev.com/w/index.php/CPU_memory_map
 // https://wiki.nesdev.com/w/index.php/2A03
-class CPU_MMU final : public IMemory {
+class CPU_MMU final : public Memory {
 private:
   // Fixed References (these will never be invalidated)
-  IMemory& ram;
-  IMemory& ppu;
-  IMemory& apu;
-  IMemory& dma;
-  IMemory& joy;
+  Memory& ram;
+  Memory& ppu;
+  Memory& apu;
+  Memory& dma;
+  Memory& joy;
 
   // ROM is subject to change
-  IMemory* rom;
+  Memory* rom;
 public:
   // No Destructor, since no owned resources
   CPU_MMU(
-    IMemory& ram,
-    IMemory& ppu,
-    IMemory& apu,
-    IMemory& dma,
-    IMemory& joy,
+    Memory& ram,
+    Memory& ppu,
+    Memory& apu,
+    Memory& dma,
+    Memory& joy,
 
-    IMemory* rom
+    Memory* rom
   );
 
-  // <IMemory>
+  // <Memory>
   u8 read(u16 addr)       override;
   u8 peek(u16 addr) const override;
   void write(u16 addr, u8 val) override;
-  // <IMemory/>
+  // <Memory/>
 
-  void addCartridge(IMemory* cart);
+  void addCartridge(Memory* cart);
   void removeCartridge();
 };
