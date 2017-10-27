@@ -81,9 +81,7 @@ u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
     case impl: addr = u8(0xFACA11);/* no args! return fack all :D */     break;
     case INVALID:
       fprintf(stderr, "Invalid Addressing Mode! Double check table!\n");
-      fprintf(stderr, "%02X\n", this->mem.peek(0x02));
-      exit(-1);
-      break;
+      return 0xBAD;
   }
 
   // Undefine temporary switch statement macros
@@ -353,7 +351,10 @@ u8 CPU::step() {
                 set_zn(val);
                 this->mem_write(addr, val);
               } break;
-    default: fprintf(stderr, "Unimplemented Instruction!\n"); exit(-1);
+    default:
+      fprintf(stderr, "Unimplemented Instruction!\n");
+      this->state = CPU::State::Halted;
+      break;
   }
 
   this->cycles += opcode.cycles;

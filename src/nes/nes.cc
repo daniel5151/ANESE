@@ -78,6 +78,8 @@ void NES::reset() {
 }
 
 void NES::step_frame() {
+  if (this->is_running == false) return;
+
   // We need to run this thing until the PPU has a full frame ready to spit out
 
   // Once the PPU is implemented, I will add a boolean to the return value of
@@ -89,7 +91,7 @@ void NES::step_frame() {
   // - PPU renders 262 scanlines per frame
   // - Each scanline lasts for 341 PPU clock cycles
   // - 1 CPU cycle = 3 PPU cycles
-  constexpr u32 CPU_CYCLES_PER_FRAME = 262 * 341 / 3;
+  // constexpr u32 CPU_CYCLES_PER_FRAME = 262 * 341 / 3;
 
   // for (u32 orig_cycles = this->clock_cycles; (this->clock_cycles - orig_cycles) / CPU_CYCLES_PER_FRAME == 0;) {
     u8 cpu_cycles = this->cpu->step();

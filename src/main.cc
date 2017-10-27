@@ -92,23 +92,21 @@ int main(int argc, char* argv[]) {
     SDL_TEXTUREACCESS_STREAMING,
     RES_X, RES_Y
   );
+
   // where within the window to render the screen texture
   SDL_Rect screen;
 
   // Main NES pixelbuffer
   u8* pixelbuff = new u8 [RES_X * RES_Y * 4];
 
-  // Frame Counting
-  const time_ms start_time = SDL_GetTicks();
-
-  time_ms frame_start_time;
-  time_ms frame_end_time;
+  // Frame Counter
   u32 total_frames = 0;
 
   // Main Loop
   bool quit = false;
   while (!quit) {
     time_ms frame_start_time = SDL_GetTicks();
+    total_frames++;
 
     while (SDL_PollEvent(&event) != 0) {
       if (event.type == SDL_QUIT) {
@@ -117,11 +115,11 @@ int main(int argc, char* argv[]) {
     }
 
     // run the NES for a frame
-    nes.step_frame();
+    // for (int i = 0; i < 20; i++)
+      nes.step_frame();
 
     if (nes.isRunning() == false) {
-      quit = true;
-      break;
+      // quit = true;
     }
 
     // output!
@@ -154,6 +152,7 @@ int main(int argc, char* argv[]) {
         pixelbuff[offset + 3] = SDL_ALPHA_OPAQUE;  // a
       }
     }
+
     SDL_UpdateTexture(texture, nullptr, pixelbuff, RES_X * 4);
 
     // Render everything
@@ -162,24 +161,28 @@ int main(int argc, char* argv[]) {
     // Reveal out the composited image
     SDL_RenderPresent(renderer);
 
+    // ---- Limit Framerate ---- //
+    // NES runs as 60 fups, so don't run faster!
+    constexpr time_ms TARGET_FPS = 1000.0 / 60.0;
+    time_ms frame_dt = SDL_GetTicks() - frame_start_time;
+    if (frame_dt < TARGET_FPS)
+      SDL_Delay(TARGET_FPS - frame_dt);
+
     time_ms frame_end_time = SDL_GetTicks();
 
     // ---- Count Framerate ---- //
-    // atm, this is a running avg.
-    // it really should be sample-based (to reflect fluctuating performance)
-    total_frames++;
-    float total_dt = frame_end_time - start_time;
-    float fps = total_frames / (total_dt / 1000.0);
-    sprintf(window_title, "anese - %d fups", int(fps));
-    SDL_SetWindowTitle(window, window_title);
+    static float past_fps [20] = {60.0}; // more samples == less FPS jutter
 
-    // ---- Limit Framerate ---- //
-    constexpr time_ms TARGET_FPS = 1000.0 / 60.0;
-    // Don't run faster than 60 fups!
-    time_ms frame_dt = frame_end_time - frame_start_time;
-    if (frame_dt < TARGET_FPS) {
-      SDL_Delay(TARGET_FPS - frame_dt);
-    }
+    // Get current FPS
+    past_fps[total_frames % 20] = 1000.0 / (frame_end_time - frame_start_time);
+
+    float avg_fps = 0;
+    for(unsigned i = 0; i < 20; i++)
+      avg_fps += past_fps[i];
+    avg_fps /= 20;
+
+    sprintf(window_title, "anese - %d fups", int(avg_fps));
+    SDL_SetWindowTitle(window, window_title);
   }
 
   SDL_DestroyRenderer(renderer);
