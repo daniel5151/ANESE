@@ -50,15 +50,14 @@ On Windows, make sure the executable can find SDL2.dll.
 - Key Milestones
   - [x] Parse iNES files
   - [x] Create Cartridges (iNES + Mapper interface)
-  - [ ] CPU
+  - [x] CPU
     - [x] Set Up Memory Map
     - [x] Core Loop / Basic Functionality
       - [x] Read / Write RAM
       - [x] Addressing Modes
       - [x] Fetch - Decode - Execute
     - [x] Official Opcodes Implemented
-    - [ ] Handle Interrupts
-    - [ ] Unofficial Opcodes Implemented (?)
+    - [x] Handle Interrupts
   - [ ] PPU
     - [ ] Set Up Basic Rendering Context (SDL)
     - [ ] Set Up Memory Map
@@ -67,7 +66,12 @@ On Windows, make sure the executable can find SDL2.dll.
     - TBD
 
 - Ongoing Tasks
-  - Better error handling (something like Result in Rust maybe?)
+  - Pass more tests (i.e: Accuracy)
+    - CPU
+      - [ ] Implement Unofficial Opcodes (?)
+      - [ ] Better handling of simultaneous interrupts
+      - [ ] _\(Stretch\)_ Switch to cycle-based emulation (vs instruction level)
+  - Better error handling (but without c++ exceptions)
     - [ ] Remove asserts
   - Implement more Mappers
     - [ ] 000
@@ -82,6 +86,12 @@ On Windows, make sure the executable can find SDL2.dll.
   - Better cmake scripts
 
 - Fun Bonuses
+  - [ ] Debugger!
+    - [ ] CPU
+      - [ ] Serialize state
+      - [ ] Step through instructions
+    - [ ] PPU
+      - TBD
   - [ ] Write a NES rom to simulate TV static, and have that run if no ROM is
         chosen
   - [ ] LibRetro support

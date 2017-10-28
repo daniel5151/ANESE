@@ -84,7 +84,7 @@ struct Opcode {
 
 // Main Opcode lookup table
 static constexpr Opcode Opcodes[256] = {
-O( 0x00 , BRK , impl , 7     ),
+O( 0x00 , BRK , impl , 0     ), // call to CPU::service_interrupt takes 7 cycles
 O( 0x01 , ORA , Xind,  6     ),
 O( 0x02                      ),
 O( 0x03                      ),

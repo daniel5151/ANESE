@@ -2,9 +2,10 @@
 
 #include <cstdlib>
 #include <cstdio>
-#include <cassert>
 
 #include "instructions.h"
+
+/*-----------------------------  Public Methods  -----------------------------*/
 
 CPU::~CPU() {}
 
@@ -16,7 +17,7 @@ CPU::CPU(Memory& mem)
 
 // https://wiki.nesdev.com/w/index.php/CPU_power_up_state
 void CPU::power_cycle() {
-  this->reg.p.raw = 0b00110100; // Interrupt = 1, Break = 1
+  this->reg.p.raw = 0x34; // 0b00110100, Interrupt = 1, Break = 1, Unused = 1
 
   this->reg.a = 0x00;
   this->reg.x = 0x00;
@@ -24,14 +25,15 @@ void CPU::power_cycle() {
 
   this->reg.s = 0xFD;
 
-  // Read initial PC from reset vector
-  // this->reg.pc = this->mem.read16(0xFFFC);
+  // trigger reset vector
+  this->service_interrupt(CPU::Interrupt::Reset);
 
-  // >> SET TO 0xC000 to do nestest.rom
+  this->pending_interrupt = CPU::Interrupt::None;
+
+  // >> set PC to 0xC000 and clear cycles for NESTEST
   this->reg.pc = 0xC000;
-
-
   this->cycles = 0;
+
   this->state = CPU::State::Running;
 }
 
@@ -40,18 +42,21 @@ void CPU::reset() {
   this->reg.s -= 3; // the stack pointer is decremented by 3 (weird...)
   this->reg.p.i = 1;
 
-  // Read from reset vector
-  // this->reg.pc = this->mem.read16(0xFFFC);
+  // trigger reset vector
+  this->service_interrupt(CPU::Interrupt::Reset);
 
-  // >> SET TO 0xC000 to do nestest.rom
-  this->reg.pc = 0xC000;
+  this->pending_interrupt = CPU::Interrupt::None;
 
-
-  this->cycles = 0;
   this->state = CPU::State::Running;
 }
 
+void CPU::request_interrupt(CPU::Interrupt type) {
+  this->pending_interrupt = type;
+}
+
 CPU::State CPU::getState() const { return this->state; }
+
+/*----------------------------  Private Methods  -----------------------------*/
 
 u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
   using namespace Instructions;
@@ -105,8 +110,35 @@ u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
   return addr;
 }
 
+void CPU::service_interrupt(CPU::Interrupt type) {
+  this->reg.p.i = true; // don't want interrupts being interrupted :D
+
+  if (type != CPU::Interrupt::Reset) {
+    this->s_push16(this->reg.pc);
+    this->s_push(this->reg.p.raw);
+  }
+
+  this->cycles += 7;
+
+  switch (type) {
+  case CPU::Interrupt::IRQ: if (!this->reg.p.i)
+                              this->reg.pc = this->mem.read16(0xFFFE); break;
+  case CPU::Interrupt::Reset: this->reg.pc = this->mem.read16(0xFFFC); break;
+  case CPU::Interrupt::NMI:   this->reg.pc = this->mem.read16(0xFFFA); break;
+  default: break;
+  }
+}
+
+
 u8 CPU::step() {
   u32 old_cycles = this->cycles;
+
+  // Service any pending interrupts
+  if (this->pending_interrupt != CPU::Interrupt::None) {
+    this->service_interrupt(this->pending_interrupt);
+    // mark interrupt as serviced
+    this->pending_interrupt = CPU::Interrupt::None;
+  }
 
   // Fetch current opcode
   u8 op = this->mem.read(this->reg.pc++);
@@ -285,9 +317,8 @@ u8 CPU::step() {
     case RTI: { this->reg.p.raw = this->s_pull() | 0x20; // NESTEST
                 this->reg.pc = this->s_pull16();
               } break;
-    case BRK: { this->s_push16(this->reg.pc);
-                this->s_push(this->reg.p.raw);
-                this->reg.pc = this->mem.read16(0xFFFE);
+    case BRK: { // ignores interrupt disable bit, and just forces an interrupt
+                this->service_interrupt(CPU::Interrupt::IRQ);
               } break;
     case LSR: { if (opcode.addrm == Instructions::AddrM::acc) {
                   this->reg.p.c = nth_bit(this->reg.a, 0);
@@ -523,7 +554,7 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
     this->reg.a,
     this->reg.x,
     this->reg.y,
-    this->reg.p.raw & 0b11101111, // match nestest "golden" log
+    this->reg.p.raw & ~0x10, // 0b11101111, match nestest "golden" log
     this->reg.s,
     this->cycles * 3 % 341 // CYC measures PPU X coordinates
                            // PPU does 1 x coordinate per cycle

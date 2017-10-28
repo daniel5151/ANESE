@@ -16,6 +16,14 @@ public:
     Halted
   };
 
+  enum class Interrupt {
+    None,
+
+    NMI,
+    IRQ,
+    Reset
+  };
+
 private:
   /*----------  Hardware  ----------*/
 
@@ -44,7 +52,7 @@ private:
     u8 y; // Index Y
   } reg;
 
-  // instructions and addressing modes are defined in instructions.h
+  Interrupt pending_interrupt;
 
   /*----------  Emulation Vars  ----------*/
 
@@ -55,12 +63,7 @@ private:
 
   u16 get_operand_addr(const Instructions::Opcode& opcode);
 
-  // Read / Write from mem
-  u8  mem_read       (u16 addr); // read 1 byte
-  u16 mem_read16     (u16 addr); // read 2 bytes
-  u16 mem_read16_zpg (u16 addr); // read 2 bytes, handling zero page bug
-  void mem_write     (u16 addr, u8  val); // write 1 byte
-  void mem_write16   (u16 addr, u16 val); // write 2 bytes
+  void service_interrupt(Interrupt type);
 
   // Push / Pop from Stack
   u8   s_pull  ();
@@ -76,12 +79,13 @@ private:
 public:
   ~CPU();
   CPU(Memory& mem);
-  void init_next();
 
   void power_cycle();
   void reset();
 
+  void request_interrupt(Interrupt type);
+
   CPU::State getState() const;
 
-  u8 step();
+  u8 step(); // exec instruction, and return cycles taken
 };
