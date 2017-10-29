@@ -31,8 +31,8 @@ void CPU::power_cycle() {
   this->pending_interrupt = CPU::Interrupt::None;
 
   // >> set PC to 0xC000 and clear cycles for NESTEST
-  this->reg.pc = 0xC000;
-  this->cycles = 0;
+  // this->reg.pc = 0xC000;
+  // this->cycles = 0;
 
   this->state = CPU::State::Running;
 }

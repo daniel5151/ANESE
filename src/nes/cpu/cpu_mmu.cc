@@ -66,7 +66,7 @@ void CPU_MMU::write(u16 addr, u8 val) {
   if (in_range(addr, 0x4015        )) return apu.write(addr, val);
   if (in_range(addr, 0x4016        )) return joy.write(addr, val);
   if (in_range(addr, 0x4017        )) return apu.write(addr, val); // not JOY
-  if (in_range(addr, 0x4018, 0xFFFF)) return rom? rom->write(addr, val) : void();
+  if (in_range(addr, 0x4018, 0xFFFF)) return rom ? rom->write(addr, val) : void();
 
   assert(false);
 }
