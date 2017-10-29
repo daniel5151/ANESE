@@ -59,8 +59,8 @@ On Windows, make sure the executable can find SDL2.dll.
     - [x] Official Opcodes Implemented
     - [x] Handle Interrupts
   - [ ] PPU
+    - [x] Set Up Memory Map
     - [ ] Set Up Basic Rendering Context (SDL)
-    - [ ] Set Up Memory Map
     - TBD
   - [ ] APU
     - TBD
@@ -74,7 +74,7 @@ On Windows, make sure the executable can find SDL2.dll.
   - Better error handling (but without c++ exceptions)
     - [ ] Remove asserts
   - Implement more Mappers
-    - [ ] 000
+    - [x] 000
     - [ ] 001
     - [ ] 002
     - [ ] 003

@@ -1,10 +1,22 @@
 #pragma once
 
+#include "common/components/ram/ram.h"
 #include "common/util.h"
 #include "mapper.h"
 
 // http://wiki.nesdev.com/w/index.php/NROM
 class Mapper_000 final : public Mapper {
+private:
+  // const INES& rom_file; // inherited from Mapper
+
+  // PGR ROM
+  const ROM* lo_rom; // 0x8000 ... 0xBFFF
+  const ROM* hi_rom; // 0xC000 ... 0xFFFF
+
+  // CHR ROM / RAM
+  const ROM* chr_rom;
+        RAM* chr_ram;
+
 public:
   Mapper_000(const INES& rom_file);
   ~Mapper_000();

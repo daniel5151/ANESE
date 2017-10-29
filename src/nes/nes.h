@@ -1,10 +1,10 @@
 #pragma once
 
 #include "cartridge/cartridge.h"
+#include "common/components/ram/ram.h"
 #include "common/util.h"
 #include "cpu/cpu.h"
 #include "cpu/cpu_mmu.h"
-#include "ram/ram.h"
 
 // Core NES class.
 // - Owns all NES core resources (but NOT the cartridge)
@@ -28,8 +28,9 @@ private:
   // PPU* ppu;
 
   // RAM
-  RAM* cpu_ram;
-  // RAM* ppu_ram;
+  RAM* cpu_ram;   // 2k CPU general purpose RAM
+  RAM* ppu_pram;  // 32 bytes PPU palette RAM
+  RAM* ppu_ciram; // 2k PPU nametable VRAM
 
   // Joypads
   // JOY* joy;

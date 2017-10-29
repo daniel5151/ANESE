@@ -9,7 +9,7 @@ CPU_MMU::CPU_MMU(
   Memory& dma,
   Memory& joy,
 
-  Memory* rom
+  Cartridge* rom
 )
 : ram(ram),
   ppu(ppu),
@@ -66,10 +66,10 @@ void CPU_MMU::write(u16 addr, u8 val) {
   if (in_range(addr, 0x4015        )) return apu.write(addr, val);
   if (in_range(addr, 0x4016        )) return joy.write(addr, val);
   if (in_range(addr, 0x4017        )) return apu.write(addr, val); // not JOY
-  if (in_range(addr, 0x4018, 0xFFFF)) return rom? rom->write(addr, val) :void();
+  if (in_range(addr, 0x4018, 0xFFFF)) return rom? rom->write(addr, val) : void();
 
   assert(false);
 }
 
-void CPU_MMU::addCartridge(Memory* cart) { this->rom = cart;    }
-void CPU_MMU::removeCartridge()          { this->rom = nullptr; }
+void CPU_MMU::addCartridge(Cartridge* cart) { this->rom = cart;    }
+void CPU_MMU::removeCartridge()             { this->rom = nullptr; }

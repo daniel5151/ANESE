@@ -10,8 +10,6 @@ class Mapper : public Memory {
 protected:
   const INES& rom_file; // Owned by Cartridge
 
-  const u8* lo_rom;
-  const u8* hi_rom;
 public:
   Mapper(const INES& rom_file) : rom_file(rom_file) {};
   virtual ~Mapper() {};

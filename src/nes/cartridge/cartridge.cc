@@ -20,6 +20,11 @@ bool Cartridge::isValid() const {
   return this->rom_data->is_valid && this->mapper != nullptr;
 }
 
+PPU::Mirroring Cartridge::mirroring() const {
+  return this->rom_data->flags.mirror_type;
+}
+
+
 void Cartridge::blowOnContacts() const {
   // *huff puff puff puff*
 

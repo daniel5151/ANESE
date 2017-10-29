@@ -5,7 +5,7 @@
 RAM::RAM(u32 ram_size) {
   // Don't allocate more memory than addressable by a u16
   if (ram_size > 0xFFFF + 1) {
-    ram_size = 0xFFFF  + 1;
+    ram_size = 0xFFFF + 1;
   }
 
   this->size = ram_size;
@@ -20,11 +20,8 @@ RAM::~RAM() {
   delete[] this->ram;
 }
 
-u8 RAM::read(u16 addr) {
-  // RAM has no side-effects
-  return this->peek(addr);
-}
-
+// RAM has no side-effects
+u8 RAM::read(u16 addr) { return this->peek(addr); }
 u8 RAM::peek(u16 addr) const {
   assert(addr < this->size);
   return this->ram[addr];

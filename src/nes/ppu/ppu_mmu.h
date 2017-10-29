@@ -4,30 +4,30 @@
 #include "common/util.h"
 #include "nes/cartridge/cartridge.h"
 
-// CPU Memory Map (MMU)
+// PPU Memory Map (MMU)
 // NESdoc.pdf
-// https://wiki.nesdev.com/w/index.php/CPU_memory_map
-// https://wiki.nesdev.com/w/index.php/2A03
-class CPU_MMU final : public Memory {
+// http://wiki.nesdev.com/w/index.php/PPU_memory_map
+class PPU_MMU final : public Memory {
 private:
   // Fixed References (these will never be invalidated)
-  Memory& ram;
-  Memory& ppu;
-  Memory& apu;
-  Memory& dma;
-  Memory& joy;
+  Memory& ciram; // PPU internal VRAM
+  Memory& pram;  // Palette RAM
 
   // ROM is subject to change
   Cartridge* rom;
+  Memory* vram; // changes based on mirroring mode
+
+  // Nametable offsets
+  u16 nt_0;
+  u16 nt_1;
+  u16 nt_2;
+  u16 nt_3;
+
 public:
   // No Destructor, since no owned resources
-  CPU_MMU(
-    Memory& ram,
-    Memory& ppu,
-    Memory& apu,
-    Memory& dma,
-    Memory& joy,
-
+  PPU_MMU(
+    Memory& ciram,
+    Memory& pram,
     Cartridge* rom
   );
 

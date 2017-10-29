@@ -3,9 +3,7 @@
 #include <iostream>
 
 INES::INES(const u8* data, u32 data_len) {
-  // Hold on to the raw data (to be deleted later)
-  this->raw_data = data;
-  this->data_len = data_len;
+  (void)data_len; // don't actually use it
 
   // Can't parse data if there is none ;)
   if (data == nullptr) {
@@ -42,10 +40,18 @@ INES::INES(const u8* data, u32 data_len) {
   // B: has_battery
   // M: mirror_type (0 = horizontal, 1 = vertical)
 
-  this->flags.has_4screen = nth_bit(data[5], 3);
   this->flags.has_trainer = nth_bit(data[5], 2);
   this->flags.has_battery = nth_bit(data[5], 1);
-  this->flags.mirror_type = nth_bit(data[5], 0);
+
+  if (nth_bit(data[5], 3) == true) {
+    this->flags.mirror_type = PPU::Mirroring::FourScreen;
+  }
+  else if (nth_bit(data[5], 0) == true) {
+    this->flags.mirror_type = PPU::Mirroring::Vertical;
+  }
+  else {
+    this->flags.mirror_type = PPU::Mirroring::Horizontal;
+  }
 
   // 7       0
   // ---------
@@ -62,7 +68,9 @@ INES::INES(const u8* data, u32 data_len) {
 
   this->mapper = data[5] >> 4 & (data[6] & 0xFF00);
 
-  // Find base addresses for the various ROM sections in the data
+  // Find addresses for the various ROM sections in the data, and throw them
+  // into some ROM ADTs
+
   // iNES is laid out as follows:
 
   // Section             | Multiplier    | Size
@@ -74,13 +82,40 @@ INES::INES(const u8* data, u32 data_len) {
   // PlayChoice INST-ROM | is_PC10       | 0x2000
   // PlayChoice PROM     | is_PC10       | 0x10
 
-  this->roms.trn_rom = data + 0x10;
-  this->roms.prg_rom = this->roms.trn_rom + 0x200  * this->flags.has_trainer;
-  this->roms.chr_rom = this->roms.prg_rom + 0x4000 * this->flags.prg_rom_pages;
-  this->roms.pci_rom = this->roms.chr_rom + 0x2000 * this->flags.chr_rom_pages;
-  this->roms.pc_prom = this->roms.pci_rom + 0x2000 * this->flags.is_PC10;
+  const u8* data_p = data + 0x10; // move past header
+
+  if (this->flags.has_trainer) {
+    this->roms.trn_rom = new ROM(0x200, data_p);
+    data_p += 0x200;
+  } else {
+    this->roms.trn_rom = nullptr;
+  }
+
+  for (uint i = 0; i < this->flags.prg_rom_pages; i++) {
+    this->roms.prg_roms.push_back(new ROM (0x4000, data_p));
+    data_p += 0x4000;
+  }
+
+  for (uint i = 0; i < this->flags.chr_rom_pages; i++) {
+    this->roms.chr_roms.push_back(new ROM (0x2000, data_p));
+    data_p += 0x2000;
+  }
+
+  if (this->flags.is_PC10) {
+    this->roms.pci_rom = new ROM (0x2000, data_p);
+    data_p += 0x2000;
+    this->roms.pc_prom = new ROM (0x10, data_p);
+  } else {
+    this->roms.pci_rom = nullptr;
+    this->roms.pc_prom = nullptr;
+  }
 }
 
 INES::~INES() {
-  delete[] raw_data;
+  for (ROM* rom : this->roms.prg_roms) delete rom;
+  for (ROM* rom : this->roms.chr_roms) delete rom;
+
+  delete this->roms.trn_rom;
+  delete this->roms.pci_rom;
+  delete this->roms.pc_prom;
 }

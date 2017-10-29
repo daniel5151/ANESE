@@ -4,6 +4,7 @@
 #include "common/util.h"
 #include "formats/ines.h"
 #include "mappers/mapper.h"
+#include "nes/ppu/ppu.h"
 
 // Contains Mapper and iNES cartridge
 class Cartridge final : public Memory {
@@ -22,6 +23,8 @@ public:
   // </Memory>
 
   bool isValid() const;
+
+  PPU::Mirroring mirroring() const; // get nametable mirroring type
 
   // Critical importance
   void blowOnContacts() const;

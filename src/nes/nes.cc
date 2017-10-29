@@ -10,8 +10,9 @@ NES::NES() {
   this->cart = nullptr;
 
   // Create RAM modules
-  this->cpu_ram = new RAM (0x800);
-  // this->ppu_ram = new RAM (/* Stuff */);
+  this->cpu_ram   = new RAM (0x800);
+  this->ppu_pram  = new RAM (32);
+  this->ppu_ciram = new RAM (0x800);
 
   // Create DMA
   // this->dma = new DMA (this->cpu_ram, this->ppu_ram);
@@ -21,12 +22,12 @@ NES::NES() {
 
   // Create MMUs
   this->cpu_mmu = new CPU_MMU(
-    *this->cpu_ram,
-    *Void_Memory::Get(),
-    *Void_Memory::Get(),
-    *Void_Memory::Get(),
-    *Void_Memory::Get(),
-     this->cart
+    /* ram */ *this->cpu_ram,
+    /* ppu */ *Void_Memory::Get(),
+    /* apu */ *Void_Memory::Get(),
+    /* dma */ *Void_Memory::Get(),
+    /* joy */ *Void_Memory::Get(),
+    /* rom */  this->cart
   );
 
   // this->ppu_mmu = new PPU_MMU (/* Stuff */);
@@ -46,6 +47,8 @@ NES::~NES() {
   delete this->cpu;
   delete this->cpu_ram;
   delete this->cpu_mmu;
+  delete this->ppu_pram;
+  delete this->ppu_ciram;
 }
 
 bool NES::loadCartridge(Cartridge* cart) {

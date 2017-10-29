@@ -19,9 +19,9 @@ private:
 
 public:
   // <Memory>
-  u8 read(u16 addr)       override { return 0; };
-  u8 peek(u16 addr) const override { return 0; };
-  void write(u16 addr, u8 val) override {};
+  u8 read(u16 addr)       override { (void)addr; return 0; };
+  u8 peek(u16 addr) const override { (void)addr; return 0; };
+  void write(u16 addr, u8 val) override { (void)addr; (void)val; };
   // <Memory/>
 
   static Void_Memory* Get() {
