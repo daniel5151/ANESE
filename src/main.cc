@@ -96,9 +96,6 @@ int main(int argc, char* argv[]) {
   // where within the window to render the screen texture
   SDL_Rect screen;
 
-  // Main NES pixelbuffer
-  u8* pixelbuff = new u8 [RES_X * RES_Y * 4];
-
   // Frame Counter
   u32 total_frames = 0;
 
@@ -115,8 +112,7 @@ int main(int argc, char* argv[]) {
     }
 
     // run the NES for a frame
-    // for (int i = 0; i < 20; i++)
-      nes.step_frame();
+    nes.step_frame();
 
     if (nes.isRunning() == false) {
       // quit = true;
@@ -141,19 +137,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Update the screen texture
-
-    // lmao this looks neato
-    for (u32 x = 0; x < RES_X; x++) {
-      for (u32 y = 0; y < RES_Y; y++) {
-        const u32 offset = (RES_X * 4 * y) + x * 4;
-        pixelbuff[offset + 0] = (sin(frame_start_time / 1000.0) + 1) * 126; // b
-        pixelbuff[offset + 1] = (y / float(RES_Y)) * RES_X; // g
-        pixelbuff[offset + 2] = (x / float(RES_X)) * RES_X; // r
-        pixelbuff[offset + 3] = SDL_ALPHA_OPAQUE;  // a
-      }
-    }
-
-    SDL_UpdateTexture(texture, nullptr, pixelbuff, RES_X * 4);
+    SDL_UpdateTexture(texture, nullptr, nes.getFrame(), RES_X * 4);
 
     // Render everything
     SDL_RenderCopy(renderer, texture, nullptr, &screen);

@@ -59,11 +59,14 @@ On Windows, make sure the executable can find SDL2.dll.
     - [x] Official Opcodes Implemented
     - [x] Handle Interrupts
   - [ ] PPU
+    - [x] Set Up Basic Rendering Context (SDL)
     - [x] Set Up Memory Map
-    - [ ] Set Up Basic Rendering Context (SDL)
-    - TBD
+    - [ ] Core rendering loop
+      - ...
+    - [ ] Implement DMA
+    - ...
   - [ ] APU
-    - TBD
+    - ...
 
 - Ongoing Tasks
   - Pass more tests (i.e: Accuracy)
@@ -82,7 +85,11 @@ On Windows, make sure the executable can find SDL2.dll.
     - [ ] 005
     - [ ] 006
     - ...
-  - Add `const` throughout the codebase?
+  - Cleanup
+    - [ ] Get SDL out of the main function!
+    - [ ] Unify method naming (either camelCase or snake_case)
+    - [ ] Be more explicit with copy / move ctors
+    - [ ] Add `const` throughout the codebase (?)
   - Better cmake scripts
 
 - Fun Bonuses
@@ -96,3 +103,4 @@ On Windows, make sure the executable can find SDL2.dll.
         chosen
   - [ ] LibRetro support
   - [ ] Add support for more ROM formats (not just iNES)
+  - [ ] Propert handling of PAL
