@@ -1,8 +1,8 @@
 //
 // Portable Bitfield implementation
-//
-// Taken wholesale from
 // http://blog.codef00.com/2014/12/06/portable-bitfields-using-c11/
+//
+// Slightly modified by Daniel Prilik
 //
 
 #ifndef BITFIELD_H_
@@ -73,7 +73,7 @@ public:
         return *this;
     }
 
-    explicit operator bool() const { return value_ & (Mask << Index); }
+    operator T() const { return value_ & (Mask << Index); }
 
 private:
     T value_;

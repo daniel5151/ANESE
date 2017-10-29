@@ -250,7 +250,7 @@ u8 CPU::step() {
               } break;
     // Fuck ADC
     case ADC: { u8  val = this->mem.read(addr);
-                u16 sum = this->reg.a + val + !!this->reg.p.c;
+                u16 sum = this->reg.a + val + this->reg.p.c;
                 this->reg.p.c = sum > 0xFF;
                 this->reg.p.z = u8(sum) == 0;
                 // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
@@ -262,7 +262,7 @@ u8 CPU::step() {
               } break;
     // Fuck SBC
     case SBC: { u8  val = this->mem.read(addr);
-                u16 sum = this->reg.a + ~val + !!this->reg.p.c;
+                u16 sum = this->reg.a + ~val + this->reg.p.c;
                 this->reg.p.c = !(sum > 0xFF);
                 this->reg.p.z = u8(sum) == 0;
                 // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
@@ -346,13 +346,13 @@ u8 CPU::step() {
               } break;
     case ROR: { if (opcode.addrm == Instructions::AddrM::acc) {
                   bool old_bit_0 = nth_bit(this->reg.a, 0);
-                  this->reg.a = (this->reg.a >> 1) | (!!this->reg.p.c << 7);
+                  this->reg.a = (this->reg.a >> 1) | (this->reg.p.c << 7);
                   this->reg.p.c = old_bit_0;
                   set_zn(this->reg.a);
                 } else {
                   u8 val = this->mem.read(addr);
                   bool old_bit_0 = nth_bit(val, 0);
-                  val = (val >> 1) | (!!this->reg.p.c << 7);
+                  val = (val >> 1) | (this->reg.p.c << 7);
                   this->reg.p.c = old_bit_0;
                   set_zn(val);
                   this->mem.write(addr, val);
@@ -360,13 +360,13 @@ u8 CPU::step() {
               } break;
     case ROL: { if (opcode.addrm == Instructions::AddrM::acc) {
                   bool old_bit_0 = nth_bit(this->reg.a, 7);
-                  this->reg.a = (this->reg.a << 1) | !!this->reg.p.c;
+                  this->reg.a = (this->reg.a << 1) | this->reg.p.c;
                   this->reg.p.c = old_bit_0;
                   set_zn(this->reg.a);
                 } else {
                   u8 val = this->mem.read(addr);
                   bool old_bit_0 = nth_bit(val, 7);
-                  val = (val << 1) | !!this->reg.p.c;
+                  val = (val << 1) | this->reg.p.c;
                   this->reg.p.c = old_bit_0;
                   set_zn(val);
                   this->mem.write(addr, val);
