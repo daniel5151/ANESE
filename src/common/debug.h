@@ -11,7 +11,7 @@
 #include "util.h"
 
 // Void Memory Singleton
-// Returns 0 on read
+// Returns 0x00 on read
 // No effect on write
 class Void_Memory : public Memory {
 private:
@@ -19,14 +19,16 @@ private:
 
 public:
   // <Memory>
-  u8 read(u16 addr)       override { (void)addr; return 0; };
-  u8 peek(u16 addr) const override { (void)addr; return 0; };
+  u8 read(u16 addr)       override { (void)addr; return 0x00; };
+  u8 peek(u16 addr) const override { (void)addr; return 0x00; };
   void write(u16 addr, u8 val) override { (void)addr; (void)val; };
   // <Memory/>
 
   static Void_Memory* Get() {
-    static Void_Memory the_void;
-    return &the_void;
+    static Void_Memory* the_void = nullptr;
+
+    if (!the_void) the_void = new Void_Memory ();
+    return the_void;
   }
 };
 

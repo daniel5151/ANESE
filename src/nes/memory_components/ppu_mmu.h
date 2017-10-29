@@ -24,7 +24,7 @@ private:
   u16 nt_3;
 
 public:
-  // No Destructor, since no owned resources
+  ~PPU_MMU() = default; // no owned resources
   PPU_MMU(
     Memory& ciram,
     Memory& pram,

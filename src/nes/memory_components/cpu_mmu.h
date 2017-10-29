@@ -19,7 +19,7 @@ private:
   // ROM is subject to change
   Cartridge* rom;
 public:
-  // No Destructor, since no owned resources
+  ~CPU_MMU() = default; // no owned resources
   CPU_MMU(
     Memory& ram,
     Memory& ppu,

@@ -9,7 +9,7 @@ public:
   virtual u8 read(u16 addr) = 0;
   virtual void write(u16 addr, u8 val) = 0;
 
-  // Derived memory access methods
+  // ---- Derived memory access methods ---- //
 
   u16 peek16(u16 addr) const {
     return this->peek(addr + 0) |
@@ -33,5 +33,4 @@ public:
     this->write(addr + 0, val);
     this->write(addr + 1, val);
   }
-
 };

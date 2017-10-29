@@ -39,6 +39,7 @@ NES::NES() {
   this->cpu = new CPU (*this->cpu_mmu);
 
   /*----------  Emulator Vars  ----------*/
+
   this->is_running = false;
 }
 
