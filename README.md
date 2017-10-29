@@ -52,6 +52,7 @@ On Windows, make sure the executable can find SDL2.dll.
   - [x] Create Cartridges (iNES + Mapper interface)
   - [x] CPU
     - [x] Set Up Memory Map
+    - [x] Hardware Structures (registers)
     - [x] Core Loop / Basic Functionality
       - [x] Read / Write RAM
       - [x] Addressing Modes
@@ -61,9 +62,14 @@ On Windows, make sure the executable can find SDL2.dll.
   - [ ] PPU
     - [x] Set Up Basic Rendering Context (SDL)
     - [x] Set Up Memory Map
+    - [ ] Hardware Structures
+      - [x] Framebuffer
+      - [x] Registers
+        - [ ] Map to memory
+      - ...
+    - [x] Implement DMA
     - [ ] Core rendering loop
       - ...
-    - [ ] Implement DMA
     - ...
   - [ ] APU
     - ...

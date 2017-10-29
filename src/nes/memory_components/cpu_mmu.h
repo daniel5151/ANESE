@@ -14,7 +14,6 @@ private:
   Memory& ram;
   Memory& ppu;
   Memory& apu;
-  Memory& dma;
   Memory& joy;
 
   // ROM is subject to change
@@ -25,7 +24,6 @@ public:
     Memory& ram,
     Memory& ppu,
     Memory& apu,
-    Memory& dma,
     Memory& joy,
 
     Cartridge* rom

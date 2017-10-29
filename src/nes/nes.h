@@ -4,9 +4,10 @@
 #include "common/components/ram/ram.h"
 #include "common/util.h"
 #include "cpu/cpu.h"
-#include "cpu/cpu_mmu.h"
 #include "ppu/ppu.h"
-#include "ppu/ppu_mmu.h"
+#include "memory_components/cpu_mmu.h"
+#include "memory_components/dma.h"
+#include "memory_components/ppu_mmu.h"
 
 // Core NES class.
 // - Owns all NES core resources (but NOT the cartridge)
@@ -33,17 +34,18 @@ private:
   RAM* cpu_wram; // 2k CPU general purpose Work RAM
   RAM* ppu_vram; // 2k PPU nametable VRAM
   RAM* ppu_pram; // 32 bytes PPU palette RAM
+  RAM* ppu_oam;  // 256 bytes PPU Object Attribute Memory (OAM)
 
   // Joypads
   // JOY* joy;
 
   /*-----------  Static Resources  ------------*/
-  // Fixed, non-stateful "wiring"
+  // Fixed, non-stateful compnents
 
   CPU_MMU* cpu_mmu;
   PPU_MMU* ppu_mmu;
 
-  // DMA* dma;
+  DMA* dma;
 
   /*=====================================
   =            Emulator Vars            =

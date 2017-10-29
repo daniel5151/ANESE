@@ -1,6 +1,5 @@
 #include "nes.h"
 
-#include "cpu/cpu_mmu.h"
 #include "common/debug.h"
 
 // The constructor creates the individual NES components, and "wires them up"
@@ -10,35 +9,34 @@ NES::NES() {
   this->cart = nullptr;
 
   // Create RAM modules
-  this->cpu_wram   = new RAM (0x800);
-  this->ppu_pram  = new RAM (32);
+  this->cpu_wram = new RAM (0x800);
   this->ppu_vram = new RAM (0x800);
+  this->ppu_pram = new RAM (32);
+  this->ppu_oam  = new RAM (256);
 
-  // Create DMA
-  // this->dma = new DMA (this->cpu_wram, this->ppu_ram);
+  // Create DMA component
+  this->dma = new DMA (*this->cpu_wram, *this->ppu_oam);
 
   // Create Joypads
   // JOY* joy;
 
-  // Create MMUs
-  this->cpu_mmu = new CPU_MMU(
-    /* ram */ *this->cpu_wram,
-    /* ppu */ *Void_Memory::Get(),
-    /* apu */ *Void_Memory::Get(),
-    /* dma */ *Void_Memory::Get(),
-    /* joy */ *Void_Memory::Get(),
-    /* rom */  this->cart
-  );
-
+  // Create PPU
   this->ppu_mmu = new PPU_MMU(
     /* vram */ *this->ppu_vram,
     /* pram */ *this->ppu_pram,
     /* rom  */  this->cart
   );
+  this->ppu = new PPU (*this->ppu_mmu, *this->ppu_oam, *this->dma);
 
-  // Create Processors
+  // Create CPU
+  this->cpu_mmu = new CPU_MMU(
+    /* ram */ *this->cpu_wram,
+    /* ppu */ *this->ppu,
+    /* apu */ *Void_Memory::Get(),
+    /* joy */ *Void_Memory::Get(),
+    /* rom */  this->cart
+  );
   this->cpu = new CPU (*this->cpu_mmu);
-  this->ppu = new PPU (*this->ppu_mmu);
 
   /*----------  Emulator Vars  ----------*/
   this->is_running = false;
@@ -47,15 +45,15 @@ NES::NES() {
 NES::~NES() {
   // Don't delete Cartridge! It's not owned by NES!
 
-  delete this->cpu;
-  delete this->ppu;
-
   delete this->cpu_mmu;
+  delete this->cpu;
+
   delete this->ppu_mmu;
+  delete this->ppu;
 
   // delete this->joy;
 
-  // delete this->dma;
+  delete this->dma;
 
   delete this->cpu_wram;
   delete this->ppu_pram;
@@ -120,6 +118,5 @@ void NES::step_frame() {
 }
 
 const u8* NES::getFrame() const { return this->ppu->getFrame(); }
-
 
 bool NES::isRunning() const { return this->is_running; }
