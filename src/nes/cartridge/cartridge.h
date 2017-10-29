@@ -8,9 +8,17 @@
 
 // Contains Mapper and iNES cartridge
 class Cartridge final : public Memory {
+public:
+  enum class Mirroring {
+    Vertical,
+    Horizontal,
+    FourScreen
+  };
 private:
   const INES*   const rom_data; // ROM file data does not change
         Mapper* const mapper;
+
+  Mirroring mirroring_type;
 
 public:
   ~Cartridge();
@@ -24,7 +32,7 @@ public:
 
   bool isValid() const;
 
-  PPU::Mirroring mirroring() const; // get nametable mirroring type
+  Mirroring mirroring() const; // get nametable mirroring type
 
   // Critical importance
   void blowOnContacts() const;

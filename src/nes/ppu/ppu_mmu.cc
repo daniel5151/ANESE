@@ -69,21 +69,21 @@ void PPU_MMU::addCartridge(Cartridge* cart) {
   this->rom = cart;
 
   switch(cart->mirroring()) {
-  case PPU::Mirroring::Vertical:
+  case Cartridge::Mirroring::Vertical:
     this->vram = &this->ciram;
     this->nt_0 = 0x000; // 0x2000 -> 0x2000
     this->nt_1 = 0x000; // 0x2400 -> 0x2400
     this->nt_2 = 0x800; // 0x2800 -> 0x2000
     this->nt_3 = 0x800; // 0x2C00 -> 0x2400
     break;
-  case PPU::Mirroring::Horizontal:
+  case Cartridge::Mirroring::Horizontal:
     this->vram = &this->ciram;
     this->nt_0 = 0x000; // 0x2000 -> 0x2000
     this->nt_1 = 0x400; // 0x2400 -> 0x2000
     this->nt_2 = 0x400; // 0x2800 -> 0x2400
     this->nt_3 = 0x800; // 0x2C00 -> 0x2400
     break;
-  case PPU::Mirroring::FourScreen:
+  case Cartridge::Mirroring::FourScreen:
     this->vram = this->rom; // use ROM instead of internal VRAM
     this->nt_0 = 0x000; // 0x2000 -> 0x2000
     this->nt_1 = 0x000; // 0x2400 -> 0x2400

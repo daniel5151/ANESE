@@ -5,13 +5,6 @@
 #include "common/bitfield.h"
 
 class PPU {
-public:
-  enum class Mirroring {
-    Vertical,
-    Horizontal,
-    FourScreen
-  };
-
 private:
   Memory& mem;
 

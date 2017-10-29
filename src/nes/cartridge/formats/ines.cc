@@ -40,18 +40,10 @@ INES::INES(const u8* data, u32 data_len) {
   // B: has_battery
   // M: mirror_type (0 = horizontal, 1 = vertical)
 
+  this->flags.has_4screen = nth_bit(data[5], 3);
   this->flags.has_trainer = nth_bit(data[5], 2);
   this->flags.has_battery = nth_bit(data[5], 1);
-
-  if (nth_bit(data[5], 3) == true) {
-    this->flags.mirror_type = PPU::Mirroring::FourScreen;
-  }
-  else if (nth_bit(data[5], 0) == true) {
-    this->flags.mirror_type = PPU::Mirroring::Vertical;
-  }
-  else {
-    this->flags.mirror_type = PPU::Mirroring::Horizontal;
-  }
+  this->flags.mirror_type = nth_bit(data[5], 0);
 
   // 7       0
   // ---------
@@ -91,13 +83,15 @@ INES::INES(const u8* data, u32 data_len) {
     this->roms.trn_rom = nullptr;
   }
 
+  this->roms.prg_roms = new ROM* [this->flags.prg_rom_pages];
   for (uint i = 0; i < this->flags.prg_rom_pages; i++) {
-    this->roms.prg_roms.push_back(new ROM (0x4000, data_p));
+    this->roms.prg_roms[i] = new ROM (0x4000, data_p);
     data_p += 0x4000;
   }
 
+  this->roms.chr_roms = new ROM* [this->flags.chr_rom_pages];
   for (uint i = 0; i < this->flags.chr_rom_pages; i++) {
-    this->roms.chr_roms.push_back(new ROM (0x2000, data_p));
+    this->roms.chr_roms[i] = new ROM (0x2000, data_p);
     data_p += 0x2000;
   }
 
@@ -112,8 +106,13 @@ INES::INES(const u8* data, u32 data_len) {
 }
 
 INES::~INES() {
-  for (ROM* rom : this->roms.prg_roms) delete rom;
-  for (ROM* rom : this->roms.chr_roms) delete rom;
+  for (uint i = 0; i < this->flags.prg_rom_pages; i++)
+    delete this->roms.prg_roms[i];
+  delete[] this->roms.prg_roms;
+
+  for (uint i = 0; i < this->flags.chr_rom_pages; i++)
+    delete this->roms.chr_roms[i];
+  delete[] this->roms.chr_roms;
 
   delete this->roms.trn_rom;
   delete this->roms.pci_rom;

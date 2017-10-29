@@ -2,9 +2,6 @@
 
 #include "common/components/rom/rom.h"
 #include "common/util.h"
-#include "nes/ppu/ppu.h"
-
-#include <vector>
 
 // iNES file container
 // https://wiki.nesdev.com/w/index.php/INES
@@ -16,8 +13,8 @@ public:
 
   // ROMs
   struct {
-    std::vector<ROM*> prg_roms; // PRG ROM banks (16K each)
-    std::vector<ROM*> chr_roms; // CHR ROM banks (8k each)
+    ROM** prg_roms; // array of PRG ROM banks (16K each)
+    ROM** chr_roms; // array of CHR ROM banks (8k each)
 
     ROM* trn_rom; // start of Trainer
     ROM* pci_rom; // start of PlayChoice INST-ROM
@@ -28,10 +25,10 @@ public:
     u8 prg_rom_pages; // Num 16K program ROM pages
     u8 chr_rom_pages; // Num 8K character ROM pages (0 indicates CHR RAM)
 
-    PPU::Mirroring mirror_type; // Nametable Mirroring mode
-
+    bool has_4screen; // Nametable mirroring is FourScreen
     bool has_trainer; // Has 512 byte trainer at 0x7000 - 0x71FF
     bool has_battery; // Has battery backed SRAM at 0x6000 - 0x7FFF
+    bool mirror_type; // Nametable mirroring mode (0 = horizontal, 1 = vertical)
 
     bool is_PC10; // is a PC-10 Game
     bool is_VS;   // is a VS. Game
