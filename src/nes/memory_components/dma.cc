@@ -1,6 +1,7 @@
 #include "dma.h"
 
 #include <cassert>
+#include <cstdio>
 
 DMA::DMA(Memory& cpu_wram, Memory& ppu_oam)
 : cpu_wram(cpu_wram),
@@ -8,8 +9,22 @@ DMA::DMA(Memory& cpu_wram, Memory& ppu_oam)
 {}
 
 // Reading from DMA is not a valid operation...
-u8 DMA::read(u16 addr)       { assert(addr == 0x4014); (void)addr; return 0x0; }
-u8 DMA::peek(u16 addr) const { assert(addr == 0x4014); (void)addr; return 0x0; }
+u8 DMA::read(u16 addr)       {
+  assert(addr == 0x4014);
+  fprintf(stderr, "[DMA] Why is DMA being read?\n");
+  return 0x0;
+}
+u8 DMA::peek(u16 addr) const {
+  assert(addr == 0x4014);
+  fprintf(stderr, "[DMA] Why is DMA being poked?\n");
+  return 0x0;
+}
+
+// So, after reading some more about how DMA is supposed to work, I found out
+// that DMA is acutally supposed to repeatedly call OAMDATA on the PPU to do
+// the DMA...
+// This is _not_ how I do it, but tbh, I don't think it will make that much of
+// a difference, so i'm leaving it the way it is for now.
 
 void DMA::write(u16 dma_addr, u8 page) {
   assert(dma_addr == 0x4014);

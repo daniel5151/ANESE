@@ -1,6 +1,7 @@
 #include "cpu_mmu.h"
 
-#include <assert.h>
+#include <cassert>
+#include <cstdio>
 
 CPU_MMU::CPU_MMU(
   Memory& ram,
@@ -36,6 +37,7 @@ u8 CPU_MMU::read(u16 addr) {
   if (in_range(addr, 0x4017        )) return joy.read(addr);
   if (in_range(addr, 0x4018, 0xFFFF)) return rom ? rom->read(addr) : 0x0;
 
+  fprintf(stderr, "[CPU] unhandled address: 0x%04X\n", addr);
   assert(false);
   return 0;
 }
@@ -51,6 +53,7 @@ u8 CPU_MMU::peek(u16 addr) const {
   if (in_range(addr, 0x4017        )) return joy.peek(addr); // not APU
   if (in_range(addr, 0x4018, 0xFFFF)) return rom ? rom->peek(addr) : 0x0;
 
+  fprintf(stderr, "[CPU] unhandled address: 0x%04X\n", addr);
   assert(false);
   return 0;
 }
@@ -65,6 +68,7 @@ void CPU_MMU::write(u16 addr, u8 val) {
   if (in_range(addr, 0x4017        )) return apu.write(addr, val); // not JOY
   if (in_range(addr, 0x4018, 0xFFFF)) return rom ? rom->write(addr, val) : void();
 
+  fprintf(stderr, "[CPU] unhandled address: 0x%04X\n", addr);
   assert(false);
 }
 

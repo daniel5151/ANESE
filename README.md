@@ -65,9 +65,10 @@ On Windows, make sure the executable can find SDL2.dll.
     - [ ] Hardware Structures
       - [x] Framebuffer
       - [x] Registers
-        - [ ] Map to memory
+        - [x] Memory Map them
       - ...
     - [x] Implement DMA
+    - [ ] Generate NMI -> CPU
     - [ ] Core rendering loop
       - ...
     - ...
@@ -77,11 +78,14 @@ On Windows, make sure the executable can find SDL2.dll.
 - Ongoing Tasks
   - Pass more tests (i.e: Accuracy)
     - CPU
-      - [ ] Implement Unofficial Opcodes (?)
+      - [ ] Implement Unofficial Opcodes
       - [ ] Better handling of simultaneous interrupts
       - [ ] _\(Stretch\)_ Switch to cycle-based emulation (vs instruction level)
-  - Better error handling (but without c++ exceptions)
+    - PPU
+      - [ ] Make value in PPU <-> CPU bus decay
+  - Better error handling & logging
     - [ ] Remove asserts
+    - [ ] Switch to a better logging system (\*cough\* not fprintf \*cough\*)
   - Implement more Mappers
     - [x] 000
     - [ ] 001

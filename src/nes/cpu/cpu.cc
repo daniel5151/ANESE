@@ -85,7 +85,7 @@ u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
     case acc : addr = this->reg.a;                                       break;
     case impl: addr = u8(0xFACA11);/* no args! return fack all :D */     break;
     case INVALID:
-      fprintf(stderr, "Invalid Addressing Mode! Double check table!\n");
+      fprintf(stderr, "[CPU] Invalid Addressing Mode! Double check table!\n");
       return 0xBAD;
   }
 
@@ -146,7 +146,7 @@ u8 CPU::step() {
   // Lookup info about opcode
   Instructions::Opcode opcode = Instructions::Opcodes[op];
 
-  this->nestest(opcode); // print NESTEST debug info
+  // this->nestest(opcode); // print NESTEST debug info
 
   // Depending on what addrm this instruction uses, this will either be a u8
   // or a u16. Thus, we use a u16 to get the value from the fn, and let
@@ -383,7 +383,7 @@ u8 CPU::step() {
                 this->mem.write(addr, val);
               } break;
     default:
-      fprintf(stderr, "Unimplemented Instruction!\n");
+      fprintf(stderr, "[CPU] Unimplemented Instruction!\n");
       this->state = CPU::State::Halted;
       break;
   }

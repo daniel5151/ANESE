@@ -4,6 +4,20 @@
 #include "common/interfaces/memory.h"
 #include "common/bitfield.h"
 
+namespace PPURegisters {
+  enum Reg {
+    PPUCTRL   = 0x2000,
+    PPUMASK   = 0x2001,
+    PPUSTATUS = 0x2002,
+    OAMADDR   = 0x2003,
+    OAMDATA   = 0x2004,
+    PPUSCROLL = 0x2005,
+    PPUADDR   = 0x2006,
+    PPUDATA   = 0x2007,
+    OAMDMA    = 0x4014,
+  };
+} // PPURegisters
+
 // http://wiki.nesdev.com/w/index.php/PPU_programmer_reference
 class PPU final : public Memory {
 private:
@@ -28,8 +42,20 @@ private:
   Memory& mem; // PPU 16 bit address space (should be wired to ppu_mmu)
   Memory& oam; // PPU Object Attribute Memory
 
-  struct {
-    union {       // PPUCTRL   - 0x2000 - PPU control register
+  u8 cpu_data_bus; // PPU <-> CPU data bus (filled on any register write)
+
+  bool latch; // Controls which byte to write to in PPUADDR and PPUSCROLL
+              // 0 = write to hi, 1 = write to lo
+
+
+  struct { // Registers
+    // ------ Internal Registers ------- //
+
+    u8 ppudata_read_buffer;
+
+    // ---- Memory Mapped Registers ---- //
+
+    union {     // PPUCTRL   - 0x2000 - PPU control register
       u8 raw;
       BitField<7> V; // NMI enable
       BitField<6> P; // PPU master/slave
@@ -39,7 +65,8 @@ private:
       BitField<2> I; // increment mode
       BitField<0, 2> N; // nametable select
     } ppuctrl;
-    union {       // PPUMASK   - 0x2001 - PPU mask register
+
+    union {     // PPUMASK   - 0x2001 - PPU mask register
       u8 raw;
       BitField<7> B; // color emphasis Blue
       BitField<6> G; // color emphasis Green
@@ -50,7 +77,8 @@ private:
       BitField<1> m; // background left column enable
       BitField<0> g; // greyscale
     } ppumask;
-    union {       // PPUSTATUS - 0x2002 - PPU status register
+
+    union {     // PPUSTATUS - 0x2002 - PPU status register
       u8 raw;
       BitField<7> V; // vblank
       BitField<6> S; // sprite 0 hit
@@ -58,23 +86,22 @@ private:
       // the rest are irrelevant
     } ppustatus;
 
-    u8 oamaddr;   // OAMADDR   - 0x2003 - OAM address port
-    u8 oamdata;   // OAMDATA   - 0x2004 - OAM data port
-    struct {      // PPUSCROLL - 0x2005 - PPU scrolling position register
-      bool write_to; // 0 = write to x, 1 = write to y
-      u8 x;
-      u8 y;
+    u8 oamaddr; // OAMADDR   - 0x2003 - OAM address port
+    u8 oamdata; // OAMDATA   - 0x2004 - OAM data port
+
+    union {     // PPUSCROLL - 0x2005 - PPU scrolling position register
+      u16 val;
+      BitField<8, 8> x;
+      BitField<0, 8> y;
     } ppuscroll;
 
-    struct {      // PPUADDR   - 0x2006 - PPU VRAM address register
-      bool write_to; // o = write to hi, 1 = write to lo
-      union {
-        u16 val;            // 16 bit address
-        BitField<8, 8> hi;  // hi byte of addr
-        BitField<0, 8> lo;  // lo byte of addr
-      } addr;
+    union {     // PPUADDR   - 0x2006 - PPU VRAM address register
+      u16 val;            // 16 bit address
+      BitField<8, 8> hi;  // hi byte of addr
+      BitField<0, 8> lo;  // lo byte of addr
     } ppuaddr;
-    u8 ppudata;   // PPUDATA   - 0x2007 - PPU VRAM data port
+
+    u8 ppudata; // PPUDATA   - 0x2007 - PPU VRAM data port
   } reg;
 
   // What about OAMDMA - 0x4014 - PPU DMA register?
