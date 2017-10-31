@@ -4,6 +4,8 @@
 #include "common/interfaces/memory.h"
 #include "common/bitfield.h"
 
+#include "nes/memory_components/dma.h"
+
 namespace PPURegisters {
   enum Reg {
     PPUCTRL   = 0x2000,
@@ -35,7 +37,7 @@ private:
   } scan;
 
   // CPU WRAM -> PPU OAM Direct Memory Access (DMA) Unit
-  Memory& dma;
+  DMA& dma;
 
   /*-----------  Hardware  -----------*/
 
@@ -120,7 +122,7 @@ private:
 
 public:
   ~PPU();
-  PPU(Memory& mem, Memory& oam, Memory& dma);
+  PPU(Memory& mem, Memory& oam, DMA& dma);
 
   // <Memory>
   u8 read(u16 addr) override;

@@ -4,7 +4,7 @@
 #include <cstdio>
 
 PPU::~PPU() {}
-PPU::PPU(Memory& mem, Memory& oam, Memory& dma)
+PPU::PPU(Memory& mem, Memory& oam, DMA& dma)
 : dma(dma),
   mem(mem),
   oam(oam)
@@ -99,7 +99,11 @@ u8 PPU::read(u16 addr) {
                     if (this->reg.ppuctrl.I == 0) this->reg.ppuaddr.val += 1;
                     if (this->reg.ppuctrl.I == 1) this->reg.ppuaddr.val += 32;
                   } break;
-  case OAMDMA:    { retval = this->dma[addr];
+  case OAMDMA:    { // This is not a valid operation...
+                    // And it's not like this would return the cpu_data_bus val
+                    // So, uh, screw it, just return 0 I guess?
+                    fprintf(stderr, "[DMA] Reading DMA is undefined!\n");
+                    retval = 0x00;
                   } break;
   default:        { retval = this->cpu_data_bus;
                     fprintf(stderr,
@@ -132,7 +136,11 @@ u8 PPU::peek(u16 addr) const {
                       retval = this->mem.peek(this->reg.ppuaddr.val % 0x4000);
                     }
                   } break;
-  case OAMDMA:    { retval = this->dma.peek(addr);
+  case OAMDMA:    { // This is not a valid operation...
+                    // And it's not like this would return the cpu_data_bus val
+                    // So, uh, screw it, just return 0 I guess?
+                    fprintf(stderr, "[DMA] Peeking DMA is undefined!\n");
+                    retval = 0x00;
                   } break;
   default:        { retval = this->cpu_data_bus;
                     fprintf(stderr,
@@ -190,13 +198,16 @@ void PPU::write(u16 addr, u8 val) {
                     if (mode == 0) this->reg.ppuaddr.val += 1;
                     if (mode == 1) this->reg.ppuaddr.val += 32;
                   } return;
-  case OAMDMA:    { this->dma[addr] = val;
-                    // DMA takes 513 / 514 CPU cycles (+1 cycle if starting on
-                    // an odd CPU cycle)
-                    // The CPU doesn't do anything at that time, but the PPU
-                    // still runs!
-                    uint dma_cycles = 513 + ((this->cycles / 3) % 2);
-                    for (uint i = 0; i < dma_cycles; i++) this->cycle();
+  case OAMDMA:    { // The CPU is paused during DMA, but the PPU is not!
+                    // DMA takes 513 / 514 CPU cycles:
+                    // 1 dummy cycle
+                    this->cycle();
+                    // +1 cycle if starting on odd CPU cycle
+                    if ((this->cycles / 3) % 2)
+                      this->cycle();
+                    // 512 cycles of reading & writing
+                    this->dma.start(val);
+                    while (this->dma.isActive()) this->cycle();
                   } return;
   default:        { fprintf(stderr,
                       "[PPU] Writing to a Read-Only register: 0x%04X\n <- 0x%02X",
