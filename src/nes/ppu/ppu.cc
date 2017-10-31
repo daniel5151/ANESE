@@ -75,7 +75,7 @@ u8 PPU::read(u16 addr) {
                     this->reg.ppustatus.V = false;
                     this->latch = false;
                   } break;
-  case OAMDATA:   { retval = this->oam.read(this->reg.oamaddr++);
+  case OAMDATA:   { retval = this->oam[this->reg.oamaddr++];
                   } break;
   case PPUDATA:   { // PPUDATA read buffer (post-fetch) logic
                     if (this->reg.ppuaddr.val <= 0x3EFF) {
@@ -83,15 +83,15 @@ u8 PPU::read(u16 addr) {
                       // retval = from internal buffer
                       retval = this->reg.ppudata_read_buffer;
                       // Fill read buffer with acutal data
-                      u8 val = this->mem.read(this->reg.ppuaddr.val % 0x4000);
+                      u8 val = this->mem[this->reg.ppuaddr.val % 0x4000];
                       this->reg.ppudata_read_buffer = val;
                     } else {
                       // Reading Pallete
                       // retval = directly from memory
-                      retval = this->mem.read(this->reg.ppuaddr.val % 0x4000);
+                      retval = this->mem[this->reg.ppuaddr.val % 0x4000];
                       // Fill read buffer with the mirrored nametable data
                       // Why? Because the wiki said so!
-                      u8 val = this->mem.read(this->reg.ppuaddr.val % 0x2000);
+                      u8 val = this->mem[this->reg.ppuaddr.val % 0x2000];
                       this->reg.ppudata_read_buffer = val;
                     }
 
@@ -99,7 +99,7 @@ u8 PPU::read(u16 addr) {
                     if (this->reg.ppuctrl.I == 0) this->reg.ppuaddr.val += 1;
                     if (this->reg.ppuctrl.I == 1) this->reg.ppuaddr.val += 32;
                   } break;
-  case OAMDMA:    { retval = this->dma.read(addr);
+  case OAMDMA:    { retval = this->dma[addr];
                   } break;
   default:        { retval = this->cpu_data_bus;
                     fprintf(stderr,
@@ -173,7 +173,7 @@ void PPU::write(u16 addr, u8 val) {
                   } return;
   case OAMADDR:   { this->reg.oamaddr = val;
                   } return;
-  case OAMDATA:   { this->oam.write(this->reg.oamaddr++, val);
+  case OAMDATA:   { this->oam[this->reg.oamaddr++] = val;
                   } return;
   case PPUSCROLL: { if (this->latch == 0) this->reg.ppuscroll.x = val;
                     if (this->latch == 1) this->reg.ppuscroll.y = val;
@@ -184,13 +184,13 @@ void PPU::write(u16 addr, u8 val) {
                     this->latch = !this->latch;
                   } return;
   case PPUDATA:   { u16 addr = this->reg.ppuaddr.val % 0x4000;
-                    this->mem.write(addr, val);
+                    this->mem[addr] = val;
                     // (0: add 1, going across; 1: add 32, going down)
                     bool mode = this->reg.ppuctrl.I;
                     if (mode == 0) this->reg.ppuaddr.val += 1;
                     if (mode == 1) this->reg.ppuaddr.val += 32;
                   } return;
-  case OAMDMA:    { this->dma.write(addr, val);
+  case OAMDMA:    { this->dma[addr] = val;
                     // DMA takes 513 / 514 CPU cycles (+1 cycle if starting on
                     // an odd CPU cycle)
                     // The CPU doesn't do anything at that time, but the PPU

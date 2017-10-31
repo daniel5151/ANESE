@@ -76,6 +76,13 @@ On Windows, make sure the executable can find SDL2.dll.
     - ...
 
 - Ongoing Tasks
+  - Better Usability
+    - [ ] Menus
+      - [ ] Loading Files
+      - [ ] Run / Pause / Stop
+      - [ ] Remap controls
+    - [ ] Config File
+    - [ ] Running NESTEST (behind a flag)
   - Pass more tests (i.e: Accuracy)
     - CPU
       - [ ] Implement Unofficial Opcodes
@@ -113,4 +120,4 @@ On Windows, make sure the executable can find SDL2.dll.
         chosen
   - [ ] LibRetro support
   - [ ] Add support for more ROM formats (not just iNES)
-  - [ ] Propert handling of PAL
+  - [ ] Proper handling of PAL

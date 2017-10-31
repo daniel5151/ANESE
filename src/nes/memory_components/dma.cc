@@ -21,7 +21,7 @@ u8 DMA::peek(u16 addr) const {
 }
 
 // So, after reading some more about how DMA is supposed to work, I found out
-// that DMA is acutally supposed to repeatedly call OAMDATA on the PPU to do
+// that DMA is actually supposed to repeatedly call OAMDATA on the PPU to do
 // the DMA...
 // This is _not_ how I do it, but tbh, I don't think it will make that much of
 // a difference, so i'm leaving it the way it is for now.
@@ -30,8 +30,8 @@ void DMA::write(u16 dma_addr, u8 page) {
   assert(dma_addr == 0x4014);
   for (u16 addr = 0; addr <= 256; addr++) {
     // Read value from CPU WRAM
-    u8 cpu_val = this->cpu_wram.read((u16(page) << 8) + addr);
+    u8 cpu_val = this->cpu_wram[(u16(page) << 8) + addr];
     // And dump it into the PPU OAM
-    this->ppu_oam.write(addr, cpu_val);
+    this->ppu_oam[addr] = cpu_val;
   }
 }
