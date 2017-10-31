@@ -5,8 +5,6 @@
 
 #include "instructions.h"
 
-// #define NESTEST
-
 /*-----------------------------  Public Methods  -----------------------------*/
 
 CPU::~CPU() {}

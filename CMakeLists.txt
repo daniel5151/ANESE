@@ -20,6 +20,11 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   endif()
 endif()
 
+option(NESTEST "Move intial PC to 0xC000 for NESTEST" OFF)
+if (NESTEST)
+  add_definitions(-DNESTEST)
+endif()
+
 # since there is no standard install directory for sdl2 on windows, change this
 # variable to suit your needs
 set(SDL2_MORE_INCLUDE_DIR "C:/sdl2")
