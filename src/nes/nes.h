@@ -1,7 +1,7 @@
 #pragma once
 
 #include "cartridge/cartridge.h"
-#include "common/components/ram/ram.h"
+#include "nes/generic/ram/ram.h"
 #include "common/util.h"
 #include "cpu/cpu.h"
 #include "ppu/ppu.h"

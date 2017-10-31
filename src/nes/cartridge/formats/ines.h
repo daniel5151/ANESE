@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/components/rom/rom.h"
+#include "nes/generic/rom/rom.h"
 #include "common/util.h"
 
 // iNES file container

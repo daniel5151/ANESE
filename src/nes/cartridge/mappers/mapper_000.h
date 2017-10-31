@@ -1,6 +1,7 @@
 #pragma once
 
-#include "common/components/ram/ram.h"
+#include "nes/generic/ram/ram.h"
+#include "nes/generic/rom/rom.h"
 #include "common/util.h"
 #include "mapper.h"
 
