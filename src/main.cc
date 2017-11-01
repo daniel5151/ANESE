@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Create a NES
-  NES nes = NES ();
+  NES nes;
 
   // Slap in a cartridge
   // (don't forget to blow on it)

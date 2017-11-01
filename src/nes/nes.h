@@ -54,8 +54,12 @@ private:
   bool is_running;
 
 public:
-  NES();
   ~NES();
+  NES();
+
+  // Until I am at a point where I can serialize the state of the NES, i'm
+  // disallowing copying NES instances
+  NES(const NES&) = delete;
 
   bool loadCartridge(Cartridge* cart);
   void removeCartridge();

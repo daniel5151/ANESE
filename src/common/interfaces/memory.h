@@ -51,12 +51,11 @@ public:
   // calls to Memory::read and Memory::write instead!
 
   class       ref; // allows .read and .write
-  class const_ref; // only .peek
+  class const_ref; // allows .peek
 
-        ref operator[](u16 addr)       { return ref(this, addr);       }
+        ref operator[](u16 addr)       { return       ref(this, addr); }
   const_ref operator[](u16 addr) const { return const_ref(this, addr); }
 
-  // This is for
   class ref {
   private:
     friend class Memory;
@@ -66,10 +65,9 @@ public:
 
     // Should not be initialized by client code
     ref(Memory* self, u16 addr) : self(self), addr(addr) {};
+    ref(const ref&) = default;
 
   public:
-    ~ref() = default;
-
     // Read
     operator u8() const { return self->read(addr); }
 
@@ -87,15 +85,14 @@ public:
 
     // Should not be initialized by client code
     const_ref(const Memory* self, u16 addr) : self(self), addr(addr) {};
+    const_ref(const const_ref&) = default;
 
   public:
-    ~const_ref() = default;
-
     // Peek
     operator u8() const { return self->peek(addr); }
 
-    // Disallow all write operations
-    template <typename T>
-    const_ref& operator= (const T&) = delete;
+    template <typename whateverT>
+    const_ref& operator= (const whateverT&) = delete; // can't write to const Memory!
+    const_ref& operator= (const const_ref&) = delete; // can't write to const Memory!
   };
 };
