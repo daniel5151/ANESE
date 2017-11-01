@@ -23,8 +23,7 @@ NES::NES() {
   // Create PPU
   this->ppu_mmu = new PPU_MMU(
     /* vram */ *this->ppu_vram,
-    /* pram */ *this->ppu_pram,
-    /* rom  */  this->cart
+    /* pram */ *this->ppu_pram
   );
   this->ppu = new PPU (*this->ppu_mmu, *this->ppu_oam, *this->dma);
 
@@ -33,8 +32,7 @@ NES::NES() {
     /* ram */ *this->cpu_wram,
     /* ppu */ *this->ppu,
     /* apu */ *Void_Memory::Get(),
-    /* joy */ *Void_Memory::Get(),
-    /* rom */  this->cart
+    /* joy */ *Void_Memory::Get()
   );
   this->cpu = new CPU (*this->cpu_mmu);
 
@@ -62,15 +60,22 @@ NES::~NES() {
 }
 
 bool NES::loadCartridge(Cartridge* cart) {
-  if (cart->isValid() == false)
+  if (cart == nullptr || cart->isValid() == false)
     return false;
 
   this->cart = cart;
 
-  this->cpu_mmu->addCartridge(this->cart);
-  this->ppu_mmu->addCartridge(this->cart);
+  this->cpu_mmu->loadCartridge(this->cart);
+  this->ppu_mmu->loadCartridge(this->cart);
 
   return true;
+}
+
+void NES::removeCartridge() {
+  this->cart = nullptr;
+
+  this->cpu_mmu->removeCartridge();
+  this->ppu_mmu->removeCartridge();
 }
 
 // Power Cycling initializes all the components to their "power on" state
@@ -99,7 +104,7 @@ void NES::cycle() {
   if (this->is_running == false) return;
 
   // Execute a CPU instruction
-  u8 cpu_cycles = this->cpu->step();
+  uint cpu_cycles = this->cpu->step();
 
   // Run the PPU 3x for every cpu_cycle it took
   for (uint i = 0; i < cpu_cycles * 3; i++)

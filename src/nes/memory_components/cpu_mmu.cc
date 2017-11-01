@@ -7,16 +7,15 @@ CPU_MMU::CPU_MMU(
   Memory& ram,
   Memory& ppu,
   Memory& apu,
-  Memory& joy,
-
-  Cartridge* rom
+  Memory& joy
 )
 : ram(ram),
   ppu(ppu),
   apu(apu),
-  joy(joy),
-  rom(rom)
-{}
+  joy(joy)
+{
+  this->cart = nullptr;
+}
 
 // 0x0000 ... 0x1FFF: 0x0000 - 0x07FF are RAM           (Mirrored 4x)
 // 0x2000 ... 0x3FFF: 0x2000 - 0x2007 are PPU Regusters (Mirrored every 8 bytes)
@@ -35,7 +34,7 @@ u8 CPU_MMU::read(u16 addr) {
   if (in_range(addr, 0x4015        )) return apu.read(addr);
   if (in_range(addr, 0x4016        )) return joy.read(addr);
   if (in_range(addr, 0x4017        )) return joy.read(addr);
-  if (in_range(addr, 0x4018, 0xFFFF)) return rom ? rom->read(addr) : 0x0;
+  if (in_range(addr, 0x4018, 0xFFFF)) return cart ? cart->read(addr) : 0x0;
 
   fprintf(stderr, "[CPU] unhandled address: 0x%04X\n", addr);
   assert(false);
@@ -51,7 +50,7 @@ u8 CPU_MMU::peek(u16 addr) const {
   if (in_range(addr, 0x4015        )) return apu.peek(addr);
   if (in_range(addr, 0x4016        )) return joy.peek(addr);
   if (in_range(addr, 0x4017        )) return joy.peek(addr); // not APU
-  if (in_range(addr, 0x4018, 0xFFFF)) return rom ? rom->peek(addr) : 0x0;
+  if (in_range(addr, 0x4018, 0xFFFF)) return cart ? cart->peek(addr) : 0x0;
 
   fprintf(stderr, "[CPU] unhandled address: 0x%04X\n", addr);
   assert(false);
@@ -66,11 +65,11 @@ void CPU_MMU::write(u16 addr, u8 val) {
   if (in_range(addr, 0x4015        )) return apu.write(addr, val);
   if (in_range(addr, 0x4016        )) return joy.write(addr, val);
   if (in_range(addr, 0x4017        )) return apu.write(addr, val); // not JOY
-  if (in_range(addr, 0x4018, 0xFFFF)) return rom ? rom->write(addr, val) : void();
+  if (in_range(addr, 0x4018, 0xFFFF)) return cart ? cart->write(addr, val) : void();
 
   fprintf(stderr, "[CPU] unhandled address: 0x%04X\n", addr);
   assert(false);
 }
 
-void CPU_MMU::addCartridge(Cartridge* cart) { this->rom = cart;    }
-void CPU_MMU::removeCartridge()             { this->rom = nullptr; }
+void CPU_MMU::loadCartridge(Cartridge* cart) { this->cart = cart;    }
+void CPU_MMU::removeCartridge()              { this->cart = nullptr; }

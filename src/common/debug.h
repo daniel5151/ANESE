@@ -68,7 +68,7 @@ u8 Memory_Sniffer::read(u16 addr) {
   u8 val = this->mem->read(addr);
   printf("[%s] R 0x%04X -> 0x%02X\n", this->label, addr, val);
   return val;
-};
+}
 
 u8 Memory_Sniffer::peek(u16 addr) const {
   if (this->mem == nullptr) {
@@ -95,4 +95,4 @@ void Memory_Sniffer::write(u16 addr, u8 val) {
 
   printf("[%s] W 0x%04X <- 0x%02X\n", this->label, addr, val);
   this->mem->write(addr, val);
-};
+}

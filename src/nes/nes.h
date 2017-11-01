@@ -58,6 +58,7 @@ public:
   ~NES();
 
   bool loadCartridge(Cartridge* cart);
+  void removeCartridge();
 
   void power_cycle(); // Set all volatile components to default power_on state
   void reset();       // Set all volatile components to default reset state

@@ -16,17 +16,15 @@ private:
   Memory& apu;
   Memory& joy;
 
-  // ROM is subject to change
-  Cartridge* rom;
+  // Changing References
+  Cartridge* cart;
 public:
   ~CPU_MMU() = default; // no owned resources
   CPU_MMU(
     Memory& ram,
     Memory& ppu,
     Memory& apu,
-    Memory& joy,
-
-    Cartridge* rom
+    Memory& joy
   );
 
   // <Memory>
@@ -35,6 +33,6 @@ public:
   void write(u16 addr, u8 val) override;
   // <Memory/>
 
-  void addCartridge(Cartridge* cart);
+  void loadCartridge(Cartridge* cart);
   void removeCartridge();
 };

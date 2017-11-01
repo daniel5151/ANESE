@@ -1,7 +1,5 @@
 #include "cartridge.h"
 
-#include "mappers/mapper.h"
-
 Cartridge::Cartridge(const u8* data, u32 data_len)
 : rom_data(new INES(data, data_len)),
   mapper(Mapper::Factory(*this->rom_data))

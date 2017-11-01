@@ -4,7 +4,6 @@
 #include "common/util.h"
 #include "formats/ines.h"
 #include "mappers/mapper.h"
-#include "nes/ppu/ppu.h"
 
 // Contains Mapper and iNES cartridge
 class Cartridge final : public Memory {

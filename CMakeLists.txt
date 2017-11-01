@@ -13,11 +13,18 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -g")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O2")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
   if (CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
     string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
   endif()
+  # suppress some MSVC warnings
+  # 4458 - declaration of 'x' hides class member
+  #   * non issue, since I tend to refer to class members through this->
+  # 4310 - cast truncates constant value
+  # 4068 - unknown pragma
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4458 /wd4310 /wd4068")
 endif()
 
 option(NESTEST "Move intial PC to 0xC000 for NESTEST" OFF)

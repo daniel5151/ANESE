@@ -13,9 +13,9 @@ private:
   Memory& ciram; // PPU internal VRAM
   Memory& pram;  // Palette RAM
 
-  // ROM is subject to change
-  Cartridge* rom;
-  Memory* vram; // changes based on mirroring mode
+  // Changing References
+  Cartridge* cart;
+  Memory* vram; // what VRAM to access changes based on mirroring mode
 
   // Nametable offsets
   u16 nt_0;
@@ -27,8 +27,7 @@ public:
   ~PPU_MMU() = default; // no owned resources
   PPU_MMU(
     Memory& ciram,
-    Memory& pram,
-    Cartridge* rom
+    Memory& pram
   );
 
   // <Memory>
@@ -37,6 +36,6 @@ public:
   void write(u16 addr, u8 val) override;
   // <Memory/>
 
-  void addCartridge(Cartridge* cart);
+  void loadCartridge(Cartridge* cart);
   void removeCartridge();
 };

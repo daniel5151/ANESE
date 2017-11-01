@@ -26,8 +26,15 @@ int main(int argc, char* argv[]) {
 
   // get length of file
   rom_file.seekg(0, rom_file.end);
-  u32 data_len = rom_file.tellg();
+  std::streamoff rom_file_size = rom_file.tellg();
   rom_file.seekg(0, rom_file.beg);
+
+  if (rom_file_size == -1) {
+    std::cerr << "could not read '" << argv[1] << "'\n";
+    return -1;
+  }
+
+  uint data_len = static_cast<uint>(rom_file_size);
 
   u8* data = new u8 [data_len];
 
@@ -66,8 +73,8 @@ int main(int argc, char* argv[]) {
 
   constexpr u32 RES_X = 256;
   constexpr u32 RES_Y = 240;
-  constexpr float RATIO_XY = float(RES_X) / float(RES_Y);
-  constexpr float RATIO_YX = float(RES_Y) / float(RES_X);
+  constexpr double RATIO_XY = double(RES_X) / double(RES_Y);
+  constexpr double RATIO_YX = double(RES_Y) / double(RES_X);
 
   int window_w = RES_X * 2;
   int window_h = RES_Y * 2;
@@ -122,16 +129,16 @@ int main(int argc, char* argv[]) {
     SDL_GetWindowSize(window, &window_w, &window_h);
 
     // Letterbox the screen within the window
-    if (window_w / float(RES_X) > window_h / float(RES_Y)) {
+    if (window_w / double(RES_X) > window_h / double(RES_Y)) {
       // fat window
-      screen.h = window_h;
-      screen.w = window_h * RATIO_XY;
+      screen.h = static_cast<int>(window_h);
+      screen.w = static_cast<int>(window_h * RATIO_XY);
       screen.x = -(screen.w - window_w) / 2;
       screen.y = 0;
     } else {
       // tall window
-      screen.h = window_w * RATIO_YX;
-      screen.w = window_w;
+      screen.h = static_cast<int>(window_w * RATIO_YX);
+      screen.w = static_cast<int>(window_w);
       screen.x = 0;
       screen.y = -(screen.h - window_h) / 2;
     }
@@ -147,7 +154,7 @@ int main(int argc, char* argv[]) {
 
     // ---- Limit Framerate ---- //
     // NES runs as 60 fups, so don't run faster!
-    constexpr time_ms TARGET_FPS = 1000.0 / 60.0;
+    constexpr time_ms TARGET_FPS = static_cast<time_ms>(1000.0 / 60.0);
     time_ms frame_dt = SDL_GetTicks() - frame_start_time;
     if (frame_dt < TARGET_FPS)
       SDL_Delay(TARGET_FPS - frame_dt);
@@ -155,12 +162,12 @@ int main(int argc, char* argv[]) {
     time_ms frame_end_time = SDL_GetTicks();
 
     // ---- Count Framerate ---- //
-    static float past_fps [20] = {60.0}; // more samples == less FPS jutter
+    static double past_fps [20] = {60.0}; // more samples == less FPS jutter
 
     // Get current FPS
     past_fps[total_frames % 20] = 1000.0 / (frame_end_time - frame_start_time);
 
-    float avg_fps = 0;
+    double avg_fps = 0;
     for(unsigned i = 0; i < 20; i++)
       avg_fps += past_fps[i];
     avg_fps /= 20;

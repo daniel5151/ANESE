@@ -71,6 +71,7 @@ struct Opcode {
   { opcode, Instr::instr , AddrM::addrm , cycles , true , #instr, #addrm }
 
 // https://stackoverflow.com/a/11763277
+#pragma GCC system_header // this macro magic is techincally not pedantic...
 #define EXPAND( x ) x
 #define GET_MACRO(_1,_2,_3,_4,_5,NAME,...) NAME
 #define O(...) EXPAND(GET_MACRO(__VA_ARGS__, \
@@ -83,7 +84,7 @@ struct Opcode {
 )(__VA_ARGS__))
 
 // Main Opcode lookup table
-static constexpr Opcode Opcodes[256] = {
+constexpr Opcode Opcodes[256] = {
 O( 0x00 , BRK , impl , 0     ), // call to CPU::service_interrupt takes 7 cycles
 O( 0x01 , ORA , Xind,  6     ),
 O( 0x02                      ),

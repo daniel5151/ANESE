@@ -21,6 +21,8 @@ PPU::PPU(Memory& mem, Memory& oam, DMA& dma)
 void PPU::power_cycle() {
   this->cycles = 0;
 
+  this->cpu_data_bus = 0x00;
+
   // http://wiki.nesdev.com/w/index.php/PPU_power_up_state
   this->reg.ppuctrl.raw = 0x00;
   this->reg.ppumask.raw = 0x00;
@@ -191,8 +193,8 @@ void PPU::write(u16 addr, u8 val) {
                     if (this->latch == 1) this->reg.ppuaddr.lo = val;
                     this->latch = !this->latch;
                   } return;
-  case PPUDATA:   { u16 addr = this->reg.ppuaddr.val % 0x4000;
-                    this->mem[addr] = val;
+  case PPUDATA:   { u16 true_addr = this->reg.ppuaddr.val % 0x4000;
+                    this->mem[true_addr] = val;
                     // (0: add 1, going across; 1: add 32, going down)
                     bool mode = this->reg.ppuctrl.I;
                     if (mode == 0) this->reg.ppuaddr.val += 1;
@@ -207,7 +209,10 @@ void PPU::write(u16 addr, u8 val) {
                       this->cycle();
                     // 512 cycles of reading & writing
                     this->dma.start(val);
-                    while (this->dma.isActive()) this->cycle();
+                    while (this->dma.isActive()) {
+                      this->dma.transfer();
+                      this->cycle();
+                    }
                   } return;
   default:        { fprintf(stderr,
                       "[PPU] Writing to a Read-Only register: 0x%04X\n <- 0x%02X",
@@ -216,8 +221,6 @@ void PPU::write(u16 addr, u8 val) {
                     );
                   } return;
   }
-
-  assert(false);
 }
 
 // Just dicking around rn
@@ -228,8 +231,8 @@ void PPU::cycle() {
 
   const u32 offset = (256 * 4 * this->scan.y) + this->scan.x * 4;
   /* b */ this->frame[offset + 0] = (sin(this->cycles / 10.0) + 1) * 125;
-  /* g */ this->frame[offset + 1] = (this->scan.y / float(240)) * 255;
-  /* r */ this->frame[offset + 2] = (this->scan.x / float(256)) * 255;
+  /* g */ this->frame[offset + 1] = (this->scan.y / double(240)) * 255;
+  /* r */ this->frame[offset + 2] = (this->scan.x / double(256)) * 255;
   /* a */ this->frame[offset + 3] = 255;
 
 

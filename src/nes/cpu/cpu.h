@@ -56,7 +56,7 @@ private:
 
   /*----------  Emulation Vars  ----------*/
 
-  u32 cycles;  // Cycles elapsed
+  uint cycles;  // Cycles elapsed
   State state; // CPU state
 
   /*--------------  Helpers  -------------*/
@@ -87,5 +87,5 @@ public:
 
   CPU::State getState() const;
 
-  u8 step(); // exec instruction, and return cycles taken
+  uint step(); // exec instruction, and return cycles taken
 };

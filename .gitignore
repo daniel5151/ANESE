@@ -5,7 +5,7 @@ roms/retail/*
 .DS_Store
 
 # build and debugging artifacts
-/build
+/build*
 /anese.dSYM
 
 # anese that's in the main directory

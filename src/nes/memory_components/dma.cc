@@ -6,7 +6,11 @@
 DMA::DMA(Memory& cpu_wram, Memory& ppu_oam)
 : cpu_wram(cpu_wram),
   ppu_oam(ppu_oam)
-{}
+{
+  this->in_dma = false;
+  this->page = 0x00;
+  this->step = 0x00;
+}
 
 void DMA::start(u8 page) {
   assert(this->in_dma == false);
@@ -14,7 +18,7 @@ void DMA::start(u8 page) {
   this->in_dma = true;
 
   this->page = page;
-  this->step = 0;
+  this->step = 0x00;
 }
 
 void DMA::transfer() {

@@ -3,8 +3,6 @@
 #include <cstdlib>
 #include <cstdio>
 
-#include "instructions.h"
-
 /*-----------------------------  Public Methods  -----------------------------*/
 
 CPU::~CPU() {}
@@ -52,65 +50,13 @@ void CPU::reset() {
   this->state = CPU::State::Running;
 }
 
+CPU::State CPU::getState() const { return this->state; }
+
 void CPU::request_interrupt(CPU::Interrupt type) {
   this->pending_interrupt = type;
 }
 
-CPU::State CPU::getState() const { return this->state; }
-
 /*----------------------------  Private Methods  -----------------------------*/
-
-u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
-  using namespace Instructions;
-  using namespace Instructions::AddrM;
-
-  u16 addr; // this is what we are trying to find...
-
-  // To keep switch-statement code clean, define some temporary macros that
-  // read 8 and 1 bit arguments (respectively)
-  #define arg8  (this->mem[this->reg.pc++])
-  #define arg16 (this->mem[this->reg.pc++] \
-              | (this->mem[this->reg.pc++] << 8))
-
-  switch(opcode.addrm) {
-    case abs_: addr = arg16;                                             break;
-    case absX: addr = arg16 + this->reg.x;                               break;
-    case absY: addr = arg16 + this->reg.y;                               break;
-    case ind_: addr = this->mem.read16_zpg(arg16);                       break;
-    case indY: addr = this->mem.read16_zpg(arg8) + this->reg.y;          break;
-    case Xind: addr = this->mem.read16_zpg((arg8 + this->reg.x) & 0xFF); break;
-    case zpg_: addr = arg8;                                              break;
-    case zpgX: addr = (arg8 + this->reg.x) & 0xFF;                       break;
-    case zpgY: addr = (arg8 + this->reg.y) & 0xFF;                       break;
-    case rel : addr = this->reg.pc++;                                    break;
-    case imm : addr = this->reg.pc++;                                    break;
-    case acc : addr = this->reg.a;                                       break;
-    case impl: addr = u8(0xFACA11);/* no args! return fack all :D */     break;
-    case INVALID:
-      fprintf(stderr, "[CPU] Invalid Addressing Mode! Double check table!\n");
-      return 0xBAD;
-  }
-
-  // Undefine temporary switch statement macros
-  #undef arg16
-  #undef arg8
-
-  // Check to see if we need to add extra cycles due to crossing pages
-  if (opcode.check_pg_cross == true) {
-    // I checked, the only instructions affected by this are those with the
-    // following 3 addressing modes. No need to handle any of the other modes
-    #define is_pg_cross(a,b) ((a & 0xFF00) != (b & 0xFF00))
-    switch (opcode.addrm) {
-    case absX: this->cycles += is_pg_cross(addr - this->reg.x, addr); break;
-    case absY: this->cycles += is_pg_cross(addr - this->reg.y, addr); break;
-    case indY: this->cycles += is_pg_cross(addr - this->reg.y, addr); break;
-    default: break;
-    }
-    #undef is_pg_cross
-  }
-
-  return addr;
-}
 
 void CPU::service_interrupt(CPU::Interrupt type) {
   this->reg.p.i = true; // don't want interrupts being interrupted :D
@@ -131,9 +77,59 @@ void CPU::service_interrupt(CPU::Interrupt type) {
   }
 }
 
+u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
+  using namespace Instructions;
+  using namespace Instructions::AddrM;
 
-u8 CPU::step() {
-  u32 old_cycles = this->cycles;
+  u16 addr = 0xBAD; // this is what we are trying to find...
+
+  // To keep switch-statement code clean, define some temporary macros that
+  // read 8 and 1 bit arguments (respectively)
+  #define arg8  (this->mem[this->reg.pc++])
+  #define arg16 (this->mem.read16((this->reg.pc += 2) - 2))
+
+  switch(opcode.addrm) {
+    case abs_: addr = arg16;                                             break;
+    case absX: addr = arg16 + this->reg.x;                               break;
+    case absY: addr = arg16 + this->reg.y;                               break;
+    case ind_: addr = this->mem.read16_zpg(arg16);                       break;
+    case indY: addr = this->mem.read16_zpg(arg8) + this->reg.y;          break;
+    case Xind: addr = this->mem.read16_zpg((arg8 + this->reg.x) & 0xFF); break;
+    case zpg_: addr = arg8;                                              break;
+    case zpgX: addr = (arg8 + this->reg.x) & 0xFF;                       break;
+    case zpgY: addr = (arg8 + this->reg.y) & 0xFF;                       break;
+    case rel : addr = this->reg.pc++;                                    break;
+    case imm : addr = this->reg.pc++;                                    break;
+    case acc : addr = this->reg.a;                                       break;
+    case impl: addr = u8(0xFACA11); /* no args, so return fack all :D */ break;
+    case INVALID:
+      fprintf(stderr, "[CPU] Invalid Addressing Mode! Double check table!\n");
+      return 0xBAD;
+  }
+
+  // Undefine temporary switch statement macros
+  #undef arg16
+  #undef arg8
+
+  // Check to see if we need to add extra cycles due to crossing pages
+  if (opcode.check_pg_cross == true) {
+    // I checked, the only instructions affected by this are those with the
+    // following 3 addressing modes. No need to handle any of the other modes
+    #define is_pg_cross(a,b) (((a) & 0xFF00) != ((b) & 0xFF00))
+    switch (opcode.addrm) {
+    case absX: this->cycles += is_pg_cross(addr - this->reg.x, addr); break;
+    case absY: this->cycles += is_pg_cross(addr - this->reg.y, addr); break;
+    case indY: this->cycles += is_pg_cross(addr - this->reg.y, addr); break;
+    default: break;
+    }
+    #undef is_pg_cross
+  }
+
+  return addr;
+}
+
+uint CPU::step() {
+  uint old_cycles = this->cycles;
 
   // Service any pending interrupts
   if (this->pending_interrupt != CPU::Interrupt::None) {
@@ -407,8 +403,8 @@ u16 CPU::s_pull16() {
   return (hi << 8) | lo;
 }
 void CPU::s_push16(u16 val) {
-  this->s_push(val >> 8); // push hi
-  this->s_push(val);      // push lo
+  this->s_push(val >> 8);   // push hi
+  this->s_push(val & 0xFF); // push lo
 }
 
 /*===============================
