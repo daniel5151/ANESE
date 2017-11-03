@@ -20,7 +20,9 @@ typedef int64_t i64;
 
 /* Helper functions */
 
-// get nth bit from a number x
+// get nth bit from a number x, with bit layout:
+// 7      0
+// xxxxxxxx
 template <typename T>
 inline bool nth_bit(T x, u8 n) { return (x >> n) & 1; }
 

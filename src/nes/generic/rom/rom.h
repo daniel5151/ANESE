@@ -9,6 +9,7 @@ class ROM final : public Memory {
 private:
   u8* rom;
   u32 size;
+
 public:
   ROM(u32 ram_size, const u8* content);
   ~ROM();

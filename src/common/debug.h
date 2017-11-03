@@ -1,5 +1,5 @@
 //
-// A collection of useful Debug tools
+// A real mish-mash of useful debug constructs
 //
 
 #pragma once
@@ -19,17 +19,12 @@ private:
 
 public:
   // <Memory>
-  u8 read(u16 addr)       override { (void)addr; return 0x00; };
-  u8 peek(u16 addr) const override { (void)addr; return 0x00; };
-  void write(u16 addr, u8 val) override { (void)addr; (void)val; };
+  u8 read(u16 addr)            override;
+  u8 peek(u16 addr) const      override;
+  void write(u16 addr, u8 val) override;
   // <Memory/>
 
-  static Void_Memory* Get() {
-    static Void_Memory* the_void = nullptr;
-
-    if (!the_void) the_void = new Void_Memory ();
-    return the_void;
-  }
+  static Void_Memory* Get();
 };
 
 // Wrapper that transaparently intercepts all transactions that occur through a
@@ -43,56 +38,49 @@ private:
   Memory* mem;
 
 public:
-  Memory_Sniffer(const char* label, Memory* mem)
-  : label(label),
-    mem(mem)
-  {}
+  Memory_Sniffer(const char* label, Memory* mem);
 
   // <Memory>
-  u8 read(u16 addr)       override;
-  u8 peek(u16 addr) const override;
+  u8 read(u16 addr)            override;
+  u8 peek(u16 addr) const      override;
   void write(u16 addr, u8 val) override;
   // <Memory/>
 };
 
-u8 Memory_Sniffer::read(u16 addr) {
-  if (this->mem == nullptr) {
-    printf(
-      "[%s] Underlying Memory is nullptr!\n",
-      this->label
-    );
-    return 0x00;
-  }
+// Wrapper that offsets all memory accesses through it by some difference
+class OffsetMemory final : public Memory {
+private:
+  Memory* mem;
+  i32 diff;
 
-  // only read once, to prevent side effects
-  u8 val = this->mem->read(addr);
-  printf("[%s] R 0x%04X -> 0x%02X\n", this->label, addr, val);
-  return val;
-}
+public:
+  OffsetMemory(Memory* mem, i32 diff);
 
-u8 Memory_Sniffer::peek(u16 addr) const {
-  if (this->mem == nullptr) {
-    printf(
-      "[%s] Underlying Memory is nullptr!\n",
-      this->label
-    );
-    return 0x00;
-  }
+  // <Memory>
+  u8 read(u16 addr)            override;
+  u8 peek(u16 addr) const      override;
+  void write(u16 addr, u8 val) override;
+  // <Memory/>
+};
 
-  u8 val = this->mem->peek(addr);
-  printf("[%s] P 0x%04X -> 0x%02X\n", this->label, addr, val);
-  return val;
-}
+#include <SDL.h>
 
-void Memory_Sniffer::write(u16 addr, u8 val) {
-  if (this->mem == nullptr) {
-    printf(
-      "[%s] Underlying Memory is nullptr!\n",
-      this->label
-    );
-    return;
-  }
+// Simple SDL debug window that is pixel-addressable
+struct DebugPixelbuffWindow {
+  SDL_Window*   window;
+  SDL_Renderer* renderer;
+  SDL_Texture*  texture;
 
-  printf("[%s] W 0x%04X <- 0x%02X\n", this->label, addr, val);
-  this->mem->write(addr, val);
-}
+  u8* frame;
+
+  uint w, h, x, y;
+
+  ~DebugPixelbuffWindow();
+  DebugPixelbuffWindow(const char* title, uint w, uint h, uint x, uint y);
+  DebugPixelbuffWindow(const DebugPixelbuffWindow&) = delete;
+
+  void set_pixel(uint x, uint y, u8 r, u8 g, u8 b, u8 a);
+  void set_pixel(uint x, uint y, u32 rbg, u8 a);
+
+  void render();
+};

@@ -14,8 +14,8 @@ private:
   Memory& pram;  // Palette RAM
 
   // Changing References
-  Cartridge* cart;
-  Memory* vram; // what VRAM to access changes based on mirroring mode
+  Cartridge* cart;  // Plugged in cartridge
+  Memory* vram;     // VRAM can be ciram or cart (depending on mirroring)
 
   // Nametable offsets
   u16 nt_0;

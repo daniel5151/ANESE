@@ -9,6 +9,7 @@ class RAM final : public Memory {
 private:
   u8* ram;
   u32 size;
+
 public:
   RAM(u32 ram_size);
   ~RAM();

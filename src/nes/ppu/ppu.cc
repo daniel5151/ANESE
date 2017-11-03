@@ -3,7 +3,16 @@
 #include <cassert>
 #include <cstdio>
 
+#define DEBUG_PPU
+
+#ifdef DEBUG_PPU
+  #include <SDL.h>
+  #include "common/debug.h"
+  static DebugPixelbuffWindow* patt_t;
+#endif
+
 PPU::~PPU() {}
+
 PPU::PPU(Memory& mem, Memory& oam, DMA& dma)
 : dma(dma),
   mem(mem),
@@ -16,6 +25,14 @@ PPU::PPU(Memory& mem, Memory& oam, DMA& dma)
   this->scan.y = 0;
 
   this->power_cycle();
+
+#ifdef DEBUG_PPU
+  patt_t = new DebugPixelbuffWindow(
+    "Pattern Table",
+    0x80 * 2 + 16, 0x80,
+    32, 32
+  );
+#endif
 }
 
 void PPU::power_cycle() {
@@ -227,6 +244,60 @@ void PPU::write(u16 addr, u8 val) {
 #include <cmath>
 
 void PPU::cycle() {
+#ifdef DEBUG_PPU
+  if (this->cycles % 200000 == 0) {
+    // Don't update this info every frame, that's sooper pooper slow
+
+    // Left pattern table
+    for (uint row = 0; row < 16; row++) {
+      for (uint col = 0; col < 16; col++) {
+        for (uint y = 0; y < 8; y++) {
+          u16 addr = (row << 8) + (col << 4) + y;
+          u8 lo_bp = this->mem[addr + 0];
+          u8 hi_bp = this->mem[addr + 8];
+          for (uint x = 0; x < 8; x++) {
+            u8 pixel_type = nth_bit(lo_bp, x) + 2 * nth_bit(hi_bp, x);
+            patt_t->set_pixel(
+              col * 8 + (7 - x),
+              row * 8 + y,
+              pixel_type * (256 / 4),
+              pixel_type * (256 / 4),
+              pixel_type * (256 / 4),
+              255
+            );
+          }
+        }
+      }
+    }
+
+    // Right pattern table
+    for (uint row = 0; row < 16; row++) {
+      for (uint col = 0; col < 16; col++) {
+        for (uint y = 0; y < 8; y++) {
+          u16 addr = (row << 8) + (col << 4) + y;
+
+          addr += 0x1000;
+
+          u8 lo_bp = this->mem[addr + 0];
+          u8 hi_bp = this->mem[addr + 8];
+          for (uint x = 0; x < 8; x++) {
+            u8 pixel_type = nth_bit(lo_bp, x) + 2 * nth_bit(hi_bp, x);
+            patt_t->set_pixel(
+              col * 8 + (7 - x) + 0x90, // <--- draw to the right
+              row * 8 + y,
+              pixel_type * (256 / 4),
+              pixel_type * (256 / 4),
+              pixel_type * (256 / 4),
+              255
+            );
+          }
+        }
+      }
+    }
+
+    patt_t->render();
+  }
+#endif
   this->cycles += 1;
 
   const u32 offset = (256 * 4 * this->scan.y) + this->scan.x * 4;
@@ -234,7 +305,6 @@ void PPU::cycle() {
   /* g */ this->frame[offset + 1] = (this->scan.y / double(240)) * 255;
   /* r */ this->frame[offset + 2] = (this->scan.x / double(256)) * 255;
   /* a */ this->frame[offset + 3] = 255;
-
 
   // Always increment x
   this->scan.x += 1;
@@ -246,3 +316,28 @@ void PPU::cycle() {
 }
 
 const u8* PPU::getFrame() const { return this->frame; }
+
+/*----------------------------------------------------------------------------*/
+
+PPU::Color::Color(u8 r, u8 g, u8 b) {
+  this->r = r;
+  this->g = g;
+  this->b = b;
+}
+
+PPU::Color::Color(u32 color) {
+  this->r = color & 0xFF0000 >> 16;
+  this->g = color & 0x00FF00 >> 8;
+  this->b = color & 0x0000FF >> 0;
+}
+
+PPU::Color PPU::palette [64] = {
+  0x666666, 0x002A88, 0x1412A7, 0x3B00A4, 0x5C007E, 0x6E0040, 0x6C0600, 0x561D00,
+  0x333500, 0x0B4800, 0x005200, 0x004F08, 0x00404D, 0x000000, 0x000000, 0x000000,
+  0xADADAD, 0x155FD9, 0x4240FF, 0x7527FE, 0xA01ACC, 0xB71E7B, 0xB53120, 0x994E00,
+  0x6B6D00, 0x388700, 0x0C9300, 0x008F32, 0x007C8D, 0x000000, 0x000000, 0x000000,
+  0xFFFEFF, 0x64B0FF, 0x9290FF, 0xC676FF, 0xF36AFF, 0xFE6ECC, 0xFE8170, 0xEA9E22,
+  0xBCBE00, 0x88D800, 0x5CE430, 0x45E082, 0x48CDDE, 0x4F4F4F, 0x000000, 0x000000,
+  0xFFFEFF, 0xC0DFFF, 0xD3D2FF, 0xE8C8FF, 0xFBC2FF, 0xFEC4EA, 0xFECCC5, 0xF7D8A5,
+  0xE4E594, 0xCFEF96, 0xBDF4AB, 0xB3F3CC, 0xB5EBF2, 0xB8B8B8, 0x000000, 0x000000,
+};

@@ -23,6 +23,7 @@ namespace PPURegisters {
 // http://wiki.nesdev.com/w/index.php/PPU_programmer_reference
 class PPU final : public Memory {
 private:
+
   /*----------  "Hardware"  ----------*/
   // In quotes because technically, these things aren't located on the PPU, but
   // by coupling them with the PPU, it makes the emulator code cleaner
@@ -119,6 +120,18 @@ private:
   /*----------  Emulation Vars  ----------*/
 
   u32 cycles;
+
+public:
+  struct Color {
+    u8 r;
+    u8 g;
+    u8 b;
+
+    Color(u8 r, u8 g, u8 b);
+    Color(u32 color);
+  };
+
+  static Color palette [64]; // NES color palette (static, for now)
 
 public:
   ~PPU();

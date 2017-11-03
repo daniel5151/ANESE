@@ -176,6 +176,7 @@ int main(int argc, char* argv[]) {
     SDL_SetWindowTitle(window, window_title);
   }
 
+  SDL_DestroyTexture(texture);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();

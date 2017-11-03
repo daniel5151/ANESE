@@ -77,27 +77,32 @@ void PPU_MMU::write(u16 addr, u8 val) {
 void PPU_MMU::loadCartridge(Cartridge* cart) {
   this->cart = cart;
 
+  // When using internal ciram, a additional 0x2000 offset is applied to the
+  // nametable addresses, since the ciram RAM module has no concept of the
+  // memory map, and assumes that things will be accessing it from it's internal
+  // range (0x0000 -> 0x2000)
+
   switch(cart->mirroring()) {
   case Cartridge::Mirroring::Vertical:
     this->vram = &this->ciram;
-    this->nt_0 = 0x000; // 0x2000 -> 0x2000
-    this->nt_1 = 0x000; // 0x2400 -> 0x2400
-    this->nt_2 = 0x800; // 0x2800 -> 0x2000
-    this->nt_3 = 0x800; // 0x2C00 -> 0x2400
+    this->nt_0 = 0x2000; // 0x2000 -> 0x0000
+    this->nt_1 = 0x2000; // 0x2400 -> 0x0400
+    this->nt_2 = 0x2800; // 0x2800 -> 0x0000
+    this->nt_3 = 0x2800; // 0x2C00 -> 0x0400
     break;
   case Cartridge::Mirroring::Horizontal:
     this->vram = &this->ciram;
-    this->nt_0 = 0x000; // 0x2000 -> 0x2000
-    this->nt_1 = 0x400; // 0x2400 -> 0x2000
-    this->nt_2 = 0x400; // 0x2800 -> 0x2400
-    this->nt_3 = 0x800; // 0x2C00 -> 0x2400
+    this->nt_0 = 0x2000; // 0x2000 -> 0x0000
+    this->nt_1 = 0x2400; // 0x2400 -> 0x0000
+    this->nt_2 = 0x2400; // 0x2800 -> 0x0400
+    this->nt_3 = 0x2800; // 0x2C00 -> 0x0400
     break;
   case Cartridge::Mirroring::FourScreen:
     this->vram = this->cart; // use ROM instead of internal VRAM
-    this->nt_0 = 0x000; // 0x2000 -> 0x2000
-    this->nt_1 = 0x000; // 0x2400 -> 0x2400
-    this->nt_2 = 0x000; // 0x2800 -> 0x2800
-    this->nt_3 = 0x000; // 0x2C00 -> 0x2C00
+    this->nt_0 = 0x0000; // 0x2000 -> 0x2000
+    this->nt_1 = 0x0000; // 0x2400 -> 0x2400
+    this->nt_2 = 0x0000; // 0x2800 -> 0x2800
+    this->nt_3 = 0x0000; // 0x2C00 -> 0x2C00
     break;
   }
 }
