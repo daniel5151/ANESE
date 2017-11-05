@@ -115,7 +115,7 @@ DebugPixelbuffWindow::DebugPixelbuffWindow(
     texture_w, texture_h
   );
 
-  this->frame = new u8 [texture_w * texture_h * 4];
+  this->frame = new u8 [texture_w * texture_h * 4]();
 }
 
 void DebugPixelbuffWindow::set_pixel(uint x, uint y, u8 r, u8 g, u8 b, u8 a) {

@@ -401,6 +401,8 @@ void CPU::s_push16(u16 val) {
   this->s_push(val & 0xFF); // push lo
 }
 
+#ifdef NESTEST
+
 /*===============================
 =            NESTEST            =
 ===============================*/
@@ -556,3 +558,5 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
                            // ergo, multiply cycles by 3 should be fineee
   );
 }
+
+#endif /* NESTEST */

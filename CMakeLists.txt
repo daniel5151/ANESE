@@ -27,10 +27,16 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4458 /wd4310 /wd4068")
 endif()
 
-option(NESTEST "Move intial PC to 0xC000 for NESTEST" OFF)
+option(NESTEST "test CPU against NESTEST golden log" OFF)
 if (NESTEST)
   add_definitions(-DNESTEST)
 endif()
+
+option(DEBUG_PPU "Display PPU debug windows" OFF)
+if (DEBUG_PPU)
+  add_definitions(-DDEBUG_PPU)
+endif()
+
 
 # since there is no standard install directory for sdl2 on windows, change this
 # variable to suit your needs

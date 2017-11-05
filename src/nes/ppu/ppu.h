@@ -29,21 +29,12 @@ private:
   // In quotes because technically, these things aren't located on the PPU, but
   // by coupling them with the PPU, it makes the emulator code cleaner
 
-  // framebuffer
-  u8 frame [240 * 256 * 4];
-
-  // current pixel to draw
-  struct {
-    u16 x;
-    u16 y;
-  } scan;
+  // CPU WRAM -> PPU OAM Direct Memory Access (DMA) Unit
+  DMA& dma;
 
   /*-----------  Hardware  -----------*/
 
   InterruptLines& interrupts;
-
-  // CPU WRAM -> PPU OAM Direct Memory Access (DMA) Unit
-  DMA& dma;
 
   Memory& mem; // PPU 16 bit address space (should be wired to ppu_mmu)
   Memory& oam; // PPU Object Attribute Memory
@@ -123,6 +114,22 @@ private:
   /*----------  Emulation Vars  ----------*/
 
   uint cycles;
+
+  // framebuffer
+  u8 frame [240 * 256 * 4];
+
+  // current pixel
+  struct {
+    uint x;
+    uint y;
+  } scan;
+
+  /*---------------  Debug  --------------*/
+
+#ifdef DEBUG_PPU
+  void   init_debug_windows();
+  void update_debug_windows();
+#endif // DEBUG_PPU
 
 public:
   struct Color {

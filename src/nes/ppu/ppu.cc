@@ -3,21 +3,11 @@
 #include <cassert>
 #include <cstdio>
 
-#define DEBUG_PPU
-
-#ifdef DEBUG_PPU
-  #include <SDL.h>
-  #include "common/debug.h"
-  static DebugPixelbuffWindow* patt_t;
-  static DebugPixelbuffWindow* palette_t;
-  static DebugPixelbuffWindow* nes_palette;
-#endif
-
 PPU::~PPU() {}
 
 PPU::PPU(Memory& mem, Memory& oam, DMA& dma, InterruptLines& interrupts)
-: interrupts(interrupts),
-  dma(dma),
+: dma(dma),
+  interrupts(interrupts),
   mem(mem),
   oam(oam)
 {
@@ -30,28 +20,7 @@ PPU::PPU(Memory& mem, Memory& oam, DMA& dma, InterruptLines& interrupts)
   this->power_cycle();
 
 #ifdef DEBUG_PPU
-  // Pattern Table
-  patt_t = new DebugPixelbuffWindow(
-    "Pattern Table",
-    (0x80 * 2 + 16) * 2, (0x80) * 2,
-     0x80 * 2 + 16,       0x80,
-    0, 32
-  );
-
-  // Palette Table
-  palette_t = new DebugPixelbuffWindow(
-    "Palette Table",
-    (8 + 1) * 10, (4) * 10,
-     8 + 1,        4,
-    0, 400
-  );
-
-  nes_palette = new DebugPixelbuffWindow(
-    "Static NES Palette",
-    (16) * 16, (4) * 16,
-     16,        4,
-    0, 800
-  );
+  this->init_debug_windows();
 #endif
 }
 
@@ -214,7 +183,8 @@ void PPU::write(u16 addr, u8 val) {
 
   switch(addr) {
   case PPUCTRL:   { this->reg.ppuctrl.raw = val;
-                    // SHOULD CAUSE NMI IF SET WHILE PPU IS IN VBLANK!
+                    if (this->reg.ppustatus.V)
+                      this->interrupts.request(Interrupts::Type::NMI);
                   } return;
   case PPUMASK:   { this->reg.ppumask.raw = val;
                   } return;
@@ -265,82 +235,7 @@ void PPU::write(u16 addr, u8 val) {
 
 void PPU::cycle() {
 #ifdef DEBUG_PPU
-  if (this->cycles % 89341 * 3 * 60 == 0) {
-    // Don't update this info every frame, that's sooper pooper slow
-
-    // Left pattern table
-    for (uint row = 0; row < 16; row++) {
-      for (uint col = 0; col < 16; col++) {
-        for (uint y = 0; y < 8; y++) {
-          u16 addr = (row << 8) + (col << 4) + y;
-          u8 lo_bp = this->mem[addr + 0];
-          u8 hi_bp = this->mem[addr + 8];
-          for (uint x = 0; x < 8; x++) {
-            u8 pixel_type = nth_bit(lo_bp, x) + 2 * nth_bit(hi_bp, x);
-            patt_t->set_pixel(
-              col * 8 + (7 - x),
-              row * 8 + y,
-              pixel_type * (256 / 4),
-              pixel_type * (256 / 4),
-              pixel_type * (256 / 4),
-              255
-            );
-          }
-        }
-      }
-    }
-
-    // Right pattern table
-    for (uint row = 0; row < 16; row++) {
-      for (uint col = 0; col < 16; col++) {
-        for (uint y = 0; y < 8; y++) {
-          u16 addr = (row << 8) + (col << 4) + y;
-
-          addr += 0x1000;
-
-          u8 lo_bp = this->mem[addr + 0];
-          u8 hi_bp = this->mem[addr + 8];
-          for (uint x = 0; x < 8; x++) {
-            u8 pixel_type = nth_bit(lo_bp, x) + 2 * nth_bit(hi_bp, x);
-            patt_t->set_pixel(
-              col * 8 + (7 - x) + 0x90, // <--- draw to the right
-              row * 8 + y,
-              pixel_type * (256 / 4),
-              pixel_type * (256 / 4),
-              pixel_type * (256 / 4),
-              255
-            );
-          }
-        }
-      }
-    }
-
-    patt_t->render();
-
-    // Palette Tables
-
-    // nes palette
-    for (uint i = 0; i < 64; i++) {
-      nes_palette->set_pixel(i % 16, i / 16, this->palette[i]);
-    }
-
-    nes_palette->render();
-
-    // Background palette
-    for (u16 addr = 0x3F00; addr < 0x3F10; addr++) {
-      Color color = this->palette[this->mem.peek(addr)];
-      // printf("0x%04X\n", this->mem.peek(addr));
-      palette_t->set_pixel(addr % 4, (addr - 0x3F00) / 4, color);
-    }
-    // Sprite palette
-    for (u16 addr = 0x3F10; addr < 0x3F20; addr++) {
-      Color color = this->palette[this->mem.peek(addr)];
-      // printf("0x%04X\n", this->mem.peek(addr));
-      palette_t->set_pixel(addr % 4 + 5, (addr - 0x3F10) / 4, color);
-    }
-
-    palette_t->render();
-  }
+  this->update_debug_windows();
 #endif
 
   this->cycles += 1;
@@ -395,3 +290,130 @@ PPU::Color PPU::palette [64] = {
   0xFFFEFF, 0xC0DFFF, 0xD3D2FF, 0xE8C8FF, 0xFBC2FF, 0xFEC4EA, 0xFECCC5, 0xF7D8A5,
   0xE4E594, 0xCFEF96, 0xBDF4AB, 0xB3F3CC, 0xB5EBF2, 0xB8B8B8, 0x000000, 0x000000,
 };
+
+/*=====================================
+=            DEBUG WINDOWS            =
+=====================================*/
+
+#ifdef DEBUG_PPU
+
+#include <SDL.h>
+#include "common/debug.h"
+
+static DebugPixelbuffWindow* patt_t;
+static DebugPixelbuffWindow* palette_t;
+static DebugPixelbuffWindow* nes_palette;
+static DebugPixelbuffWindow* name_t;
+
+void PPU::init_debug_windows() {
+  // Pattern Table
+  patt_t = new DebugPixelbuffWindow(
+    "Pattern Table",
+    (0x80 * 2 + 16) * 2, (0x80) * 2,
+     0x80 * 2 + 16,       0x80,
+    0, 32
+  );
+
+  // Palette Table
+  palette_t = new DebugPixelbuffWindow(
+    "Palette Table",
+    (8 + 1) * 20, (4) * 20,
+     8 + 1,        4,
+    0x110 * 2, 4*16*2
+  );
+
+  // the static NES palette
+  nes_palette = new DebugPixelbuffWindow(
+    "Static NES Palette",
+    (16) * 16, (4) * 16,
+     16,        4,
+    0x110 * 2, 0
+  );
+
+  // nametables
+  name_t = new DebugPixelbuffWindow(
+    "Nametables",
+    (256 * 2 + 16), (240 * 2 + 16),
+     256 * 2 + 16,   240 * 2 + 16,
+    0, 324
+  );
+}
+
+void PPU::update_debug_windows() {
+  // Don't update this info every frame, that's sooper pooper slow
+  if (this->cycles % 89290 * 3 * 60 == 0) {
+
+    auto paint_tile = [=](
+      u16 tile_addr,
+      uint tl_x, uint tl_y,
+      DebugPixelbuffWindow* window
+    ) {
+      for (uint y = 0; y < 8; y++) {
+        u8 lo_bp = this->mem.peek(tile_addr + y + 0);
+        u8 hi_bp = this->mem.peek(tile_addr + y + 8);
+
+        for (uint x = 0; x < 8; x++) {
+          u8 pixel_type = nth_bit(lo_bp, x) + 2 * nth_bit(hi_bp, x);
+          window->set_pixel(
+            tl_x + (7 - x),
+            tl_y + y,
+
+            pixel_type * (256 / 4),
+            pixel_type * (256 / 4),
+            pixel_type * (256 / 4),
+            255
+          );
+        }
+      }
+    };
+
+    // Pattern Tables
+    // There are two sets of 256 8x8 pixel tiles
+    // Every 16 bytes represents a single 8x8 pixel tile
+    for (uint addr = 0x0000; addr < 0x2000; addr += 16) {
+      const uint tl_x = ((addr % 0x1000) % 256) / 2
+                      + ((addr >= 0x1000) ? 0x90 : 0);
+      const uint tl_y = ((addr % 0x1000) / 256) * 8;
+
+      paint_tile(addr, tl_x, tl_y, patt_t);
+    }
+
+    patt_t->render();
+
+    // Nametables
+    for (uint addr = 0x2000; addr < 0x2400; addr++) {
+      const uint tl_x = ((addr - 0x2000) % 32) * 8;
+      const uint tl_y = ((addr - 0x2000) / 32) * 8;
+
+      u16 tile_addr = this->mem.peek(addr) * 32;
+
+      paint_tile(tile_addr, tl_x, tl_y, name_t);
+    }
+
+    name_t->render();
+
+    // nes palette
+    for (uint i = 0; i < 64; i++) {
+      nes_palette->set_pixel(i % 16, i / 16, this->palette[i]);
+    }
+
+    nes_palette->render();
+
+    // Palette Tables
+    // Background palette - from 0x3F00 to 0x3F0F
+    // Sprite palette     - from 0x3F10 to 0x3F1F
+    for (u16 addr = 0x3F00; addr < 0x3F20; addr++) {
+      Color color = this->palette[this->mem.peek(addr)];
+      // printf("0x%04X\n", this->mem.peek(addr));
+      palette_t->set_pixel(
+        (addr % 4) + ((addr >= 0x3F10) ? 5 : 0),
+        (addr - ((addr >= 0x3F10) ? 0x3F10 : 0x3F00)) / 4,
+        color
+      );
+    }
+
+    palette_t->render();
+  }
+}
+
+#endif // DEBUG_PPU
