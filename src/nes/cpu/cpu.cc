@@ -7,14 +7,17 @@
 
 CPU::~CPU() {}
 
-CPU::CPU(Memory& mem)
-: mem(mem)
+CPU::CPU(Memory& mem, InterruptLines& interrupt)
+: interrupt(interrupt),
+  mem(mem)
 {
   this->power_cycle();
 }
 
 // https://wiki.nesdev.com/w/index.php/CPU_power_up_state
 void CPU::power_cycle() {
+  this->cycles = 0;
+
   this->reg.p.raw = 0x34; // 0b00110100, Interrupt = 1, Break = 1, Unused = 1
 
   this->reg.a = 0x00;
@@ -23,15 +26,8 @@ void CPU::power_cycle() {
 
   this->reg.s = 0xFD;
 
-  // trigger reset vector
-  this->service_interrupt(CPU::Interrupt::Reset);
-
-  this->pending_interrupt = CPU::Interrupt::None;
-
 #ifdef NESTEST
-  // >> set PC to 0xC000 and clear cycles for NESTEST
   this->reg.pc = 0xC000;
-  this->cycles = 0;
 #endif
 
   this->state = CPU::State::Running;
@@ -42,39 +38,41 @@ void CPU::reset() {
   this->reg.s -= 3; // the stack pointer is decremented by 3 (weird...)
   this->reg.p.i = 1;
 
-  // trigger reset vector
-  this->service_interrupt(CPU::Interrupt::Reset);
-
-  this->pending_interrupt = CPU::Interrupt::None;
-
   this->state = CPU::State::Running;
 }
 
 CPU::State CPU::getState() const { return this->state; }
 
-void CPU::request_interrupt(CPU::Interrupt type) {
-  this->pending_interrupt = type;
-}
-
 /*----------------------------  Private Methods  -----------------------------*/
 
-void CPU::service_interrupt(CPU::Interrupt type) {
-  this->reg.p.i = true; // don't want interrupts being interrupted :D
+void CPU::service_interrupt(Interrupts::Type interrupt, bool brk /* = false */) {
+  using namespace Interrupts;
 
-  if (type != CPU::Interrupt::Reset) {
+  if (interrupt == NONE) return;
+
+#ifdef NESTEST
+  // only allow IRQs to pass through when running NESTEST
+  if (interrupt != IRQ) return;
+#endif
+
+  this->reg.p.i = true; // don't want interrupts being interrupted
+
+  if (interrupt != RESET) {
     this->s_push16(this->reg.pc);
     this->s_push(this->reg.p.raw);
   }
 
   this->cycles += 7;
 
-  switch (type) {
-  case CPU::Interrupt::IRQ: if (!this->reg.p.i)
-                              this->reg.pc = this->mem.read16(0xFFFE); break;
-  case CPU::Interrupt::Reset: this->reg.pc = this->mem.read16(0xFFFC); break;
-  case CPU::Interrupt::NMI:   this->reg.pc = this->mem.read16(0xFFFA); break;
+  switch (interrupt) {
+  case IRQ: if (brk || !this->reg.p.i)
+              this->reg.pc = this->mem.read16(0xFFFE); break;
+  case RESET: this->reg.pc = this->mem.read16(0xFFFC); break;
+  case NMI:   this->reg.pc = this->mem.read16(0xFFFA); break;
   default: break;
   }
+
+  this->interrupt.service(interrupt);
 }
 
 u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
@@ -132,11 +130,7 @@ uint CPU::step() {
   uint old_cycles = this->cycles;
 
   // Service any pending interrupts
-  if (this->pending_interrupt != CPU::Interrupt::None) {
-    this->service_interrupt(this->pending_interrupt);
-    // mark interrupt as serviced
-    this->pending_interrupt = CPU::Interrupt::None;
-  }
+  this->service_interrupt(this->interrupt.get());
 
   // Fetch current opcode
   u8 op = this->mem[this->reg.pc++];
@@ -318,7 +312,7 @@ uint CPU::step() {
                 this->reg.pc = this->s_pull16();
               } break;
     case BRK: { // ignores interrupt disable bit, and just forces an interrupt
-                this->service_interrupt(CPU::Interrupt::IRQ);
+                this->service_interrupt(Interrupts::Type::IRQ, true);
               } break;
     case LSR: { if (opcode.addrm == Instructions::AddrM::acc) {
                   this->reg.p.c = nth_bit(this->reg.a, 0);

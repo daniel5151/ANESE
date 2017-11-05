@@ -29,6 +29,16 @@ PPU_MMU::PPU_MMU(
 // 0x3000 ... 0x3EFF: Mirrors of $2000-$2EFF
 // 0x3F00 ... 0x3FFF: Palette RAM indexes (Mirrored every 32 bytes)
 
+u16 pram_mirror(u16 addr) {
+  addr %= 32;
+
+  // Addresses $3F10/$3F14/$3F18/$3F1C are mirrors of $3F00/$3F04/$3F08/$3F0C
+  if (addr >= 16 && addr % 4)
+    addr -= 16;
+
+  return addr;
+}
+
 u8 PPU_MMU::read(u16 addr) {
   if (in_range(addr, 0x0000, 0x1FFF)) return cart ? cart->read(addr) : 0x0;
   if (in_range(addr, 0x2000, 0x23FF)) return vram->read(addr - this->nt_0);
@@ -36,7 +46,7 @@ u8 PPU_MMU::read(u16 addr) {
   if (in_range(addr, 0x2800, 0x2BFF)) return vram->read(addr - this->nt_2);
   if (in_range(addr, 0x2C00, 0x2FFF)) return vram->read(addr - this->nt_3);
   if (in_range(addr, 0x3000, 0x3EFF)) return this->read(addr - 0x1000);
-  if (in_range(addr, 0x3F00, 0x3FFF)) return pram.read(addr % 32 + 0x3F00);
+  if (in_range(addr, 0x3F00, 0x3FFF)) return pram.read(pram_mirror(addr));
   if (in_range(addr, 0x4000, 0xFFFF)) return this->read(addr - 0x4000);
 
   fprintf(stderr, "[PPU] unhandled address: 0x%04X\n", addr);
@@ -52,7 +62,7 @@ u8 PPU_MMU::peek(u16 addr) const {
   if (in_range(addr, 0x2800, 0x2BFF)) return vram->peek(addr - this->nt_2);
   if (in_range(addr, 0x2C00, 0x2FFF)) return vram->peek(addr - this->nt_3);
   if (in_range(addr, 0x3000, 0x3EFF)) return this->peek(addr - 0x1000);
-  if (in_range(addr, 0x3F00, 0x3FFF)) return pram.peek(addr % 32 + 0x3F00);
+  if (in_range(addr, 0x3F00, 0x3FFF)) return pram.peek(pram_mirror(addr));
   if (in_range(addr, 0x4000, 0xFFFF)) return this->peek(addr - 0x4000);
 
   fprintf(stderr, "[PPU] unhandled address: 0x%04X\n", addr);
@@ -67,7 +77,7 @@ void PPU_MMU::write(u16 addr, u8 val) {
   if (in_range(addr, 0x2800, 0x2BFF)) return vram->write(addr - this->nt_2, val);
   if (in_range(addr, 0x2C00, 0x2FFF)) return vram->write(addr - this->nt_3, val);
   if (in_range(addr, 0x3000, 0x3EFF)) return this->write(addr - 0x1000, val);
-  if (in_range(addr, 0x3F00, 0x3FFF)) return pram.write(addr % 32 + 0x3F00, val);
+  if (in_range(addr, 0x3F00, 0x3FFF)) return pram.write(pram_mirror(addr), val);
   if (in_range(addr, 0x4000, 0xFFFF)) return this->write(addr - 0x4000, val);
 
   fprintf(stderr, "[PPU] unhandled address: 0x%04X\n", addr);

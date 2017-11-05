@@ -5,6 +5,8 @@
 #include "common/bitfield.h"
 #include "instructions.h"
 
+#include "nes/wiring/interrupt_lines.h"
+
 // MOS 6502 (no BCD)
 // https://wiki.nesdev.com/w/index.php/CPU
 // http://users.telenet.be/kim1-6502/6502
@@ -16,16 +18,10 @@ public:
     Halted
   };
 
-  enum class Interrupt {
-    None,
-
-    NMI,
-    IRQ,
-    Reset
-  };
-
 private:
   /*----------  Hardware  ----------*/
+
+  InterruptLines& interrupt;
 
   Memory& mem; // Memory
 
@@ -52,8 +48,6 @@ private:
     u8 y; // Index Y
   } reg;
 
-  Interrupt pending_interrupt;
-
   /*----------  Emulation Vars  ----------*/
 
   uint cycles;  // Cycles elapsed
@@ -63,7 +57,7 @@ private:
 
   u16 get_operand_addr(const Instructions::Opcode& opcode);
 
-  void service_interrupt(Interrupt type);
+  void service_interrupt(Interrupts::Type type, bool brk = false);
 
   // Push / Pop from Stack
   u8   s_pull  ();
@@ -78,12 +72,10 @@ private:
 
 public:
   ~CPU();
-  CPU(Memory& mem);
+  CPU(Memory& mem, InterruptLines& interrupt);
 
   void power_cycle();
   void reset();
-
-  void request_interrupt(Interrupt type);
 
   CPU::State getState() const;
 

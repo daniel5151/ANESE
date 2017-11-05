@@ -9,12 +9,15 @@
   #include <SDL.h>
   #include "common/debug.h"
   static DebugPixelbuffWindow* patt_t;
+  static DebugPixelbuffWindow* palette_t;
+  static DebugPixelbuffWindow* nes_palette;
 #endif
 
 PPU::~PPU() {}
 
-PPU::PPU(Memory& mem, Memory& oam, DMA& dma)
-: dma(dma),
+PPU::PPU(Memory& mem, Memory& oam, DMA& dma, InterruptLines& interrupts)
+: interrupts(interrupts),
+  dma(dma),
   mem(mem),
   oam(oam)
 {
@@ -27,10 +30,27 @@ PPU::PPU(Memory& mem, Memory& oam, DMA& dma)
   this->power_cycle();
 
 #ifdef DEBUG_PPU
+  // Pattern Table
   patt_t = new DebugPixelbuffWindow(
     "Pattern Table",
-    0x80 * 2 + 16, 0x80,
-    32, 32
+    (0x80 * 2 + 16) * 2, (0x80) * 2,
+     0x80 * 2 + 16,       0x80,
+    0, 32
+  );
+
+  // Palette Table
+  palette_t = new DebugPixelbuffWindow(
+    "Palette Table",
+    (8 + 1) * 10, (4) * 10,
+     8 + 1,        4,
+    0, 400
+  );
+
+  nes_palette = new DebugPixelbuffWindow(
+    "Static NES Palette",
+    (16) * 16, (4) * 16,
+     16,        4,
+    0, 800
   );
 #endif
 }
@@ -245,7 +265,7 @@ void PPU::write(u16 addr, u8 val) {
 
 void PPU::cycle() {
 #ifdef DEBUG_PPU
-  if (this->cycles % 200000 == 0) {
+  if (this->cycles % 89341 * 3 * 60 == 0) {
     // Don't update this info every frame, that's sooper pooper slow
 
     // Left pattern table
@@ -296,8 +316,33 @@ void PPU::cycle() {
     }
 
     patt_t->render();
+
+    // Palette Tables
+
+    // nes palette
+    for (uint i = 0; i < 64; i++) {
+      nes_palette->set_pixel(i % 16, i / 16, this->palette[i]);
+    }
+
+    nes_palette->render();
+
+    // Background palette
+    for (u16 addr = 0x3F00; addr < 0x3F10; addr++) {
+      Color color = this->palette[this->mem.peek(addr)];
+      // printf("0x%04X\n", this->mem.peek(addr));
+      palette_t->set_pixel(addr % 4, (addr - 0x3F00) / 4, color);
+    }
+    // Sprite palette
+    for (u16 addr = 0x3F10; addr < 0x3F20; addr++) {
+      Color color = this->palette[this->mem.peek(addr)];
+      // printf("0x%04X\n", this->mem.peek(addr));
+      palette_t->set_pixel(addr % 4 + 5, (addr - 0x3F10) / 4, color);
+    }
+
+    palette_t->render();
   }
 #endif
+
   this->cycles += 1;
 
   const u32 offset = (256 * 4 * this->scan.y) + this->scan.x * 4;
@@ -313,6 +358,15 @@ void PPU::cycle() {
   // Only increment y when x is back at 0
   this->scan.y += (this->scan.x == 0 ? 1 : 0);
   this->scan.y %= 240;
+
+  if ((this->cycles / 341) % 262 == 241) {
+    this->reg.ppustatus.V = true;
+    this->interrupts.request(Interrupts::NMI);
+  }
+
+  if ((this->cycles / 341) % 262 == 0) {
+    this->reg.ppustatus.V = false;
+  }
 }
 
 const u8* PPU::getFrame() const { return this->frame; }
@@ -326,9 +380,9 @@ PPU::Color::Color(u8 r, u8 g, u8 b) {
 }
 
 PPU::Color::Color(u32 color) {
-  this->r = color & 0xFF0000 >> 16;
-  this->g = color & 0x00FF00 >> 8;
-  this->b = color & 0x0000FF >> 0;
+  this->r = (color & 0xFF0000) >> 16;
+  this->g = (color & 0x00FF00) >> 8;
+  this->b = (color & 0x0000FF) >> 0;
 }
 
 PPU::Color PPU::palette [64] = {

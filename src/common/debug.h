@@ -73,14 +73,21 @@ struct DebugPixelbuffWindow {
 
   u8* frame;
 
-  uint w, h, x, y;
+  uint window_w, window_h;
+  uint texture_w, texture_h;
+  uint x, y;
 
   ~DebugPixelbuffWindow();
-  DebugPixelbuffWindow(const char* title, uint w, uint h, uint x, uint y);
+  DebugPixelbuffWindow(
+    const char* title,
+    uint window_w, uint window_h,
+    uint texture_w, uint texture_h,
+    uint x, uint y
+  );
   DebugPixelbuffWindow(const DebugPixelbuffWindow&) = delete;
 
   void set_pixel(uint x, uint y, u8 r, u8 g, u8 b, u8 a);
-  void set_pixel(uint x, uint y, u32 rbg, u8 a);
+  void set_pixel(uint x, uint y, u32 rbg);
 
   void render();
 };

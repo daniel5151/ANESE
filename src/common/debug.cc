@@ -31,7 +31,7 @@ u8 Memory_Sniffer::read(u16 addr) {
 
   // only read once, to prevent side effects
   u8 val = this->mem->read(addr);
-  printf("[%s] R 0x%04X -> 0x%02X\n", this->label, addr, val);
+  printf("[%s] R 0x%04X = 0x%02X\n", this->label, addr, val);
   return val;
 }
 
@@ -45,7 +45,7 @@ u8 Memory_Sniffer::peek(u16 addr) const {
   }
 
   u8 val = this->mem->peek(addr);
-  printf("[%s] P 0x%04X -> 0x%02X\n", this->label, addr, val);
+  printf("[%s] P 0x%04X = 0x%02X\n", this->label, addr, val);
   return val;
 }
 
@@ -80,18 +80,25 @@ DebugPixelbuffWindow::~DebugPixelbuffWindow() {
   SDL_DestroyWindow(this->window);
 }
 
-DebugPixelbuffWindow::DebugPixelbuffWindow(const char* title, uint w, uint h, uint x, uint y) {
+DebugPixelbuffWindow::DebugPixelbuffWindow(
+  const char* title,
+  uint window_w, uint window_h,
+  uint texture_w, uint texture_h,
+  uint x, uint y
+) {
   SDL_Init(SDL_INIT_EVERYTHING);
 
-  this->w = w;
-  this->h = h;
+  this->window_w = window_w;
+  this->window_h = window_h;
+  this->texture_w = texture_w;
+  this->texture_h = texture_h;
   this->x = x;
   this->y = y;
 
   this->window = SDL_CreateWindow(
       title,
       x, y,
-      w * 2, h * 2,
+      window_w, window_h,
       SDL_WINDOW_RESIZABLE
   );
 
@@ -105,32 +112,32 @@ DebugPixelbuffWindow::DebugPixelbuffWindow(const char* title, uint w, uint h, ui
     this->renderer,
     SDL_PIXELFORMAT_ARGB8888,
     SDL_TEXTUREACCESS_STREAMING,
-    w, h
+    texture_w, texture_h
   );
 
-  this->frame = new u8 [w * h * 4];
+  this->frame = new u8 [texture_w * texture_h * 4];
 }
 
 void DebugPixelbuffWindow::set_pixel(uint x, uint y, u8 r, u8 g, u8 b, u8 a) {
-  const uint offset = ((this->w * y) + x) * 4;
+  const uint offset = ((this->texture_w * y) + x) * 4;
   this->frame[offset + 0] = b;
   this->frame[offset + 1] = g;
   this->frame[offset + 2] = r;
   this->frame[offset + 3] = a;
 }
 
-void DebugPixelbuffWindow::set_pixel(uint x, uint y, u32 color, u8 a) {
-  const uint offset = ((this->w * y) + x) * 4;
-  this->frame[offset + 0] = color & 0x0000FF >> 0;
-  this->frame[offset + 1] = color & 0x00FF00 >> 4;
-  this->frame[offset + 2] = color & 0xFF0000 >> 8;
-  this->frame[offset + 3] = a;
+void DebugPixelbuffWindow::set_pixel(uint x, uint y, u32 color) {
+  const uint offset = ((this->texture_w * y) + x) * 4;
+  this->frame[offset + 0] = (color & 0x0000FF) >> 0;
+  this->frame[offset + 1] = (color & 0x00FF00) >> 8;
+  this->frame[offset + 2] = (color & 0xFF0000) >> 16;
+  this->frame[offset + 3] = 0xFF;
 }
 
 
 void DebugPixelbuffWindow::render() {
   // Update the screen texture
-  SDL_UpdateTexture(this->texture, nullptr, this->frame, 0x110 * 4);
+  SDL_UpdateTexture(this->texture, nullptr, this->frame, this->texture_w * 4);
 
   // Render everything
   SDL_RenderCopy(this->renderer, this->texture, nullptr, nullptr);

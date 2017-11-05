@@ -4,7 +4,8 @@
 #include "common/interfaces/memory.h"
 #include "common/bitfield.h"
 
-#include "nes/memory_components/dma.h"
+#include "nes/wiring/dma.h"
+#include "nes/wiring/interrupt_lines.h"
 
 namespace PPURegisters {
   enum Reg {
@@ -37,10 +38,12 @@ private:
     u16 y;
   } scan;
 
+  /*-----------  Hardware  -----------*/
+
+  InterruptLines& interrupts;
+
   // CPU WRAM -> PPU OAM Direct Memory Access (DMA) Unit
   DMA& dma;
-
-  /*-----------  Hardware  -----------*/
 
   Memory& mem; // PPU 16 bit address space (should be wired to ppu_mmu)
   Memory& oam; // PPU Object Attribute Memory
@@ -119,7 +122,7 @@ private:
 
   /*----------  Emulation Vars  ----------*/
 
-  u32 cycles;
+  uint cycles;
 
 public:
   struct Color {
@@ -129,13 +132,19 @@ public:
 
     Color(u8 r, u8 g, u8 b);
     Color(u32 color);
+
+    inline operator u32() const {
+      return (u32(this->r) << 16)
+           | (u32(this->g) << 8)
+           | (u32(this->b) << 0);
+    }
   };
 
   static Color palette [64]; // NES color palette (static, for now)
 
 public:
   ~PPU();
-  PPU(Memory& mem, Memory& oam, DMA& dma);
+  PPU(Memory& mem, Memory& oam, DMA& dma, InterruptLines& interrupts);
 
   // <Memory>
   u8 read(u16 addr) override;

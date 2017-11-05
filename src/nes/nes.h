@@ -5,9 +5,10 @@
 #include "common/util.h"
 #include "cpu/cpu.h"
 #include "ppu/ppu.h"
-#include "memory_components/cpu_mmu.h"
-#include "memory_components/dma.h"
-#include "memory_components/ppu_mmu.h"
+#include "wiring/cpu_mmu.h"
+#include "wiring/dma.h"
+#include "wiring/ppu_mmu.h"
+#include "wiring/interrupt_lines.h"
 
 // Core NES class.
 // - Owns all NES core resources (but NOT the cartridge)
@@ -41,6 +42,8 @@ private:
 
   /*-----------  Static Resources  ------------*/
   // Fixed, non-stateful compnents
+
+  InterruptLines interrupts;
 
   CPU_MMU* cpu_mmu;
   PPU_MMU* ppu_mmu;

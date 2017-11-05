@@ -9,13 +9,16 @@ NES::NES() {
   this->cart = nullptr;
 
   // Create RAM modules
-  this->cpu_wram = new RAM (0x800);
-  this->ppu_vram = new RAM (0x800);
-  this->ppu_pram = new RAM (32);
-  this->ppu_oam  = new RAM (256);
+  this->cpu_wram = new RAM (0x800, "WRAM");
+  this->ppu_vram = new RAM (0x800, "CIRAM");
+  this->ppu_pram = new RAM (32, "Palette");
+  this->ppu_oam  = new RAM (256, "OAM");
 
   // Create DMA component
   this->dma = new DMA (*this->cpu_wram, *this->ppu_oam);
+
+  // Interrupt Lines are created automatically
+  this->interrupts.clear();
 
   // Create Joypads
   // JOY* joy;
@@ -25,7 +28,7 @@ NES::NES() {
     /* vram */ *this->ppu_vram,
     /* pram */ *this->ppu_pram
   );
-  this->ppu = new PPU (*this->ppu_mmu, *this->ppu_oam, *this->dma);
+  this->ppu = new PPU (*this->ppu_mmu, *this->ppu_oam, *this->dma, this->interrupts);
 
   // Create CPU
   this->cpu_mmu = new CPU_MMU(
@@ -34,7 +37,7 @@ NES::NES() {
     /* apu */ *Void_Memory::Get(),
     /* joy */ *Void_Memory::Get()
   );
-  this->cpu = new CPU (*this->cpu_mmu);
+  this->cpu = new CPU (*this->cpu_mmu, this->interrupts);
 
   /*----------  Emulator Vars  ----------*/
 
@@ -88,6 +91,9 @@ void NES::power_cycle() {
   this->cpu_wram->clear();
   this->ppu_pram->clear();
   this->ppu_vram->clear();
+
+  this->interrupts.clear();
+  this->interrupts.request(Interrupts::RESET);
 }
 
 void NES::reset() {
@@ -98,6 +104,8 @@ void NES::reset() {
 
   this->cpu->reset();
   this->ppu->reset();
+
+  this->interrupts.request(Interrupts::RESET);
 }
 
 void NES::cycle() {
@@ -119,7 +127,7 @@ void NES::cycle() {
 void NES::step_frame() {
   if (this->is_running == false) return;
 
-  for (uint i = 0; i < 2000; i++)
+  for (uint i = 0; i < 341 * 262 / 3; i++)
     this->cycle();
 }
 
