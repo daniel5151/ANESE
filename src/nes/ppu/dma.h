@@ -3,23 +3,22 @@
 #include "common/interfaces/memory.h"
 #include "common/util.h"
 
-// Class that facilitates CPU WRAM to PPU OAM Direct Memory Access (DMA)
+// Thin class that gives PPU access to CPU WRAM for Direct Memory Access (DMA)
 class DMA final {
 private:
   Memory& cpu_wram;
-  Memory& ppu_oam;
 
   bool in_dma;
 
   u8   page; // What CPU page to read from
-  u16  step; // How many transfers have occured (from 0x00 to 0xFF)
+  uint step; // How many transfers have occured (from 0x00 to 0xFF)
 
 public:
   ~DMA() = default;
-  DMA(Memory& cpu_wram, Memory& ppu_oam);
+  DMA(Memory& cpu_wram);
 
   void start(u8 page);
-  void transfer();
+  u8   transfer();
 
   bool isActive() const;
 };

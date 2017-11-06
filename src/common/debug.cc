@@ -127,11 +127,7 @@ void DebugPixelbuffWindow::set_pixel(uint x, uint y, u8 r, u8 g, u8 b, u8 a) {
 }
 
 void DebugPixelbuffWindow::set_pixel(uint x, uint y, u32 color) {
-  const uint offset = ((this->texture_w * y) + x) * 4;
-  this->frame[offset + 0] = (color & 0x0000FF) >> 0;
-  this->frame[offset + 1] = (color & 0x00FF00) >> 8;
-  this->frame[offset + 2] = (color & 0xFF0000) >> 16;
-  this->frame[offset + 3] = 0xFF;
+  ((u32*)this->frame)[(this->texture_w * y) + x] = color;
 }
 
 

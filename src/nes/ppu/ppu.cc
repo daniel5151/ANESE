@@ -44,8 +44,7 @@ void PPU::power_cycle() {
   this->reg.ppuscroll.val = 0x0000;
   this->reg.ppuaddr.val = 0x0000;
 
-  this->reg.ppudata = 0x00;
-  this->reg.ppudata_read_buffer = 0x00; // (just a guess)
+  this->reg.ppudata = 0x00; // (just a guess)
 }
 
 void PPU::reset() {
@@ -64,9 +63,18 @@ void PPU::reset() {
   this->reg.ppuscroll.val = 0x0000;
   // this->reg.ppuaddr.val is unchanged
 
-  this->reg.ppudata = 0x00;
-  this->reg.ppudata_read_buffer = 0x00; // (just a guess)
+  this->reg.ppudata = 0x00; // (just a guess)
 }
+
+/*--------------------------  Framebuffer Methods  ---------------------------*/
+
+const u8* PPU::getFrame() const { return this->frame; }
+
+void PPU::draw_dot(uint x, uint y, Color color) {
+  ((u32*)this->frame)[(256 * y) + x] = color;
+}
+
+/*----------------------------  Memory Interface  ----------------------------*/
 
 u8 PPU::read(u16 addr) {
   assert((addr >= 0x2000 && addr <= 0x2007) || addr == 0x4014);
@@ -89,10 +97,10 @@ u8 PPU::read(u16 addr) {
                     if (this->reg.ppuaddr.val <= 0x3EFF) {
                       // Reading Nametables
                       // retval = from internal buffer
-                      retval = this->reg.ppudata_read_buffer;
+                      retval = this->reg.ppudata;
                       // Fill read buffer with acutal data
                       u8 val = this->mem[this->reg.ppuaddr.val % 0x4000];
-                      this->reg.ppudata_read_buffer = val;
+                      this->reg.ppudata = val;
                     } else {
                       // Reading Pallete
                       // retval = directly from memory
@@ -100,7 +108,7 @@ u8 PPU::read(u16 addr) {
                       // Fill read buffer with the mirrored nametable data
                       // Why? Because the wiki said so!
                       u8 val = this->mem[this->reg.ppuaddr.val % 0x2000];
-                      this->reg.ppudata_read_buffer = val;
+                      this->reg.ppudata = val;
                     }
 
                     // (0: add 1, going across; 1: add 32, going down)
@@ -115,7 +123,7 @@ u8 PPU::read(u16 addr) {
                   } break;
   default:        { retval = this->cpu_data_bus;
                     fprintf(stderr,
-                      "[PPU] Reading from a Write-Only register: 0x%04X\n",
+                      "[PPU] Reading from Write-Only register: 0x%04X\n",
                       addr
                     );
                   } break;
@@ -139,7 +147,7 @@ u8 PPU::peek(u16 addr) const {
   case OAMDATA:   { retval = this->oam.peek(this->reg.oamaddr);
                   } break;
   case PPUDATA:   { if (this->reg.ppuaddr.val <= 0x3EFF) {
-                      retval = this->reg.ppudata_read_buffer;
+                      retval = this->reg.ppudata;
                     } else {
                       retval = this->mem.peek(this->reg.ppuaddr.val % 0x4000);
                     }
@@ -152,7 +160,7 @@ u8 PPU::peek(u16 addr) const {
                   } break;
   default:        { retval = this->cpu_data_bus;
                     fprintf(stderr,
-                      "[PPU] Peeking from a Write-Only register: 0x%04X\n",
+                      "[PPU] Peeking from Write-Only register: 0x%04X\n",
                       addr
                     );
                   } break;
@@ -217,12 +225,12 @@ void PPU::write(u16 addr, u8 val) {
                     // 512 cycles of reading & writing
                     this->dma.start(val);
                     while (this->dma.isActive()) {
-                      this->dma.transfer();
+                      this->mem[OAMDATA] = this->dma.transfer();
                       this->cycle();
                     }
                   } return;
   default:        { fprintf(stderr,
-                      "[PPU] Writing to a Read-Only register: 0x%04X\n <- 0x%02X",
+                      "[PPU] Writing to Read-Only register: 0x%04X\n <- 0x%02X",
                       addr,
                       val
                     );
@@ -230,8 +238,7 @@ void PPU::write(u16 addr, u8 val) {
   }
 }
 
-// Just dicking around rn
-#include <cmath>
+/*----------------------------  Core Render Loop  ----------------------------*/
 
 void PPU::cycle() {
 #ifdef DEBUG_PPU
@@ -240,11 +247,13 @@ void PPU::cycle() {
 
   this->cycles += 1;
 
+  // Just dicking around rn
   const u32 offset = (256 * 4 * this->scan.y) + this->scan.x * 4;
-  /* b */ this->frame[offset + 0] = (sin(this->cycles / 10.0) + 1) * 125;
-  /* g */ this->frame[offset + 1] = (this->scan.y / double(240)) * 255;
-  /* r */ this->frame[offset + 2] = (this->scan.x / double(256)) * 255;
   /* a */ this->frame[offset + 3] = 255;
+  /* r */ this->frame[offset + 2] = (this->scan.x / double(256)) * 255;
+  /* g */ this->frame[offset + 1] = (this->scan.y / double(240)) * 255;
+  /* b */ this->frame[offset + 0] = (this->cycles/ 10e2)
+                                  / (this->scan.y + this->scan.x + 1);
 
   // Always increment x
   this->scan.x += 1;
@@ -264,23 +273,27 @@ void PPU::cycle() {
   }
 }
 
-const u8* PPU::getFrame() const { return this->frame; }
+/*-------------------------  Palette + Color Struct  -------------------------*/
 
-/*----------------------------------------------------------------------------*/
-
-PPU::Color::Color(u8 r, u8 g, u8 b) {
-  this->r = r;
-  this->g = g;
-  this->b = b;
+Color::Color(u8 r, u8 g, u8 b) {
+  this->color.r = r;
+  this->color.g = g;
+  this->color.b = b;
+  this->color.a = 0xFF;
 }
 
-PPU::Color::Color(u32 color) {
-  this->r = (color & 0xFF0000) >> 16;
-  this->g = (color & 0x00FF00) >> 8;
-  this->b = (color & 0x0000FF) >> 0;
+Color::Color(u32 rgb) {
+  this->color.r = (rgb & 0xFF0000) >> 16;
+  this->color.g = (rgb & 0x00FF00) >> 8;
+  this->color.b = (rgb & 0x0000FF) >> 0;
+  this->color.a = 0xFF;
 }
 
-PPU::Color PPU::palette [64] = {
+Color::operator u32() const  {
+  return this->color.val;
+}
+
+Color PPU::palette [64] = {
   0x666666, 0x002A88, 0x1412A7, 0x3B00A4, 0x5C007E, 0x6E0040, 0x6C0600, 0x561D00,
   0x333500, 0x0B4800, 0x005200, 0x004F08, 0x00404D, 0x000000, 0x000000, 0x000000,
   0xADADAD, 0x155FD9, 0x4240FF, 0x7527FE, 0xA01ACC, 0xB71E7B, 0xB53120, 0x994E00,
@@ -341,8 +354,7 @@ void PPU::init_debug_windows() {
 
 void PPU::update_debug_windows() {
   // Don't update this info every frame, that's sooper pooper slow
-  if (this->cycles % 89290 * 3 * 60 == 0) {
-
+  if (this->cycles % (89290 * 3 * 30) == 0) {
     auto paint_tile = [=](
       u16 tile_addr,
       uint tl_x, uint tl_y,

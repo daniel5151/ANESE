@@ -4,8 +4,23 @@
 #include "common/interfaces/memory.h"
 #include "common/bitfield.h"
 
-#include "nes/wiring/dma.h"
+#include "dma.h"
 #include "nes/wiring/interrupt_lines.h"
+
+struct Color {
+  union {
+    u32 val;
+    BitField<24, 8> a;
+    BitField<16, 8> r;
+    BitField<8,  8> g;
+    BitField<0,  8> b;
+  } color;
+
+  Color(u8 r, u8 g, u8 b);
+  Color(u32 color);
+
+  operator u32() const;
+};
 
 namespace PPURegisters {
   enum Reg {
@@ -23,6 +38,9 @@ namespace PPURegisters {
 
 // http://wiki.nesdev.com/w/index.php/PPU_programmer_reference
 class PPU final : public Memory {
+public:
+  static Color palette [64]; // NES color palette (static, for now)
+
 private:
 
   /*----------  "Hardware"  ----------*/
@@ -44,12 +62,7 @@ private:
   bool latch; // Controls which byte to write to in PPUADDR and PPUSCROLL
               // 0 = write to hi, 1 = write to lo
 
-
   struct { // Registers
-    // ------ Internal Registers ------- //
-
-    u8 ppudata_read_buffer;
-
     // ---- Memory Mapped Registers ---- //
 
     union {     // PPUCTRL   - 0x2000 - PPU control register
@@ -99,6 +112,7 @@ private:
     } ppuaddr;
 
     u8 ppudata; // PPUDATA   - 0x2007 - PPU VRAM data port
+                // (this u8 is the read buffer)
   } reg;
 
   // What about OAMDMA - 0x4014 - PPU DMA register?
@@ -117,8 +131,9 @@ private:
 
   // framebuffer
   u8 frame [240 * 256 * 4];
+  void draw_dot(uint x, uint y, Color color);
 
-  // current pixel
+  // current dot to draw
   struct {
     uint x;
     uint y;
@@ -130,24 +145,6 @@ private:
   void   init_debug_windows();
   void update_debug_windows();
 #endif // DEBUG_PPU
-
-public:
-  struct Color {
-    u8 r;
-    u8 g;
-    u8 b;
-
-    Color(u8 r, u8 g, u8 b);
-    Color(u32 color);
-
-    inline operator u32() const {
-      return (u32(this->r) << 16)
-           | (u32(this->g) << 8)
-           | (u32(this->b) << 0);
-    }
-  };
-
-  static Color palette [64]; // NES color palette (static, for now)
 
 public:
   ~PPU();

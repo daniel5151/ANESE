@@ -20,10 +20,14 @@ INES::INES(const u8* data, u32 data_len) {
   // If this isn't valid data, don't keep parsing it!
   if (!this->is_valid) { return; }
 
+  fprintf(stderr, "[iNES] Header parsed\n");
+
   // Parse the rest of the header
 
   this->flags.prg_rom_pages = data[4];
+  fprintf(stderr, "[iNES] PRG-ROM pages: %d\n", this->flags.prg_rom_pages);
   this->flags.chr_rom_pages = data[5];
+  fprintf(stderr, "[iNES] CHR-ROM pages: %d\n", this->flags.chr_rom_pages);
 
   // Can't use a ROM with no prg_rom!
   if (this->flags.prg_rom_pages == 0) {
@@ -60,6 +64,8 @@ INES::INES(const u8* data, u32 data_len) {
   this->flags.is_VS   = nth_bit(data[7], 0);
 
   this->mapper = data[6] >> 4 & (data[7] & 0xFF00);
+
+  fprintf(stderr, "[iNES] Mapper: %d\n", this->mapper);
 
   // Not parsing the rest of the headers, since it's not really used for much
 

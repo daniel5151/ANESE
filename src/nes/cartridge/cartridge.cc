@@ -1,16 +1,21 @@
 #include "cartridge.h"
 
+#include <cstdio>
+
 Cartridge::Cartridge(const u8* data, u32 data_len)
 : rom_data(new INES(data, data_len)),
   mapper(Mapper::Factory(*this->rom_data))
 {
   if (this->rom_data->flags.has_4screen) {
+    fprintf(stderr, "[Mirroring] FourScreen\n");
     this->mirroring_type = Cartridge::Mirroring::FourScreen;
   }
   else if (this->rom_data->flags.mirror_type == 0) {
+    fprintf(stderr, "[Mirroring] Vertical\n");
     this->mirroring_type = Cartridge::Mirroring::Vertical;
   }
   else /* (this->rom_data->flags.mirror_type == 1) */ {
+    fprintf(stderr, "[Mirroring] Horizontal\n");
     this->mirroring_type = Cartridge::Mirroring::Horizontal;
   }
 }

@@ -4,9 +4,9 @@
 #include "nes/generic/ram/ram.h"
 #include "common/util.h"
 #include "cpu/cpu.h"
+#include "ppu/dma.h"
 #include "ppu/ppu.h"
 #include "wiring/cpu_mmu.h"
-#include "wiring/dma.h"
 #include "wiring/ppu_mmu.h"
 #include "wiring/interrupt_lines.h"
 

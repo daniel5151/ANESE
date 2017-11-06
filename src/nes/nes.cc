@@ -15,9 +15,10 @@ NES::NES() {
   this->ppu_oam  = new RAM (256, "OAM");
 
   // Create DMA component
-  this->dma = new DMA (*this->cpu_wram, *this->ppu_oam);
+  this->dma = new DMA (*this->cpu_wram);
 
   // Interrupt Lines are created automatically
+  // That said, we may as well clear them
   this->interrupts.clear();
 
   // Create Joypads
