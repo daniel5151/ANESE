@@ -33,7 +33,7 @@ u16 pram_mirror(u16 addr) {
   addr %= 32;
 
   // Addresses $3F10/$3F14/$3F18/$3F1C are mirrors of $3F00/$3F04/$3F08/$3F0C
-  if (addr >= 16 && addr % 4)
+  if (addr >= 16 && (addr % 4 == 0))
     addr -= 16;
 
   return addr;

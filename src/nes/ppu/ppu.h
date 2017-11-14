@@ -109,11 +109,23 @@ private:
       u16 val;            // 16 bit address
       BitField<8, 8> hi;  // hi byte of addr
       BitField<0, 8> lo;  // lo byte of addr
+
+      // https://wiki.nesdev.com/w/index.php/PPU_scrolling
+      BitField<0,  5> x_scroll;
+      BitField<5,  5> y_scroll;
+      BitField<10, 2> nametable;
+      BitField<12, 3> y_scroll_fine;
     } ppuaddr;
 
     u8 ppudata; // PPUDATA   - 0x2007 - PPU VRAM data port
                 // (this u8 is the read buffer)
-  } reg;
+
+    // ---- Internal Registers ---- //
+
+    // At the moment, i'm not really sure how to use this, but this is a actual
+    // hardware component, so i'll use it later i'd imagine
+    u16 ppuaddr_t;  // temporary vram address (actually 15 bits)
+ } reg;
 
   // What about OAMDMA - 0x4014 - PPU DMA register?
   //
@@ -122,22 +134,24 @@ private:
   // DMA is handled by an external unit (this->dma), an object that has
   // references to both CPU WRAM and PPU OAM.
   // To make the emulator code simpler, the PPU object handles the 0x4014 call,
-  // but all that actually happens is that it calls this->dma.write(...), and
-  // cycles itself for the 513/514 cycles that it takes to do this
+  // but all that actually happens is that it calls this->dma.transfer(), pushes
+  // that data to 0x2004, and cycles itself for the requisite number of cycles
+  // that it takes to do this
 
-  /*----------  Emulation Vars  ----------*/
+  /*----  Emulation Vars and Methods  ----*/
 
   uint cycles;
+  uint frames;
 
   // framebuffer
-  u8 frame [240 * 256 * 4];
-  void draw_dot(uint x, uint y, Color color);
+  u8 framebuff [240 * 256 * 4];
+  void draw_dot(Color color);
 
   // current dot to draw
   struct {
     uint x;
     uint y;
-  } scan;
+  } dot;
 
   /*---------------  Debug  --------------*/
 
@@ -161,5 +175,6 @@ public:
 
   void cycle();
 
-  const u8* getFrame() const;
+  const u8* getFramebuff() const;
+  uint getFrames() const;
 };

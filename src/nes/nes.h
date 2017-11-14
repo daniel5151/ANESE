@@ -74,7 +74,7 @@ public:
   void step_frame(); // Run the NES until there is a new frame to display
                      // (calls cycle() internally)
 
-  const u8* getFrame() const;
+  const u8* getFramebuff() const;
 
   bool isRunning() const;
 };

@@ -12,10 +12,10 @@ PPU::PPU(Memory& mem, Memory& oam, DMA& dma, InterruptLines& interrupts)
   oam(oam)
 {
   for (uint i = 0; i < 256 * 240 * 4; i++)
-    this->frame[i] = 0;
+    this->framebuff[i] = 0;
 
-  this->scan.x = 0;
-  this->scan.y = 0;
+  this->dot.x = 0;
+  this->dot.y = 261; // start on pre-render scanline
 
   this->power_cycle();
 
@@ -29,6 +29,8 @@ void PPU::power_cycle() {
 
   this->cpu_data_bus = 0x00;
 
+  this->latch = 0;
+
   // http://wiki.nesdev.com/w/index.php/PPU_power_up_state
   this->reg.ppuctrl.raw = 0x00;
   this->reg.ppumask.raw = 0x00;
@@ -40,7 +42,6 @@ void PPU::power_cycle() {
   this->reg.oamaddr = 0x00;
   this->reg.oamdata = 0x00; // (just a guess)
 
-  this->latch = 0;
   this->reg.ppuscroll.val = 0x0000;
   this->reg.ppuaddr.val = 0x0000;
 
@@ -68,10 +69,12 @@ void PPU::reset() {
 
 /*--------------------------  Framebuffer Methods  ---------------------------*/
 
-const u8* PPU::getFrame() const { return this->frame; }
+uint PPU::getFrames() const { return this->frames; }
 
-void PPU::draw_dot(uint x, uint y, Color color) {
-  ((u32*)this->frame)[(256 * y) + x] = color;
+const u8* PPU::getFramebuff() const { return this->framebuff; }
+
+void PPU::draw_dot(Color color) {
+  ((u32*)this->framebuff)[(256 * this->dot.y) + this->dot.x] = color;
 }
 
 /*----------------------------  Memory Interface  ----------------------------*/
@@ -99,12 +102,12 @@ u8 PPU::read(u16 addr) {
                       // retval = from internal buffer
                       retval = this->reg.ppudata;
                       // Fill read buffer with acutal data
-                      u8 val = this->mem[this->reg.ppuaddr.val % 0x4000];
+                      u8 val = this->mem[this->reg.ppuaddr.val];
                       this->reg.ppudata = val;
                     } else {
                       // Reading Pallete
                       // retval = directly from memory
-                      retval = this->mem[this->reg.ppuaddr.val % 0x4000];
+                      retval = this->mem[this->reg.ppuaddr.val];
                       // Fill read buffer with the mirrored nametable data
                       // Why? Because the wiki said so!
                       u8 val = this->mem[this->reg.ppuaddr.val % 0x2000];
@@ -149,7 +152,7 @@ u8 PPU::peek(u16 addr) const {
   case PPUDATA:   { if (this->reg.ppuaddr.val <= 0x3EFF) {
                       retval = this->reg.ppudata;
                     } else {
-                      retval = this->mem.peek(this->reg.ppuaddr.val % 0x4000);
+                      retval = this->mem.peek(this->reg.ppuaddr.val);
                     }
                   } break;
   case OAMDMA:    { // This is not a valid operation...
@@ -208,12 +211,10 @@ void PPU::write(u16 addr, u8 val) {
                     if (this->latch == 1) this->reg.ppuaddr.lo = val;
                     this->latch = !this->latch;
                   } return;
-  case PPUDATA:   { u16 true_addr = this->reg.ppuaddr.val % 0x4000;
-                    this->mem[true_addr] = val;
+  case PPUDATA:   { this->mem[this->reg.ppuaddr.val] = val;
                     // (0: add 1, going across; 1: add 32, going down)
-                    bool mode = this->reg.ppuctrl.I;
-                    if (mode == 0) this->reg.ppuaddr.val += 1;
-                    if (mode == 1) this->reg.ppuaddr.val += 32;
+                    if (this->reg.ppuctrl.I == 0) this->reg.ppuaddr.val += 1;
+                    if (this->reg.ppuctrl.I == 1) this->reg.ppuaddr.val += 32;
                   } return;
   case OAMDMA:    { // The CPU is paused during DMA, but the PPU is not!
                     // DMA takes 513 / 514 CPU cycles:
@@ -226,6 +227,7 @@ void PPU::write(u16 addr, u8 val) {
                     this->dma.start(val);
                     while (this->dma.isActive()) {
                       this->mem[OAMDATA] = this->dma.transfer();
+                      this->cycle();
                       this->cycle();
                     }
                   } return;
@@ -241,35 +243,54 @@ void PPU::write(u16 addr, u8 val) {
 /*----------------------------  Core Render Loop  ----------------------------*/
 
 void PPU::cycle() {
+  this->cycles += 1;
+
 #ifdef DEBUG_PPU
   this->update_debug_windows();
 #endif
 
-  this->cycles += 1;
+  const bool start_of_line = (this->cycles % 342 == 0);
 
-  // Just dicking around rn
-  const u32 offset = (256 * 4 * this->scan.y) + this->scan.x * 4;
-  /* a */ this->frame[offset + 3] = 255;
-  /* r */ this->frame[offset + 2] = (this->scan.x / double(256)) * 255;
-  /* g */ this->frame[offset + 1] = (this->scan.y / double(240)) * 255;
-  /* b */ this->frame[offset + 0] = (this->cycles/ 10e2)
-                                  / (this->scan.y + this->scan.x + 1);
+  if (start_of_line) {
+    // Update current dot position
+    this->dot.y += 1;
+    this->dot.x = 0;
 
-  // Always increment x
-  this->scan.x += 1;
-  this->scan.x %= 256;
-
-  // Only increment y when x is back at 0
-  this->scan.y += (this->scan.x == 0 ? 1 : 0);
-  this->scan.y %= 240;
-
-  if ((this->cycles / 341) % 262 == 241) {
-    this->reg.ppustatus.V = true;
-    this->interrupts.request(Interrupts::NMI);
+    if (this->dot.y > 261) {
+      this->dot.y = 0;
+      this->frames += 1;
+    }
   }
 
-  if ((this->cycles / 341) % 262 == 0) {
-    this->reg.ppustatus.V = false;
+  // Check if there is anything to render
+  // (i.e: the show sprites flag is on, or show backgrounds flag is on)
+  if (this->reg.ppumask.s || this->reg.ppumask.b) {
+
+    // this is just me messing around
+    if (this->dot.y < 240) {
+      this->draw_dot(
+        this->palette[
+          (this->cycles / (0x3FFF) + this->dot.x + this->dot.y) / 128 % 64
+        ]
+      );
+
+      this->dot.x += 1;
+      this->dot.x %= 256;
+    }
+  }
+
+  // Enable / Disable vblank
+  if (start_of_line) {
+    // vblank start on line 241...
+    if (this->dot.y == 241 && this->reg.ppuctrl.V) {
+      this->reg.ppustatus.V = true;
+      this->interrupts.request(Interrupts::NMI);
+    }
+
+    // ...and ends after line 260
+    if (this->dot.y == 261) {
+      this->reg.ppustatus.V = false;
+    }
   }
 }
 
@@ -313,6 +334,10 @@ Color PPU::palette [64] = {
 #include <SDL.h>
 #include "common/debug.h"
 
+constexpr uint UPDATE_EVERY_X_FRAMES = 10;
+
+static_assert(UPDATE_EVERY_X_FRAMES > 1, "causes badness. pls no do.");
+
 static DebugPixelbuffWindow* patt_t;
 static DebugPixelbuffWindow* palette_t;
 static DebugPixelbuffWindow* nes_palette;
@@ -353,11 +378,28 @@ void PPU::init_debug_windows() {
 }
 
 void PPU::update_debug_windows() {
-  // Don't update this info every frame, that's sooper pooper slow
-  if (this->cycles % (89290 * 3 * 30) == 0) {
+  if (this->cycles < 10) {
+    // load in a debug palette
+    this->mem[0x3F00 + 0] = 0x1D;
+    this->mem[0x3F00 + 1] = 0x2D;
+    this->mem[0x3F00 + 2] = 0x3D;
+    this->mem[0x3F00 + 3] = 0x30;
+  }
+
+  // i'm making it update every second right now
+  static bool should_update = true;
+  if (
+    should_update == false &&
+    this->frames % UPDATE_EVERY_X_FRAMES == UPDATE_EVERY_X_FRAMES - 1
+  ) should_update = true;
+
+  if (should_update && this->frames % UPDATE_EVERY_X_FRAMES == 0) {
+    should_update = false;
+
     auto paint_tile = [=](
       u16 tile_addr,
       uint tl_x, uint tl_y,
+      uint palette, // from 0 - 4
       DebugPixelbuffWindow* window
     ) {
       for (uint y = 0; y < 8; y++) {
@@ -366,14 +408,16 @@ void PPU::update_debug_windows() {
 
         for (uint x = 0; x < 8; x++) {
           u8 pixel_type = nth_bit(lo_bp, x) + 2 * nth_bit(hi_bp, x);
+
+          Color color = this->palette[
+            this->mem.peek(0x3F00 + palette * 4 + pixel_type)
+          ];
+
           window->set_pixel(
             tl_x + (7 - x),
             tl_y + y,
 
-            pixel_type * (256 / 4),
-            pixel_type * (256 / 4),
-            pixel_type * (256 / 4),
-            255
+            color
           );
         }
       }
@@ -387,20 +431,76 @@ void PPU::update_debug_windows() {
                       + ((addr >= 0x1000) ? 0x90 : 0);
       const uint tl_y = ((addr % 0x1000) / 256) * 8;
 
-      paint_tile(addr, tl_x, tl_y, patt_t);
+      paint_tile(addr, tl_x, tl_y, 0, patt_t);
     }
 
     patt_t->render();
 
     // Nametables
-    for (uint addr = 0x2000; addr < 0x2400; addr++) {
-      const uint tl_x = ((addr - 0x2000) % 32) * 8;
-      const uint tl_y = ((addr - 0x2000) / 32) * 8;
+    auto paint_nametable = [=](
+      u16 base_addr,
+      uint offset_x, uint offset_y
+    ){
+      for (uint addr = base_addr; addr < base_addr + 0x400 - 64; addr++) {
+        // Getting which tile to render is easy...
 
-      u16 tile_addr = this->mem.peek(addr) * 32;
+        u16 tile_addr = (this->reg.ppuctrl.B * 0x1000) // bg palette selector
+                      + this->mem.peek(addr) * 16;
 
-      paint_tile(tile_addr, tl_x, tl_y, name_t);
-    }
+        // ...The hard part is figuring out the palette for it :)
+        // http://wiki.nesdev.com/w/index.php/PPU_attribute_tables
+
+        // What 8x8 tile are we on?
+        // There are 32 tiles per row, and a total of 30 rows
+        const uint tile_no = addr - base_addr;
+        const uint tile_row = tile_no % 32;
+        const uint tile_col = tile_no / 32;
+
+        // Supertiles are 32x32 collections of pixels, where each 16x16 corner
+        // of the supertile (4 8x8 tiles) can be assigned a palette
+        const uint supertile_no = tile_row / 4
+                                + tile_col / 4 * 8;
+
+        // Nice! Now we can pull data from the attribute table!
+        // Now, to descifer which of the 4 palettes to use...
+        const u8 attribute = this->mem[base_addr + 0x3C0 + supertile_no];
+
+        // What corner is this particular 8x8 tile in?
+        //
+        // top left = 0
+        // top right = 1
+        // bottom left = 2
+        // bottom right = 3
+        const uint corner = (tile_row % 4) / 2
+                          + (tile_col % 4) / 2 * 2;
+
+        // Recall that the attribute byte stores the palette assignment data
+        // formatted as follows:
+        //
+        // attribute = (topleft << 0)
+        //           | (topright << 2)
+        //           | (bottomleft << 4)
+        //           | (bottomright << 6)
+        //
+        // thus, we can reverse the process with some clever bitmasking!
+        // 0x03 == 0b00000011
+        const uint mask = 0x03 << (corner * 2);
+        const uint palette = (attribute & mask) >> (corner * 2);
+
+        // And with that, we can go ahead and render it!
+
+        // 32 tiles per row, each is 8x8 pixels
+        const uint tl_x = (tile_no % 32) * 8 + offset_x;
+        const uint tl_y = (tile_no / 32) * 8 + offset_y;
+
+        paint_tile(tile_addr, tl_x, tl_y, palette, name_t);
+      }
+    };
+
+    paint_nametable(0x2000, 0,        0       );
+    paint_nametable(0x2400, 256 + 16, 0       );
+    paint_nametable(0x2800, 0,        240 + 16);
+    paint_nametable(0x2C00, 256 + 16, 240 + 16);
 
     name_t->render();
 

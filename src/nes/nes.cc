@@ -35,7 +35,7 @@ NES::NES() {
   this->cpu_mmu = new CPU_MMU(
     /* ram */ *this->cpu_wram,
     /* ppu */ *this->ppu,
-    /* apu */ *Void_Memory::Get(),
+    /* apu */ *new Map_Memory(), // this is leaky, but ees okai, since debug
     /* joy */ *Void_Memory::Get()
   );
   this->cpu = new CPU (*this->cpu_mmu, this->interrupts);
@@ -115,23 +115,26 @@ void NES::cycle() {
   // Execute a CPU instruction
   uint cpu_cycles = this->cpu->step();
 
+    // Check if the CPU halted
+  if (this->cpu->getState() == CPU::State::Halted) {
+    this->is_running = false;
+    return;
+  }
+
   // Run the PPU 3x for every cpu_cycle it took
   for (uint i = 0; i < cpu_cycles * 3; i++)
     this->ppu->cycle();
-
-  // Check if the CPU halted
-  if (this->cpu->getState() == CPU::State::Halted) {
-    this->is_running = false;
-  }
 }
 
 void NES::step_frame() {
   if (this->is_running == false) return;
 
-  for (uint i = 0; i < 341 * 262 / 3; i++)
+  const uint curr_frame = this->ppu->getFrames();
+  while (this->is_running && this->ppu->getFrames() == curr_frame) {
     this->cycle();
+  }
 }
 
-const u8* NES::getFrame() const { return this->ppu->getFrame(); }
+const u8* NES::getFramebuff() const { return this->ppu->getFramebuff(); }
 
 bool NES::isRunning() const { return this->is_running; }

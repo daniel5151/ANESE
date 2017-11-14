@@ -13,6 +13,14 @@ Void_Memory* Void_Memory::Get() {
   return the_void;
 }
 
+u8 Map_Memory::read(u16 addr)       { return this->mem[addr]; };
+u8 Map_Memory::peek(u16 addr) const { return this->mem.count(addr) != 0
+                                        ? this->mem.at(addr)
+                                        : 0x00;
+                                    };
+void Map_Memory::write(u16 addr, u8 val) { this->mem[addr] = val; };
+
+
 /*----------------------------------------------------------------------------*/
 
 Memory_Sniffer::Memory_Sniffer(const char* label, Memory* mem)
@@ -45,7 +53,9 @@ u8 Memory_Sniffer::peek(u16 addr) const {
   }
 
   u8 val = this->mem->peek(addr);
-  printf("[%s] P 0x%04X = 0x%02X\n", this->label, addr, val);
+  // Actually, don't print out anything, since I don't need the clutter from
+  // the various debug views
+  // printf("[%s] P 0x%04X = 0x%02X\n", this->label, addr, val);
   return val;
 }
 

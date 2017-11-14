@@ -27,6 +27,23 @@ public:
   static Void_Memory* Get();
 };
 
+// Map Memory
+// Uses STL map to store memory
+#include <map>
+class Map_Memory : public Memory {
+private:
+  std::map<u16, u8> mem;
+
+public:
+  Map_Memory() = default;
+
+  // <Memory>
+  u8 read(u16 addr)            override;
+  u8 peek(u16 addr) const      override;
+  void write(u16 addr, u8 val) override;
+  // <Memory/>
+};
+
 // Wrapper that transaparently intercepts all transactions that occur through a
 // given Memory* and logs them.
 //

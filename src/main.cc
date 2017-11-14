@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Update the screen texture
-    SDL_UpdateTexture(texture, nullptr, nes.getFrame(), RES_X * 4);
+    SDL_UpdateTexture(texture, nullptr, nes.getFramebuff(), RES_X * 4);
 
     // Render everything
     SDL_RenderCopy(renderer, texture, nullptr, &screen);
