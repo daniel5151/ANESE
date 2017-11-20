@@ -6,17 +6,17 @@ Emulator being written for fun and learning.
 I am aiming for accuracy in the long run, but the primary goal is simply getting
 it to play some of the more popular titles :smile:
 
-I am aiming for clean, performant, and _interesting_ C++11 code, with a emphasis
-on keeping the source readable, maintainable, and comprehensible.
+I am aiming for clean and _interesting_ C++11 code, with a emphasis on keeping
+the source readable, maintainable, and comprehensible. Performance is important,
+but not a primary focus.
 
 It is being built with _cross-platform_ in mind, with builds being tested on
 MacOS, Linux (Ubuntu), and Windows regularly, with strict compiler flags, and
 regular `cppcheck` linting.
 
 
-Lastly, I actively avoiding looking at the source codes of other NES emulators
-during early development, since IMO, half the fun of writing a emulator is
-figuring things out yourself :grin:
+Lastly, I am trying to avoid looking at the source codes of other NES emulators,
+since IMO, half the fun of writing a emulator is figuring things out yourself :D
 
 ## Building
 
@@ -40,7 +40,9 @@ cmake ..
 make
 ```
 
-Building on Windows has been tested with VS 2017
+Building on Windows has been tested with VS 2017 using both MSVC and Clang.
+At the moment, it is reccomended to build with Clang, as unlike MSVC, it can
+optimize ANESE code well enough to hit 60 fps.
 
 ## Running
 

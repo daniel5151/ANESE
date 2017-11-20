@@ -8,18 +8,23 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${anese_SOURCE_DIR}/cmake")
 set(BIN_DIR ${anese_SOURCE_DIR}/bin)
 
 # Bump up warning levels appropriately for clang, gcc & msvc and build in debug mode
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+if (NOT WIN32 AND (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -std=c++11")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -g -fsanitize=undefined")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3")
+elseif (WIN32 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+  # cmake doesn't play nice with Visual Studio and Clang
+  # so yeah, these flags are pretty janky
+  # but hey, they seem to get the exe running at 60 fups, so w/e
+  set(CMAKE_CXX_FLAGS "-Qunused-arguments -Wall -Wextra -std=c++11")
+  set(CMAKE_CXX_FLAGS_DEBUG " ")
+  set(CMAKE_CXX_FLAGS_RELEASE " ")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-  if (CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
-    string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-  endif()
+  # MSVC doesn't compile ANESE optimally, and struggles to hit even 30 fups
+  # I reccoment using clang on Windows.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /O2 /fp:fast")
   # suppress some MSVC warnings
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS) # unsafe funcs (fprintf and such)
   # 4458 - declaration of 'x' hides class member
   #   * non issue, since I tend to refer to class members through this->
   # 4310 - cast truncates constant value
