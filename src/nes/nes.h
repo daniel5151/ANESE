@@ -36,6 +36,7 @@ private:
   RAM* ppu_vram; // 2k PPU nametable VRAM
   RAM* ppu_pram; // 32 bytes PPU palette RAM
   RAM* ppu_oam;  // 256 bytes PPU Object Attribute Memory (OAM)
+  RAM* ppu_oam2; // 32 bytes secondary OAM
 
   // Joypads
   // JOY* joy;

@@ -5,4 +5,5 @@ cppcheck \
   --std=c++11 \
   -I ./src \
   ./src \
-  2> cppcheck.txt && sort cppcheck.txt | sed -e "/constructor with 1 argument/d"\
+  2> cppcheck.txt && sort cppcheck.txt | sed -e "/constructor with 1 argument/d"
+rm cppcheck.txt

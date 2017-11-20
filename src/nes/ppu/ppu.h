@@ -4,23 +4,9 @@
 #include "common/interfaces/memory.h"
 #include "common/bitfield.h"
 
+#include "color.h"
 #include "dma.h"
 #include "nes/wiring/interrupt_lines.h"
-
-struct Color {
-  union {
-    u32 val;
-    BitField<24, 8> a;
-    BitField<16, 8> r;
-    BitField<8,  8> g;
-    BitField<0,  8> b;
-  } color;
-
-  Color(u8 r, u8 g, u8 b);
-  Color(u32 color);
-
-  operator u32() const;
-};
 
 namespace PPURegisters {
   enum Reg {
@@ -36,11 +22,10 @@ namespace PPURegisters {
   };
 } // PPURegisters
 
+// Picture Processing Unit
+// This guy is NOT cycle-accurate at the moment!
 // http://wiki.nesdev.com/w/index.php/PPU_programmer_reference
 class PPU final : public Memory {
-public:
-  static Color palette [64]; // NES color palette (static, for now)
-
 private:
 
   /*----------  "Hardware"  ----------*/
@@ -52,10 +37,21 @@ private:
 
   /*-----------  Hardware  -----------*/
 
-  InterruptLines& interrupts;
+  // ---- Core Hardware ---- //
 
+  InterruptLines& interrupts;
   Memory& mem; // PPU 16 bit address space (should be wired to ppu_mmu)
-  Memory& oam; // PPU Object Attribute Memory
+
+  // ---- Sprite Hardware ---- //
+
+  Memory& oam;  // Primary OAM - 256 bytes (Object Attribute Memory)
+  Memory& oam2; // Secondary OAM - 32 bytes (8 sprites to render on scanline)
+
+  // ---- Background Hardware ---- //
+
+  // TBD
+
+  // ---- Memory Mapped Registers ---- //
 
   u8 cpu_data_bus; // PPU <-> CPU data bus (filled on any register write)
 
@@ -63,8 +59,6 @@ private:
               // 0 = write to hi, 1 = write to lo
 
   struct { // Registers
-    // ---- Memory Mapped Registers ---- //
-
     union {     // PPUCTRL   - 0x2000 - PPU control register
       u8 raw;
       BitField<7> V; // NMI enable
@@ -118,14 +112,7 @@ private:
     } ppuaddr;
 
     u8 ppudata; // PPUDATA   - 0x2007 - PPU VRAM data port
-                // (this u8 is the read buffer)
-
-    // ---- Internal Registers ---- //
-
-    // At the moment, i'm not really sure how to use this, but this is a actual
-    // hardware component, so i'll use it later i'd imagine
-    u16 ppuaddr_t;  // temporary vram address (actually 15 bits)
- } reg;
+  } reg;
 
   // What about OAMDMA - 0x4014 - PPU DMA register?
   //
@@ -135,23 +122,34 @@ private:
   // references to both CPU WRAM and PPU OAM.
   // To make the emulator code simpler, the PPU object handles the 0x4014 call,
   // but all that actually happens is that it calls this->dma.transfer(), pushes
-  // that data to 0x2004, and cycles itself for the requisite number of cycles
-  // that it takes to do this
+  // that data to OAMDATA, and cycles itself for the requisite number of cycles
+
+  /*---- Helper Functions ----*/
+
+  void get_bgr_pixel(bool& has_spr, u8& color);
+  void get_spr_pixel(bool& has_spr, u8& color, bool& priority);
+
+  void sprite_eval();
 
   /*----  Emulation Vars and Methods  ----*/
 
-  uint cycles;
-  uint frames;
+  uint cycles; // total PPU cycles
+  uint frames; // total frames rendered
 
   // framebuffer
   u8 framebuff [240 * 256 * 4];
   void draw_dot(Color color);
 
-  // current dot to draw
+  // scanline tracker
   struct {
-    uint x;
-    uint y;
-  } dot;
+    uint line;  // 0 - 261
+    uint cycle; // 0 - 340
+  } scan;
+
+  // State related to sprite evaluation
+  struct {
+    u8 oam2addr; // pointer into oam2
+  } spr_eval;
 
   /*---------------  Debug  --------------*/
 
@@ -162,7 +160,13 @@ private:
 
 public:
   ~PPU();
-  PPU(Memory& mem, Memory& oam, DMA& dma, InterruptLines& interrupts);
+  PPU(
+    Memory& mem,
+    Memory& oam,
+    Memory& oam2,
+    DMA& dma,
+    InterruptLines& interrupts
+  );
 
   // <Memory>
   u8 read(u16 addr) override;
@@ -177,4 +181,7 @@ public:
 
   const u8* getFramebuff() const;
   uint getFrames() const;
+
+  // NES color palette (static, for the time being)
+  static const Color palette [64];
 };

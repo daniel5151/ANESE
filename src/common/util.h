@@ -18,6 +18,9 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
+#include "unsigned.h"
+typedef Unsigned<2> u2;
+
 /* Helper functions */
 
 // get nth bit from a number x, with bit layout:
@@ -28,6 +31,6 @@ inline bool nth_bit(T x, u8 n) { return (x >> n) & 1; }
 
 // check if number is in range
 template <typename T, typename T2>
-bool in_range(T x, T2 min, T2 max) { return x >= min && x <= max; }
+inline bool in_range(T x, T2 min, T2 max) { return x >= T(min) && x <= T(max); }
 template <typename T, typename T2>
-bool in_range(T x, T2 val) { return x == val; }
+inline bool in_range(T x, T2 val) { return x == val; }
