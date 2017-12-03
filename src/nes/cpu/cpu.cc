@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <cassert>
 
 /*-----------------------------  Public Methods  -----------------------------*/
 
@@ -48,7 +49,7 @@ CPU::State CPU::getState() const { return this->state; }
 void CPU::service_interrupt(Interrupts::Type interrupt, bool brk /* = false */) {
   using namespace Interrupts;
 
-  if (interrupt == NONE) return;
+  assert(interrupt != NONE);;
 
 #ifdef NESTEST
   // only allow IRQs to pass through when running NESTEST
@@ -57,11 +58,13 @@ void CPU::service_interrupt(Interrupts::Type interrupt, bool brk /* = false */) 
 
   this->reg.p.i = true; // don't want interrupts being interrupted
 
+  // Push stack pointer and processor status onto stack for safekeeping
   if (interrupt != RESET) {
     this->s_push16(this->reg.pc);
     this->s_push(this->reg.p.raw);
   }
 
+  // Interrupts take 7 cycles to execute
   this->cycles += 7;
 
   switch (interrupt) {
@@ -72,6 +75,7 @@ void CPU::service_interrupt(Interrupts::Type interrupt, bool brk /* = false */) 
   default: break;
   }
 
+  // Clear interrupt
   this->interrupt.service(interrupt);
 }
 
@@ -113,11 +117,11 @@ u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
   if (opcode.check_pg_cross == true) {
     // I checked, the only instructions affected by this are those with the
     // following 3 addressing modes. No need to handle any of the other modes
-    #define is_pg_cross(a,b) (((a) & 0xFF00) != ((b) & 0xFF00))
+    #define did_pg_cross(a,b) (uint(((a) & 0xFF00) != ((b) & 0xFF00)))
     switch (opcode.addrm) {
-    case absX: this->cycles += is_pg_cross(addr - this->reg.x, addr); break;
-    case absY: this->cycles += is_pg_cross(addr - this->reg.y, addr); break;
-    case indY: this->cycles += is_pg_cross(addr - this->reg.y, addr); break;
+    case absX: this->cycles += did_pg_cross(addr - this->reg.x, addr); break;
+    case absY: this->cycles += did_pg_cross(addr - this->reg.y, addr); break;
+    case indY: this->cycles += did_pg_cross(addr - this->reg.y, addr); break;
     default: break;
     }
     #undef is_pg_cross
@@ -129,8 +133,11 @@ u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
 uint CPU::step() {
   uint old_cycles = this->cycles;
 
-  // Service any pending interrupts
-  this->service_interrupt(this->interrupt.get());
+  // Service pending interrupts
+  if (Interrupts::Type interrupt = this->interrupt.get()) {
+    this->service_interrupt(interrupt);
+    return this->cycles - old_cycles;
+  }
 
   // Fetch current opcode
   u8 op = this->mem[this->reg.pc++];
@@ -149,7 +156,7 @@ uint CPU::step() {
 
   using namespace Instructions::Instr;
 
-  // Define some utility macros (to cut down on repetitive cpu code)
+  // Define some macros used across multiple instructions
 
   // Set Zero and Negative flags
   #define set_zn(val) \
@@ -311,7 +318,7 @@ uint CPU::step() {
     case RTI: { this->reg.p.raw = this->s_pull() | 0x20; // NESTEST
                 this->reg.pc = this->s_pull16();
               } break;
-    case BRK: { // ignores interrupt disable bit, and just forces an interrupt
+    case BRK: { // ignores interrupt disable bit, and forces an interrupt
                 this->service_interrupt(Interrupts::Type::IRQ, true);
               } break;
     case LSR: { if (opcode.addrm == Instructions::AddrM::acc) {

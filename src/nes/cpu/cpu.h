@@ -50,7 +50,7 @@ private:
 
   /*----------  Emulation Vars  ----------*/
 
-  uint cycles;  // Cycles elapsed
+  uint cycles; // Cycles elapsed
   State state; // CPU state
 
   /*--------------  Helpers  -------------*/
