@@ -15,7 +15,7 @@ union Color {
   BitField<0,  8> b;
 
   constexpr inline Color() : val { 0x00000000 } {}
-  constexpr inline Color(u8 r, u8 g, u8 b, u8 a = 0x00)
+  constexpr inline Color(u8 r, u8 g, u8 b, u8 a = 0xFF)
   : val { u32(a) << 24 | r << 16 | g << 8 | b << 0 }
   {}
   constexpr inline Color(u32 color)

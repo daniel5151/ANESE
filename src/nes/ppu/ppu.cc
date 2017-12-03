@@ -290,11 +290,46 @@ void PPU::write(u16 addr, u8 val) {
 
 /*----------------------------  Helper Functions  ----------------------------*/
 
-// TODO: Make cycle accurate
+// TODO: cycle accurate
+// For now, it just performs all the calculations on cycle 0 of a scanline
 void PPU::sprite_eval() {
   if (this->scan.cycle != 0)
     return;
 
+  // (This will break games that switch sprite_height mid-scanline)
+  const uint sprite_height = this->reg.ppuctrl.H ? 16 : 8;
+
+  // Fill OAM2 memory with 0xFF
+  for (uint addr = 0; addr < 32; addr++)
+    this->oam2[addr] = 0xFF;
+
+  // Pointer into OAM2 RAM
+  uint oam2_addr = 0; // from 0 - 32
+
+  for (uint sprite = 0; sprite < 64; sprite++) {
+    // Check if sprite is on current line
+    u8 y_pos = this->oam[sprite * 4 + 0];
+    bool on_this_line = in_range(
+      y_pos,
+      this->scan.line - sprite_height,
+      this->scan.line - 1
+    );
+
+    if (!on_this_line)
+      continue;
+
+    // Otherwise, copy this sprite into OAM2 (room permitting)
+    if (oam2_addr < 32) {
+      this->oam2[oam2_addr++] = this->oam[sprite * 4 + 0];
+      this->oam2[oam2_addr++] = this->oam[sprite * 4 + 1];
+      this->oam2[oam2_addr++] = this->oam[sprite * 4 + 2];
+      this->oam2[oam2_addr++] = this->oam[sprite * 4 + 3];
+    } else {
+      this->reg.ppustatus.O = true; // Sprite Overflow
+      // Also, early return too
+      return;
+    }
+  }
 }
 
 /*-----------------------  Pixel Evaluation Functions  -----------------------*/
@@ -307,28 +342,18 @@ PPU::Pixel PPU::get_bgr_pixel() {
   return Pixel();
 }
 
+// TODO: make this more "hardware" accurate
 PPU::Pixel PPU::get_spr_pixel() {
   if (this->reg.ppumask.s == false)
     return Pixel();
 
-  // This is super ugly and not cycle-accurate at all.
-  // BUT GOD DAMN IT I JUST WANT TO PLAY SOME DANKEY KANG!
-
-  // huge optimization: for every scanline, remember which sprites aren't on
-  // the line, and skip running calculations on them
-  static bool skipme [64] = {false};
-  if (this->scan.cycle == 0) {
-    for (uint i = 0; i < 64; i++) skipme[i] = false;
-  }
-
   const uint sprite_height = this->reg.ppuctrl.H ? 16 : 8;
 
-  for (uint sprite = 0; sprite < 64; sprite++) {
-    if (skipme[sprite]) continue;
-
+  // Scan through OAM2 to see if there is a sprite to draw at this scan.cycle
+  for (uint sprite = 0; sprite < 8; sprite++) {
     // Read sprite data
-    u8 y_pos      = this->oam[sprite * 4 + 0] + 1;
-    u8 tile_index = this->oam[sprite * 4 + 1];
+    u8 y_pos      = this->oam2[sprite * 4 + 0];
+    u8 tile_index = this->oam2[sprite * 4 + 1];
     union {
       u8 val;
       BitField<0, 2> palette;
@@ -336,29 +361,25 @@ PPU::Pixel PPU::get_spr_pixel() {
       BitField<5> priority;
       BitField<6> flip_horizontal;
       BitField<7> flip_vertical;
-    } attributes  { this->oam[sprite * 4 + 2] };
-    u8 x_pos      = this->oam[sprite * 4 + 3];
+    } attributes  { this->oam2[sprite * 4 + 2] };
+    u8 x_pos      = this->oam2[sprite * 4 + 3];
 
-    bool on_this_line = in_range(
-      y_pos,
-      this->scan.line - sprite_height + 1,
-      this->scan.line
-    );
+    // If the sprite is invalid (i.e: all 0xFF), early return, since there won't
+    // be any more sprites after this
+    if (
+      y_pos == 0xFF &&
+      y_pos == x_pos &&
+      y_pos == tile_index &&
+      y_pos == attributes.val
+    ) return Pixel();
 
-    if (!on_this_line) {
-      skipme[sprite] = true;
-      continue;
-    }
-
-    // We know that the sprite is present on this scanline (otherwise it would
-    // not be in the secondary OAM!)
-    // All we need to check is if it has a pixel at the current x addr
+    // Does this sprite have a pixel at the current x addr?
     if (in_range(x_pos, this->scan.cycle - 7, this->scan.cycle)) {
       // Cool! There is a sprite here!
 
-      // Now we just need to get the pixel data for this sprite...
+      // Now we just need to get the actual pixel data for this sprite...
       // First, which pixel of the sprite are we rendering?
-      uint spr_row =      this->scan.line  - y_pos;
+      uint spr_row = this->scan.line - y_pos - 1;
       uint spr_col = 7 - (this->scan.cycle - x_pos);
 
       if (attributes.flip_vertical)   spr_row = sprite_height - 1 - spr_row;
@@ -403,37 +424,33 @@ void PPU::cycle() {
     }
   }
 
-  Color dot_color;
+  // If we are on a visible scanline, and there is stuff to render:
+  if (this->scan.line < 240 && (this->reg.ppumask.s || this->reg.ppumask.b)) {
+    // Get pixel data
+    PPU::Pixel bgr_pixel = this->get_bgr_pixel();
+    PPU::Pixel spr_pixel = this->get_spr_pixel();
 
-  // Check if there is anything to render
-  // (i.e: the show sprites flag is on, or show backgrounds flag is on)
-  if (this->reg.ppumask.s || this->reg.ppumask.b) {
-    // Visible Scanlines
-    if (this->scan.line < 240) {
-      // Get pixel data
-      PPU::Pixel bgr_pixel = this->get_bgr_pixel();
-      PPU::Pixel spr_pixel = this->get_spr_pixel();
+    // Alpha channel of 0 means that pixel is not on
+    bool bgr_on = bgr_pixel.color.a;
+    bool spr_on = spr_pixel.color.a;
 
-      // Alpha channel of 0 means that pixel is not on
-      bool bgr_on = bgr_pixel.color.a;
-      bool spr_on = spr_pixel.color.a;
+    // Priority Multiplexer decision table
+    // https://wiki.nesdev.com/w/index.php/PPU_rendering#Preface
+    Color dot_color = Color();
+    /**/ if (!bgr_on && !spr_on) dot_color = Color(); // this->palette[this->mem[0x3F00]];
+    else if (!bgr_on &&  spr_on) dot_color = spr_pixel.color;
+    else if ( bgr_on && !spr_on) dot_color = bgr_pixel.color;
+    else if ( bgr_on &&  spr_on) dot_color = spr_pixel.priority
+                                              ? bgr_pixel.color
+                                              : spr_pixel.color;
 
-      // Priority Multiplexer decision table
-      // https://wiki.nesdev.com/w/index.php/PPU_rendering#Preface
-      /**/ if (!bgr_on && !spr_on) dot_color = Color(); // this->palette[this->mem[0x3F00]];
-      else if (!bgr_on &&  spr_on) dot_color = spr_pixel.color;
-      else if ( bgr_on && !spr_on) dot_color = bgr_pixel.color;
-      else if ( bgr_on &&  spr_on) dot_color = spr_pixel.priority
-                                                ? bgr_pixel.color
-                                                : spr_pixel.color;
-    }
-
+    // Doesn't actually draw anything when this->scan.cycle >= 256
     this->draw_dot(dot_color);
   }
 
   // Sprite Evaluation
   if (this->scan.line < 240) { // only on visible scanlines
-    // this->sprite_eval();
+    this->sprite_eval();
   }
 
   // Enable / Disable vblank
