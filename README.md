@@ -1,9 +1,10 @@
 # ANESE
 
-ANESE (**A**nother **NES** **E**mulator) is a _cycle_ accurate Nintendo
-Entertainment System Emulator written for fun and learning.
+ANESE (**A**nother **NES** **E**mulator) is a Nintendo Entertainment System
+Emulator being written for fun and learning.
 
-Hopefully, it will support most popular titles :smile:
+I am aiming for accuracy in the long run, but the primary goal is simply getting
+it to play some of the more popular titles :smile:
 
 I am aiming for clean, performant, and _interesting_ C++11 code, with a emphasis
 on keeping the source readable, maintainable, and comprehensible.

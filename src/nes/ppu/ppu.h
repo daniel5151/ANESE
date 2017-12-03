@@ -126,8 +126,13 @@ private:
 
   /*---- Helper Functions ----*/
 
-  void get_bgr_pixel(bool& has_spr, u8& color);
-  void get_spr_pixel(bool& has_spr, u8& color, bool& priority);
+  struct Pixel {
+    bool  priority; // sprite priority bit (unused in brg_pixels)
+    Color color;    // pixel color (color.a determines if pixel is visible)
+  };
+
+  Pixel get_bgr_pixel();
+  Pixel get_spr_pixel();
 
   void sprite_eval();
 
@@ -146,14 +151,9 @@ private:
     uint cycle; // 0 - 340
   } scan;
 
-  // State related to sprite evaluation
-  struct {
-    u8 oam2addr; // pointer into oam2
-  } spr_eval;
-
-  /*---------------  Debug  --------------*/
-
 #ifdef DEBUG_PPU
+  /*---------------  Debug  --------------*/
+  // Implementation in debug.cc
   void   init_debug_windows();
   void update_debug_windows();
 #endif // DEBUG_PPU

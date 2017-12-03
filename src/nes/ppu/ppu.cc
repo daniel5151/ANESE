@@ -18,8 +18,6 @@ PPU::PPU(
   oam(oam),
   oam2(oam2)
 {
-  this->spr_eval = {0};
-
   for (uint i = 0; i < 256 * 240 * 4; i++)
     this->framebuff[i] = 0;
 
@@ -91,6 +89,17 @@ void PPU::draw_dot(Color color) {
     // these pixels are not actually rendered...
     return;
   }
+
+  // This array caused me a lot of heartache and headache.
+  //
+  // I spent ~1h trying to debug why this->scan.line and this->scan.cycle were
+  // being overwritten with bogus values, and in the end, I figured out why...
+  //
+  // I was indexing into this pixels array incorrectly, writing past the end of
+  // it, but lucky for me, the way that the PPU class is laid out in memory,
+  // this->scan immediately followed the pixels array, and was writable.
+  //
+  // Why the hell did I decide to write this in C++ again?
 
   u32* pixels = reinterpret_cast<u32*>(this->framebuff);
   pixels[(256 * this->scan.line) + this->scan.cycle] = color;
@@ -281,173 +290,35 @@ void PPU::write(u16 addr, u8 val) {
 
 /*----------------------------  Helper Functions  ----------------------------*/
 
-// TODO: Make sure this thing actually works!
-//
-// Implemented verbaitem as documented on nesdev wiki
-// https://wiki.nesdev.com/w/index.php/PPU_sprite_evaluation
+// TODO: Make cycle accurate
 void PPU::sprite_eval() {
-  // Cycles 1-64: Secondary OAM is initialized to $FF
-  // NOTE: attempting to read $2004 (OAMDATA) will return $FF
-  if (in_range(this->scan.cycle, 1, 64)) {
-    // reset relevant state
-    if (this->scan.cycle == 1) {
-      this->spr_eval.oam2addr = 0;
-    }
-
-    // Each write takes 2 cycles, so simulate this by only writing on every
-    // other cycle
-    if ((this->scan.cycle - 1) % 2 == 0)
-      this->oam2[this->spr_eval.oam2addr++] = 0xFF;
-
+  if (this->scan.cycle != 0)
     return;
-  } else
 
-  // Cycles 65-256: Sprite evaluation
-  if (in_range(this->scan.cycle, 65, 256)) {
-    const uint sprite_height = this->reg.ppuctrl.H ? 16 : 8;
-
-    // This implementation isn't actually cycle-accurate, since it just does all
-    // the calculations on cycle 65.
-    // Ideally, c++ would have co-routines and yeild functionality, since that
-    // would make this a whole hell of a lot easier, but ah well...
-    //
-    // Maybe i'll get around to implementing this properly later, but for now,
-    // i'm just leaving it innaccurate
-
-    if (this->scan.cycle != 65) return;
-
-    // reset state
-    this->reg.oamaddr = 0;
-    this->spr_eval.oam2addr = 0;
-    bool disable_oam2_write = false;
-
-    u8   y_coord;
-    bool y_in_range;
-    // I use this->reg.oamaddr as the `n` var as described on nesdev
-
-    // Okay, I know that gotos are generally a bad idea.
-    // But in this case, holy cow, to they help a ton!
-    // The alternative is adding a whole mess of helper functions that clutter
-    // things up, and IMHO, make it complicated to see control flow.
-
-  step1:
-    // 1.
-    // Starting at n = 0, read a sprite's Y-coordinate (OAM[n][0]),
-    // copying it to the next open slot in secondary OAM
-    y_coord = this->oam[this->reg.oamaddr];
-
-    if (!disable_oam2_write)
-      this->oam2[this->spr_eval.oam2addr] = y_coord;
-
-    // 1a.
-    // If Y-coordinate is in range, copy remaining bytes of sprite data
-    // (OAM[n][1] thru OAM[n][3]) into secondary OAM.
-    y_in_range = in_range(
-      y_coord,
-      this->scan.line + 1 - (sprite_height - 1),
-      this->scan.line + 1
-    );
-
-    if (y_in_range && !disable_oam2_write) {
-      this->spr_eval.oam2addr++;
-      this->reg.oamaddr++;
-
-      this->oam2[this->spr_eval.oam2addr++] = this->oam[this->reg.oamaddr++];
-      this->oam2[this->spr_eval.oam2addr++] = this->oam[this->reg.oamaddr++];
-      this->oam2[this->spr_eval.oam2addr++] = this->oam[this->reg.oamaddr++];
-    } else {
-      this->reg.oamaddr += 4;
-    }
-
-    // 2a. if n has overflowed back to 0 (i.e: all 64 sprites eval'd), go to 4
-    if (this->reg.oamaddr == 0) goto step4;
-    // 2b. if less than 8 sprites have been found, go to 1
-    if (this->spr_eval.oam2addr < 32) goto step1;
-    // 2c. If exactly 8 sprites have been found, disable writes to secondary OAM
-    //     This causes sprites in back to drop out.
-    if (this->spr_eval.oam2addr >= 32) disable_oam2_write = true;
-
-  step3:
-    // 3.
-    // Starting at Starting at m = 0, evaluate OAM[n][m] as a Y-coordinate.
-    y_coord = this->oam[this->reg.oamaddr];
-
-    // 3a.
-    // If the value is in range, set the sprite overflow flag in $2002 and
-    // read the next 3 entries of OAM (incrementing 'm' after each byte and
-    // incrementing 'n' when 'm' overflows)
-    y_in_range = in_range(
-      y_coord,
-      this->scan.line + 1 - (sprite_height - 1),
-      this->scan.line + 1
-    );
-    if (y_in_range) {
-      this->reg.ppustatus.O = true;
-      // not sure if these reads are used anywhere...
-      this->oam.read(this->reg.oamaddr++);
-      this->oam.read(this->reg.oamaddr++);
-      this->oam.read(this->reg.oamaddr++);
-    }
-    // 3b.
-    // If the value is not in range, increment n and m (without carry).
-    // If n overflows to 0, go to 4; otherwise go to 3
-    else {
-      // NOTE: the m increment is a hardware bug
-      this->reg.oamaddr += 4 + 1;
-
-      if (this->reg.oamaddr == 0) goto step4;
-      else                        goto step3;
-    }
-
-  step4:
-    // 4.
-    // Attempt (and fail) to copy OAM[n][0] into the next free slot in secondary
-    // OAM, and increment n
-    // (repeat until HBLANK is reached)
-
-    // since i'm not cycle-accurate, just return here...
-    return;
-  } else
-
-  // Cycles 257-320: Sprite fetches (8 sprites total, 8 cycles per sprite)
-  if (in_range(this->scan.cycle, 257, 320)) {
-    // reset state
-    if (this->scan.cycle == 257) {
-      this->spr_eval.oam2addr = 0;
-    }
-
-    const uint sprite = (this->scan.cycle - 257) / 8;
-    const uint step = (this->scan.cycle - 257) % 8;
-
-    // i can't tell if these reads are being used, but i'm going to follow what
-    // the wiki says.
-    if (in_range(step, 0, 3)) this->oam2.read(sprite * 4 + step);
-    if (in_range(step, 4, 7)) this->oam2.read(sprite * 4 + 3);
-  } else
-
-  // Cycles 321-340+0: Background render pipeline initialization
-  if (in_range(this->scan.cycle, 321, 340) || this->scan.cycle == 0) {
-    // Read the first byte in secondary OAM
-
-    // again, this read doesn't seem to be used anywhere...
-    this->oam2.read(0x00);
-  }
 }
 
-void PPU::get_bgr_pixel(bool& has_spr, u8& color) {
+/*-----------------------  Pixel Evaluation Functions  -----------------------*/
+
+PPU::Pixel PPU::get_bgr_pixel() {
+  if (this->reg.ppumask.b == false)
+    return Pixel();
+
   // TODO: implement me
-  has_spr = 0;
-  color = 0x00;
+  return Pixel();
 }
 
-void PPU::get_spr_pixel(bool& has_spr, u8& color, bool& priority) {
+PPU::Pixel PPU::get_spr_pixel() {
+  if (this->reg.ppumask.s == false)
+    return Pixel();
+
   // This is super ugly and not cycle-accurate at all.
   // BUT GOD DAMN IT I JUST WANT TO PLAY SOME DANKEY KANG!
 
-  // huge optimization
-  static bool skipme [256] = {false};
+  // huge optimization: for every scanline, remember which sprites aren't on
+  // the line, and skip running calculations on them
+  static bool skipme [64] = {false};
   if (this->scan.cycle == 0) {
-    for (uint i = 0; i < 256; i++) skipme[i] = false;
+    for (uint i = 0; i < 64; i++) skipme[i] = false;
   }
 
   const uint sprite_height = this->reg.ppuctrl.H ? 16 : 8;
@@ -473,6 +344,7 @@ void PPU::get_spr_pixel(bool& has_spr, u8& color, bool& priority) {
       this->scan.line - sprite_height + 1,
       this->scan.line
     );
+
     if (!on_this_line) {
       skipme[sprite] = true;
       continue;
@@ -483,8 +355,6 @@ void PPU::get_spr_pixel(bool& has_spr, u8& color, bool& priority) {
     // All we need to check is if it has a pixel at the current x addr
     if (in_range(x_pos, this->scan.cycle - 7, this->scan.cycle)) {
       // Cool! There is a sprite here!
-      has_spr = true;
-      priority = attributes.priority;
 
       // Now we just need to get the pixel data for this sprite...
       // First, which pixel of the sprite are we rendering?
@@ -494,22 +364,22 @@ void PPU::get_spr_pixel(bool& has_spr, u8& color, bool& priority) {
       if (attributes.flip_vertical)   spr_row = sprite_height - 1 - spr_row;
       if (attributes.flip_horizontal) spr_col =             8 - 1 - spr_col;
 
-      // Get that pixel yo!
-      const u16 tile_addr = (0x1000 * this->reg.ppuctrl.S) + (tile_index * 16);
+      // Get the pallette yo!
+      u16 tile_addr = (0x1000 * this->reg.ppuctrl.S) + (tile_index * 16);
       u8 lo_bp = this->mem[tile_addr + spr_row + 0];
       u8 hi_bp = this->mem[tile_addr + spr_row + 8];
       u2 pixel_type = nth_bit(lo_bp, spr_col) + 2 * nth_bit(hi_bp, spr_col);
+      u8 palette = this->mem.peek(0x3F10 + attributes.palette * 4 + pixel_type);
 
-      // Finally, we can set it's color!
-      color = this->mem.peek(0x3F10 + attributes.palette * 4 + pixel_type);
-
-      // no need to keep looping :)
-      return;
+      // And return the color!
+      return Pixel { bool(attributes.priority), this->palette[palette] };
     }
 
     // Otherwise, keep looking
     continue;
   }
+
+  return Pixel();
 }
 
 /*----------------------------  Core Render Loop  ----------------------------*/
@@ -533,60 +403,37 @@ void PPU::cycle() {
     }
   }
 
-  assert(in_range(this->scan.line,  0, 261));
-  assert(in_range(this->scan.cycle, 0, 341));
-
-  Color render_color;
-
-  /* TEMP */ bool renderme = false;
+  Color dot_color;
 
   // Check if there is anything to render
   // (i.e: the show sprites flag is on, or show backgrounds flag is on)
   if (this->reg.ppumask.s || this->reg.ppumask.b) {
     // Visible Scanlines
     if (this->scan.line < 240) {
-      bool has_bgr = false;
-      u8 bgr_color = 0x00;
-      // Get Background data
-      if (this->reg.ppumask.b) {
-        this->get_bgr_pixel(has_bgr, bgr_color);
-      }
+      // Get pixel data
+      PPU::Pixel bgr_pixel = this->get_bgr_pixel();
+      PPU::Pixel spr_pixel = this->get_spr_pixel();
 
-      // Get Sprite data
-      bool has_spr  = false;
-      u8 spr_color  = 0x00;
-      bool priority = false;
-      if (this->reg.ppumask.s) {
-        this->get_spr_pixel(has_spr, spr_color, priority);
-      }
+      // Alpha channel of 0 means that pixel is not on
+      bool bgr_on = bgr_pixel.color.a;
+      bool spr_on = spr_pixel.color.a;
 
       // Priority Multiplexer decision table
       // https://wiki.nesdev.com/w/index.php/PPU_rendering#Preface
-      u8 color = 0;
-      /**/ if (has_bgr == 0 && has_spr == 0) color = this->mem[0x3F00];
-      else if (has_bgr == 0 && has_spr != 0) color = spr_color;
-      else if (has_bgr != 0 && has_spr == 0) color = bgr_color;
-      else if (has_bgr != 0 && has_spr != 0) color = priority
-                                                      ? bgr_color
-                                                      : spr_color;
-
-
-      /* TEMP */ if (color == spr_color && spr_color != this->mem[0x3F00]) renderme = true;
-      /* TEMP */ if (color == spr_color)
-
-      render_color = this->palette[color];
+      /**/ if (!bgr_on && !spr_on) dot_color = Color(); // this->palette[this->mem[0x3F00]];
+      else if (!bgr_on &&  spr_on) dot_color = spr_pixel.color;
+      else if ( bgr_on && !spr_on) dot_color = bgr_pixel.color;
+      else if ( bgr_on &&  spr_on) dot_color = spr_pixel.priority
+                                                ? bgr_pixel.color
+                                                : spr_pixel.color;
     }
 
-    /* TEMP */ if (renderme)
-
-    this->draw_dot(render_color);
+    this->draw_dot(dot_color);
   }
-
-
 
   // Sprite Evaluation
   if (this->scan.line < 240) { // only on visible scanlines
-    this->sprite_eval();
+    // this->sprite_eval();
   }
 
   // Enable / Disable vblank
@@ -621,219 +468,3 @@ const Color PPU::palette [64] = {
   0xFFFEFF, 0xC0DFFF, 0xD3D2FF, 0xE8C8FF, 0xFBC2FF, 0xFEC4EA, 0xFECCC5, 0xF7D8A5,
   0xE4E594, 0xCFEF96, 0xBDF4AB, 0xB3F3CC, 0xB5EBF2, 0xB8B8B8, 0x000000, 0x000000,
 };
-
-/*=====================================
-=            DEBUG WINDOWS            =
-=====================================*/
-
-#ifdef DEBUG_PPU
-
-#include <SDL.h>
-#include "common/debug.h"
-
-constexpr uint UPDATE_EVERY_X_FRAMES = 10;
-
-static_assert(UPDATE_EVERY_X_FRAMES > 1, "causes badness. pls no do.");
-
-static DebugPixelbuffWindow* patt_t;
-static DebugPixelbuffWindow* palette_t;
-static DebugPixelbuffWindow* nes_palette;
-static DebugPixelbuffWindow* name_t;
-
-
-void PPU::init_debug_windows() {
-  // Pattern Table
-  patt_t = new DebugPixelbuffWindow(
-    "Pattern Table",
-    (0x80 * 2 + 16) * 2, (0x80) * 2,
-     0x80 * 2 + 16,       0x80,
-    0, 32
-  );
-
-  // Palette Table
-  palette_t = new DebugPixelbuffWindow(
-    "Palette Table",
-    (8 + 1) * 20, (4) * 20,
-     8 + 1,        4,
-    0x110 * 2, 4*16*2
-  );
-
-  // the static NES palette
-  nes_palette = new DebugPixelbuffWindow(
-    "Static NES Palette",
-    (16) * 16, (4) * 16,
-     16,        4,
-    0x110 * 2, 0
-  );
-
-  // nametables
-  name_t = new DebugPixelbuffWindow(
-    "Nametables",
-    (256 * 2 + 16), (240 * 2 + 16),
-     256 * 2 + 16,   240 * 2 + 16,
-    0, 324
-  );
-}
-
-void PPU::update_debug_windows() {
-  if (this->cycles < 10) {
-    // load in a debug palette
-    this->mem[0x3F00 + 0] = 0x1D;
-    this->mem[0x3F00 + 1] = 0x2D;
-    this->mem[0x3F00 + 2] = 0x3D;
-    this->mem[0x3F00 + 3] = 0x30;
-  }
-
-  // i'm making it update every second right now
-  static bool should_update = true;
-  if (
-    should_update == false &&
-    this->frames % UPDATE_EVERY_X_FRAMES == UPDATE_EVERY_X_FRAMES - 1
-  ) should_update = true;
-
-  if (should_update && this->frames % UPDATE_EVERY_X_FRAMES == 0) {
-    should_update = false;
-
-    auto paint_tile = [=](
-      u16 tile_addr,
-      uint tl_x, uint tl_y,
-      uint palette, // from 0 - 4
-      DebugPixelbuffWindow* window,
-      bool render_to_main_window = false
-    ) {
-      for (uint y = 0; y < 8; y++) {
-        u8 lo_bp = this->mem.peek(tile_addr + y + 0);
-        u8 hi_bp = this->mem.peek(tile_addr + y + 8);
-
-        for (uint x = 0; x < 8; x++) {
-          u2 pixel_type = nth_bit(lo_bp, x) + 2 * nth_bit(hi_bp, x);
-
-          Color color = this->palette[
-            this->mem.peek(0x3F00 + palette * 4 + pixel_type)
-          ];
-
-          // Render to main window too?
-          if (render_to_main_window) {
-            u32* pixels = reinterpret_cast<u32*>(this->framebuff);
-            u8 main_x = (tl_x % 256) + 7 - x;
-            u8 main_y = (tl_y % 240) + y;
-            pixels[(256 * main_y) + main_x] = color;
-          }
-
-          window->set_pixel(
-            tl_x + (7 - x),
-            tl_y + y,
-
-            color
-          );
-        }
-      }
-    };
-
-    // Pattern Tables
-    // There are two sets of 256 8x8 pixel tiles
-    // Every 16 bytes represents a single 8x8 pixel tile
-    for (uint addr = 0x0000; addr < 0x2000; addr += 16) {
-      const uint tl_x = ((addr % 0x1000) % 256) / 2
-                      + ((addr >= 0x1000) ? 0x90 : 0);
-      const uint tl_y = ((addr % 0x1000) / 256) * 8;
-
-      paint_tile(addr, tl_x, tl_y, 0, patt_t);
-    }
-
-    patt_t->render();
-
-    // Nametables
-    auto paint_nametable = [=](
-      u16 base_addr,
-      uint offset_x, uint offset_y,
-      bool render_to_main_window = false
-    ){
-      for (uint addr = base_addr; addr < base_addr + 0x400 - 64; addr++) {
-        // Getting which tile to render is easy...
-
-        u16 tile_addr = (this->reg.ppuctrl.B * 0x1000) // bg palette selector
-                      + this->mem.peek(addr) * 16;
-
-        // ...The hard part is figuring out the palette for it :)
-        // http://wiki.nesdev.com/w/index.php/PPU_attribute_tables
-
-        // What 8x8 tile are we on?
-        // There are 32 tiles per row, and a total of 30 rows
-        const uint tile_no = addr - base_addr;
-        const uint tile_row = tile_no % 32;
-        const uint tile_col = tile_no / 32;
-
-        // Supertiles are 32x32 collections of pixels, where each 16x16 corner
-        // of the supertile (4 8x8 tiles) can be assigned a palette
-        const uint supertile_no = tile_row / 4
-                                + tile_col / 4 * 8;
-
-        // Nice! Now we can pull data from the attribute table!
-        // Now, to descifer which of the 4 palettes to use...
-        const u8 attribute = this->mem[base_addr + 0x3C0 + supertile_no];
-
-        // What corner is this particular 8x8 tile in?
-        //
-        // top left = 0
-        // top right = 1
-        // bottom left = 2
-        // bottom right = 3
-        const uint corner = (tile_row % 4) / 2
-                          + (tile_col % 4) / 2 * 2;
-
-        // Recall that the attribute byte stores the palette assignment data
-        // formatted as follows:
-        //
-        // attribute = (topleft << 0)
-        //           | (topright << 2)
-        //           | (bottomleft << 4)
-        //           | (bottomright << 6)
-        //
-        // thus, we can reverse the process with some clever bitmasking!
-        // 0x03 == 0b00000011
-        const uint mask = 0x03 << (corner * 2);
-        const uint palette = (attribute & mask) >> (corner * 2);
-
-        // And with that, we can go ahead and render it!
-
-        // 32 tiles per row, each is 8x8 pixels
-        const uint tl_x = (tile_no % 32) * 8 + offset_x;
-        const uint tl_y = (tile_no / 32) * 8 + offset_y;
-
-        paint_tile(tile_addr, tl_x, tl_y, palette, name_t, render_to_main_window);
-      }
-    };
-
-    paint_nametable(0x2000, 0,        0 , true); // TEMP: render to main window
-    paint_nametable(0x2400, 256 + 16, 0       );
-    paint_nametable(0x2800, 0,        240 + 16);
-    paint_nametable(0x2C00, 256 + 16, 240 + 16);
-
-    name_t->render();
-
-    // nes palette
-    for (uint i = 0; i < 64; i++) {
-      nes_palette->set_pixel(i % 16, i / 16, this->palette[i]);
-    }
-
-    nes_palette->render();
-
-    // Palette Tables
-    // Background palette - from 0x3F00 to 0x3F0F
-    // Sprite palette     - from 0x3F10 to 0x3F1F
-    for (u16 addr = 0x3F00; addr < 0x3F20; addr++) {
-      Color color = this->palette[this->mem.peek(addr)];
-      // printf("0x%04X\n", this->mem.peek(addr));
-      palette_t->set_pixel(
-        (addr % 4) + ((addr >= 0x3F10) ? 5 : 0),
-        (addr - ((addr >= 0x3F10) ? 0x3F10 : 0x3F00)) / 4,
-        color
-      );
-    }
-
-    palette_t->render();
-  }
-}
-
-#endif // DEBUG_PPU
