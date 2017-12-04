@@ -93,23 +93,26 @@ private:
     u8 oamaddr; // OAMADDR   - 0x2003 - OAM address port
     u8 oamdata; // OAMDATA   - 0x2004 - OAM data port
 
-    union {     // PPUSCROLL - 0x2005 - PPU scrolling position register
-      u16 val;
-      BitField<8, 8> x;
-      BitField<0, 8> y;
-    } ppuscroll;
-
+    // Both 0x2005 and 0x2006 map to the same internal register, v
+    // 0x2005 is simply a convenience used to set scroll more easily!
+                // PPUSCROLL - 0x2005 - PPU scrolling position register
     union {     // PPUADDR   - 0x2006 - PPU VRAM address register
-      u16 val;            // 16 bit address
+      u16 val;            // the actual address
       BitField<8, 8> hi;  // hi byte of addr
       BitField<0, 8> lo;  // lo byte of addr
 
       // https://wiki.nesdev.com/w/index.php/PPU_scrolling
-      BitField<0,  5> x_scroll;
-      BitField<5,  5> y_scroll;
+      BitField<0,  5> coarse_x;
+      BitField<5,  5> coarse_y;
       BitField<10, 2> nametable;
-      BitField<12, 3> y_scroll_fine;
-    } ppuaddr;
+      BitField<12, 3> fine_y;
+
+      // quality-of-life methods (so i don't have to use v.val all the time)
+      operator u16() const { return this->val; }
+      u16 operator=(u16 new_val) { return this->val = new_val; }
+    }   v; // true vram address
+    u16 t; // temp vram address
+    u3  x; // fine x-scroll
 
     u8 ppudata; // PPUDATA   - 0x2007 - PPU VRAM data port
   } reg;
@@ -127,10 +130,16 @@ private:
   /*---- Helper Functions ----*/
 
   struct Pixel {
-    bool  priority; // sprite priority bit (unused in brg_pixels)
     Color color;    // pixel color (color.a determines if pixel is visible)
+    bool  priority; // sprite priority bit (unused in brg_pixels)
   };
 
+  struct {
+    u8 nt_byte;
+    u8 at_byte;
+    u8 tile_lo;
+    u8 tile_hi;
+  } bgr;
   Pixel get_bgr_pixel();
   Pixel get_spr_pixel();
 

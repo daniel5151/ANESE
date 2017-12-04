@@ -122,29 +122,35 @@ void PPU::update_debug_windows() {
       uint offset_x, uint offset_y,
       bool render_to_main_window = false
     ){
-      for (uint addr = base_addr; addr < base_addr + 0x400 - 64; addr++) {
+      union { // PPUADDR   - 0x2006 - PPU VRAM address register
+        u16 val;
+        // https://wiki.nesdev.com/w/index.php/PPU_scrolling
+        BitField<0,  5> x_scroll;
+        BitField<5,  5> y_scroll;
+        BitField<10, 2> nametable;
+        BitField<12, 3> y_scroll_fine;
+      } addr;
+
+      for (addr.val = base_addr; addr.val < base_addr + 0x400 - 64; addr.val++) {
         // Getting which tile to render is easy...
 
         u16 tile_addr = (this->reg.ppuctrl.B * 0x1000) // bg palette selector
-                      + this->mem.peek(addr) * 16;
+                      + this->mem.peek(addr.val) * 16;
 
         // ...The hard part is figuring out the palette for it :)
         // http://wiki.nesdev.com/w/index.php/PPU_attribute_tables
 
-        // What 8x8 tile are we on?
-        // There are 32 tiles per row, and a total of 30 rows
-        const uint tile_no = addr - base_addr;
-        const uint tile_row = tile_no % 32;
-        const uint tile_col = tile_no / 32;
+        // What is the base address of the nametable we are reading from?
+        const uint nt_base_addr = 0x2000 + (addr.nametable << 10);
 
         // Supertiles are 32x32 collections of pixels, where each 16x16 corner
         // of the supertile (4 8x8 tiles) can be assigned a palette
-        const uint supertile_no = tile_row / 4
-                                + tile_col / 4 * 8;
+        const uint supertile_no = (addr.x_scroll / 4)
+                                + (addr.y_scroll / 4) * 8;
 
         // Nice! Now we can pull data from the attribute table!
-        // Now, to descifer which of the 4 palettes to use...
-        const u8 attribute = this->mem[base_addr + 0x3C0 + supertile_no];
+        // Now, to decipher which of the 4 palettes to use...
+        const u8 attribute = this->mem[nt_base_addr + 0x3C0 + supertile_no];
 
         // What corner is this particular 8x8 tile in?
         //
@@ -152,8 +158,8 @@ void PPU::update_debug_windows() {
         // top right = 1
         // bottom left = 2
         // bottom right = 3
-        const uint corner = (tile_row % 4) / 2
-                          + (tile_col % 4) / 2 * 2;
+        const uint corner = (addr.x_scroll % 4) / 2
+                          + (addr.y_scroll % 4) / 2 * 2;
 
         // Recall that the attribute byte stores the palette assignment data
         // formatted as follows:
@@ -171,6 +177,7 @@ void PPU::update_debug_windows() {
         // And with that, we can go ahead and render it!
 
         // 32 tiles per row, each is 8x8 pixels
+        const uint tile_no = addr.x_scroll + addr.y_scroll * 32;
         const uint tl_x = (tile_no % 32) * 8 + offset_x;
         const uint tl_y = (tile_no / 32) * 8 + offset_y;
 
@@ -178,7 +185,7 @@ void PPU::update_debug_windows() {
       }
     };
 
-    paint_nametable(0x2000, 0,        0 , true); // TEMP: render to main window
+    paint_nametable(0x2000, 0,        0       );
     paint_nametable(0x2400, 256 + 16, 0       );
     paint_nametable(0x2800, 0,        240 + 16);
     paint_nametable(0x2C00, 256 + 16, 240 + 16);

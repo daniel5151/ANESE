@@ -73,7 +73,7 @@ public:
         return *this;
     }
 
-    operator T() const { return !!(value_ & (Mask << Index)); }
+    operator bool() const { return !!(value_ & (Mask << Index)); }
 
 private:
     T value_;

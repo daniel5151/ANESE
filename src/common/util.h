@@ -20,6 +20,7 @@ typedef int64_t i64;
 
 #include "unsigned.h"
 typedef Unsigned<2> u2;
+typedef Unsigned<3> u3;
 
 /* Helper functions */
 

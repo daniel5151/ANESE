@@ -48,12 +48,15 @@ void PPU::power_cycle() {
   this->reg.ppustatus.O = 1; // "often" set
 
   this->reg.oamaddr = 0x00;
-  this->reg.oamdata = 0x00; // (just a guess)
+  this->reg.oamdata = 0x00; // ?
 
-  this->reg.ppuscroll.val = 0x0000;
-  this->reg.ppuaddr.val = 0x0000;
+  this->reg.v = 0x0000;
+  this->reg.t = 0x0000;
+  this->reg.x = 0;
 
-  this->reg.ppudata = 0x00; // (just a guess)
+  this->reg.ppudata = 0x00; // ?
+
+  this->bgr = {0, 0, 0, 0};
 }
 
 void PPU::reset() {
@@ -67,13 +70,14 @@ void PPU::reset() {
   // this->reg.ppustatus is unchanged
 
   // this->reg.oamaddr   is unchanged
-  // this->reg.oamdata   is unchanged (just a guess)
+  // this->reg.oamdata   is unchanged?
 
   this->latch = 0;
-  this->reg.ppuscroll.val = 0x0000;
-  // this->reg.ppuaddr.val is unchanged
+  // this->reg.v is unchanged
+  // this->reg.t is unchanged?
+  // this->reg.x is unchanged?
 
-  this->reg.ppudata = 0x00; // (just a guess)
+  this->reg.ppudata = 0x00; // ?
 }
 
 /*--------------------------  Framebuffer Methods  ---------------------------*/
@@ -133,26 +137,26 @@ u8 PPU::read(u16 addr) {
                     }
                   } break;
   case PPUDATA:   { // PPUDATA read buffer (post-fetch) logic
-                    if (this->reg.ppuaddr.val <= 0x3EFF) {
+                    if (this->reg.v <= 0x3EFF) {
                       // Reading Nametables
                       // retval = from internal buffer
                       retval = this->reg.ppudata;
                       // Fill read buffer with acutal data
-                      u8 val = this->mem[this->reg.ppuaddr.val];
+                      u8 val = this->mem[this->reg.v];
                       this->reg.ppudata = val;
                     } else {
                       // Reading Pallete
                       // retval = directly from memory
-                      retval = this->mem[this->reg.ppuaddr.val];
+                      retval = this->mem[this->reg.v];
                       // Fill read buffer with the mirrored nametable data
                       // Why? Because the wiki said so!
-                      u8 val = this->mem[this->reg.ppuaddr.val % 0x2000];
+                      u8 val = this->mem[this->reg.v % 0x2000];
                       this->reg.ppudata = val;
                     }
 
                     // (0: add 1, going across; 1: add 32, going down)
-                    if (this->reg.ppuctrl.I == 0) this->reg.ppuaddr.val += 1;
-                    if (this->reg.ppuctrl.I == 1) this->reg.ppuaddr.val += 32;
+                    if (this->reg.ppuctrl.I == 0) this->reg.v.val += 1;
+                    if (this->reg.ppuctrl.I == 1) this->reg.v.val += 32;
                   } break;
   case OAMDMA:    { // This is not a valid operation...
                     // And it's not like this would return the cpu_data_bus val
@@ -193,10 +197,10 @@ u8 PPU::peek(u16 addr) const {
                       retval = this->oam.peek(this->reg.oamaddr);
                     }
                   } break;
-  case PPUDATA:   { if (this->reg.ppuaddr.val <= 0x3EFF) {
+  case PPUDATA:   { if (this->reg.v <= 0x3EFF) {
                       retval = this->reg.ppudata;
                     } else {
-                      retval = this->mem.peek(this->reg.ppuaddr.val);
+                      retval = this->mem.peek(this->reg.v);
                     }
                   } break;
   case OAMDMA:    { // This is not a valid operation...
@@ -244,6 +248,8 @@ void PPU::write(u16 addr, u8 val) {
   case PPUCTRL:   { this->reg.ppuctrl.raw = val;
                     if (this->reg.ppuctrl.V && this->reg.ppustatus.V)
                       this->interrupts.request(Interrupts::Type::NMI);
+                    // t: ....BA.. ........ = d: ......BA
+                    this->reg.t = (this->reg.t & 0xF3FF) | (u16(val & 0x03) << 10);
                   } return;
   case PPUMASK:   { this->reg.ppumask.raw = val;
                   } return;
@@ -251,18 +257,37 @@ void PPU::write(u16 addr, u8 val) {
                   } return;
   case OAMDATA:   { this->oam[this->reg.oamaddr++] = val;
                   } return;
-  case PPUSCROLL: { if (this->latch == 0) this->reg.ppuscroll.x = val;
-                    if (this->latch == 1) this->reg.ppuscroll.y = val;
+  case PPUSCROLL: { if (this->latch == 0) {
+                      // t: ........ ...HGFED = d: HGFED...
+                      this->reg.t = (this->reg.t & 0xFFE0)
+                                  | u16(val >> 3);
+                      // x:               CBA = d: .....CBA
+                      this->reg.x = val & 0x07;
+                    }
+                    if (this->latch == 1) {
+                      // t: .CBA..HG FED..... = d: HGFEDCBA
+                      this->reg.t = (this->reg.t & 0x8FFF) | (u16(val & 0x07) << 12);
+                      this->reg.t = (this->reg.t & 0xFC1F) | (u16(val & 0xF8) << 2);
+                    }
                     this->latch = !this->latch;
                   } return;
-  case PPUADDR:   { if (this->latch == 0) this->reg.ppuaddr.hi = val;
-                    if (this->latch == 1) this->reg.ppuaddr.lo = val;
+  case PPUADDR:   { if (this->latch == 0) {
+                      // t: ..FEDCBA ........ = d: ..FEDCBA
+                      // t: .X...... ........ = 0
+                      this->reg.t = (this->reg.t & 0x80FF) | (u16(val & 0x3F) << 8);
+                    }
+                    if (this->latch == 1) {
+                      // t: ........ HGFEDCBA = d: HGFEDCBA
+                      this->reg.t = (this->reg.t & 0xFF00) | u16(val);
+                      // v                    = t
+                      this->reg.v = this->reg.t;
+                    }
                     this->latch = !this->latch;
                   } return;
-  case PPUDATA:   { this->mem[this->reg.ppuaddr.val] = val;
+  case PPUDATA:   { this->mem[this->reg.v] = val;
                     // (0: add 1, going across; 1: add 32, going down)
-                    if (this->reg.ppuctrl.I == 0) this->reg.ppuaddr.val += 1;
-                    if (this->reg.ppuctrl.I == 1) this->reg.ppuaddr.val += 32;
+                    if (this->reg.ppuctrl.I == 0) this->reg.v.val += 1;
+                    if (this->reg.ppuctrl.I == 1) this->reg.v.val += 32;
                   } return;
   case OAMDMA:    { // The CPU is paused during DMA, but the PPU is not!
                     // DMA takes 513 / 514 CPU cycles:
@@ -334,15 +359,155 @@ void PPU::sprite_eval() {
 
 /*-----------------------  Pixel Evaluation Functions  -----------------------*/
 
+// https://wiki.nesdev.com/w/index.php/PPU_rendering
+// TODO: make this more "hardware" accurate
 PPU::Pixel PPU::get_bgr_pixel() {
-  if (this->reg.ppumask.b == false)
-    return Pixel();
+  // First, evaluate the current pixel
+  // TODO: make this more "hardware" accurate
 
-  // TODO: implement me
-  return Pixel();
+  // What corner is this particular 8x8 tile in?
+  //
+  // top left = 0
+  // top right = 1
+  // bottom left = 2
+  // bottom right = 3
+  const u2 corner = (this->reg.v.coarse_x % 4) / 2
+                  + (this->reg.v.coarse_y % 4) / 2 * 2;
+
+  // Recall that the attribute byte stores the palette assignment data
+  // formatted as follows:
+  //
+  // attribute = (topleft << 0)
+  //           | (topright << 2)
+  //           | (bottomleft << 4)
+  //           | (bottomright << 6)
+  //
+  // thus, we can reverse the process with some clever bitmasking!
+  // 0x03 == 0b00000011
+  const u8 mask = 0x03 << (corner * 2);
+  const u2 palette = (this->bgr.at_byte & mask) >> (corner * 2);
+
+  const u3 x = 7 - ((this->scan.cycle + this->reg.x) % 8);
+
+  const u2 pixel_type = nth_bit(this->bgr.tile_lo, x)
+                      + nth_bit(this->bgr.tile_hi, x) * 2;
+
+  Color color = this->palette[this->mem[0x3F00 + palette * 4 + pixel_type]];
+
+  // Set the pixel to be returned
+  Pixel ret_pixel = Pixel { color, 0 };
+
+
+  // If background rendering is disabled, return a empty pixel
+  if (this->reg.ppumask.b == false)
+    ret_pixel = Pixel();
+
+  // now, perform memory accesses
+
+  /**/ if (in_range(this->scan.cycle, 0,   0  )) { /* idle cycle */ }
+  else if (in_range(this->scan.cycle, 1,   256) ||
+           in_range(this->scan.cycle, 321, 336)) {
+    // Each mem-access takes 2 cycles to perform
+    switch (this->scan.cycle % 8) {
+    // 1) Fetch Nametable Byte
+    // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Tile_and_attribute_fetching
+    case 1: {
+      u16 nt_addr = 0x2000
+                  | (this->reg.v & 0x0FFF);
+      this->bgr.nt_byte = this->mem[nt_addr];
+    } break;
+
+    // 2) Fetch Attribute Table Byte
+    // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Tile_and_attribute_fetching
+    case 3: {
+      u16 at_addr = 0x23C0
+                  | ((this->reg.v >> 0) & 0x0C00)
+                  | ((this->reg.v >> 4) & 0x38)
+                  | ((this->reg.v >> 2) & 0x07);
+      this->bgr.at_byte = this->mem[at_addr];
+    } break;
+
+    // 3) Fetch lo tile bitmap
+    case 5: {
+      u16 tile_addr = this->reg.ppuctrl.B * 0x1000
+                    + this->bgr.nt_byte * 16
+                    + this->reg.v.fine_y;
+
+      this->bgr.tile_lo = this->mem[tile_addr + 0];
+    } break;
+
+    // 4) Fetch hi tile bitmap
+    case 7: {
+      u16 tile_addr = this->reg.ppuctrl.B * 0x1000
+                    + this->bgr.nt_byte * 16
+                    + this->reg.v.fine_y;
+
+      this->bgr.tile_hi = this->mem[tile_addr + 8];
+
+      // increment Coarse X
+      // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Wrapping_around
+      if (this->reg.v.coarse_x == 31) {
+        this->reg.v = this->reg.v ^ 0x0400; // switch horizontal nametable
+      }
+      this->reg.v.coarse_x++;
+    } break;
+
+    default: break; // do nothing on odd-cycles
+    }
+  }
+  else if (in_range(this->scan.cycle, 257, 320)) { /* sprite data fetches */ }
+  else if (in_range(this->scan.cycle, 337, 340)) {
+    // Two bytes are fetched, but the purpose for this is unknown.
+    // These fetches are 2 PPU cycles each.
+    // Both of the bytes fetched here are the same nametable byte that will be
+    // fetched at the beginning of the next scanline (tile 3, in other words).
+    if (this->scan.cycle % 2) {
+      this->bgr.nt_byte = this->mem[this->reg.v];
+    }
+    // This is used for timing by some mappers.
+  }
+  else { /* idle */ }
+
+  // Y increment
+  // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Wrapping_around
+  if (this->scan.cycle == 256 && this->reg.ppumask.b) {
+    if (this->reg.v.fine_y == 7) {
+
+      if (this->reg.v.coarse_y == 29) {
+        this->reg.v.coarse_y = 0;
+        this->reg.v = this->reg.v ^ 0x0800; // switch vertical nametable
+      }
+      else if (this->reg.v.coarse_y == 31) {
+        this->reg.v.coarse_y = 0;
+      }
+      else {
+        this->reg.v.coarse_y++;
+      }
+    }
+
+    this->reg.v.fine_y++;
+  }
+
+  // Check for any copyX / copyY
+    if (this->scan.cycle == 257) {
+    // copyX
+    // v: .....F.. ...EDCBA = t: .....F.. ...EDCBA
+    this->reg.v = (this->reg.v & 0xFBE0) | (this->reg.t & 0x041F);
+  }
+  if (this->scan.line == 261 && in_range(this->scan.cycle, 268, 304)) {
+    // copyY
+    // v: .IHGF.ED CBA..... = t: .IHGF.ED CBA.....
+    this->reg.v = (this->reg.v & 0x841F) | (this->reg.t & 0x7BE0);
+  }
+
+
+
+  // finally, return pixel
+  return ret_pixel;
 }
 
 // TODO: make this more "hardware" accurate
+// https://wiki.nesdev.com/w/index.php/PPU_rendering
 PPU::Pixel PPU::get_spr_pixel() {
   if (this->reg.ppumask.s == false)
     return Pixel();
@@ -357,7 +522,7 @@ PPU::Pixel PPU::get_spr_pixel() {
     union {
       u8 val;
       BitField<0, 2> palette;
-      // BitField<2, 3> unimplemented;
+    //BitField<2, 3> unimplemented;
       BitField<5> priority;
       BitField<6> flip_horizontal;
       BitField<7> flip_vertical;
@@ -385,21 +550,26 @@ PPU::Pixel PPU::get_spr_pixel() {
       if (attributes.flip_vertical)   spr_row = sprite_height - 1 - spr_row;
       if (attributes.flip_horizontal) spr_col =             8 - 1 - spr_col;
 
-      // Get the pallette yo!
+      // Time to get the pixel type yo!
       u16 tile_addr = (0x1000 * this->reg.ppuctrl.S) + (tile_index * 16);
       u8 lo_bp = this->mem[tile_addr + spr_row + 0];
       u8 hi_bp = this->mem[tile_addr + spr_row + 8];
       u2 pixel_type = nth_bit(lo_bp, spr_col) + 2 * nth_bit(hi_bp, spr_col);
-      u8 palette = this->mem.peek(0x3F10 + attributes.palette * 4 + pixel_type);
 
-      // And return the color!
-      return Pixel { bool(attributes.priority), this->palette[palette] };
+      // If the pixel is transparent, continue looking for a valid sprite...
+      if (pixel_type == 0)
+        continue;
+
+      // Otherwise, fetch which pallete color to use, and return the pixel!
+      u8 palette = this->mem.peek(0x3F10 + attributes.palette * 4 + pixel_type);
+      return Pixel { this->palette[palette], attributes.priority };
     }
 
     // Otherwise, keep looking
     continue;
   }
 
+  // if nothing was found, return a empty pixel
   return Pixel();
 }
 
@@ -424,8 +594,8 @@ void PPU::cycle() {
     }
   }
 
-  // If we are on a visible scanline, and there is stuff to render:
-  if (this->scan.line < 240 && (this->reg.ppumask.s || this->reg.ppumask.b)) {
+  // If there is stuff to render:
+  if (this->reg.ppumask.s || this->reg.ppumask.b) {
     // Get pixel data
     PPU::Pixel bgr_pixel = this->get_bgr_pixel();
     PPU::Pixel spr_pixel = this->get_spr_pixel();
