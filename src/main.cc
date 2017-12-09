@@ -116,6 +116,12 @@ int main(int argc, char* argv[]) {
       if (event.type == SDL_QUIT) {
         quit = true;
       }
+
+      // for now
+      if (event.type == SDL_WINDOWEVENT &&
+          event.window.event == SDL_WINDOWEVENT_CLOSE) {
+        quit = true;
+      }
     }
 
     // run the NES for a frame

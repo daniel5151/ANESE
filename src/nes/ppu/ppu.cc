@@ -259,26 +259,25 @@ void PPU::write(u16 addr, u8 val) {
                   } return;
   case PPUSCROLL: { if (this->latch == 0) {
                       // t: ........ ...HGFED = d: HGFED...
-                      this->reg.t = (this->reg.t & 0xFFE0)
-                                  | u16(val >> 3);
+                      this->reg.t.coarse_x = val >> 3;
                       // x:               CBA = d: .....CBA
                       this->reg.x = val & 0x07;
                     }
                     if (this->latch == 1) {
                       // t: .CBA..HG FED..... = d: HGFEDCBA
-                      this->reg.t = (this->reg.t & 0x8FFF) | (u16(val & 0x07) << 12);
-                      this->reg.t = (this->reg.t & 0xFC1F) | (u16(val & 0xF8) << 2);
+                      this->reg.t.coarse_y = val >> 3;
+                      this->reg.t.fine_y   = val & 0x07;
                     }
                     this->latch = !this->latch;
                   } return;
   case PPUADDR:   { if (this->latch == 0) {
                       // t: ..FEDCBA ........ = d: ..FEDCBA
                       // t: .X...... ........ = 0
-                      this->reg.t = (this->reg.t & 0x80FF) | (u16(val & 0x3F) << 8);
+                      this->reg.t.hi = val & 0x3F;
                     }
                     if (this->latch == 1) {
                       // t: ........ HGFEDCBA = d: HGFEDCBA
-                      this->reg.t = (this->reg.t & 0xFF00) | u16(val);
+                      this->reg.t.lo = val;
                       // v                    = t
                       this->reg.v = this->reg.t;
                     }
@@ -383,7 +382,6 @@ PPU::Pixel PPU::get_bgr_pixel() {
   //           | (bottomright << 6)
   //
   // thus, we can reverse the process with some clever bitmasking!
-  // 0x03 == 0b00000011
   const u8 mask = 0x03 << (corner * 2);
   const u2 palette = (this->bgr.at_byte & mask) >> (corner * 2);
 
@@ -472,19 +470,14 @@ PPU::Pixel PPU::get_bgr_pixel() {
   // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Wrapping_around
   if (this->scan.cycle == 256 && this->reg.ppumask.b) {
     if (this->reg.v.fine_y == 7) {
-
       if (this->reg.v.coarse_y == 29) {
         this->reg.v.coarse_y = 0;
         this->reg.v = this->reg.v ^ 0x0800; // switch vertical nametable
-      }
-      else if (this->reg.v.coarse_y == 31) {
-        this->reg.v.coarse_y = 0;
       }
       else {
         this->reg.v.coarse_y++;
       }
     }
-
     this->reg.v.fine_y++;
   }
 
@@ -580,7 +573,7 @@ void PPU::cycle() {
   this->update_debug_windows();
 #endif
 
-  const bool start_new_line = this->scan.cycle == 342;
+  const bool start_new_line = this->scan.cycle == 341;
 
   if (start_new_line) {
     // update scanline tracking vars
@@ -614,7 +607,7 @@ void PPU::cycle() {
                                               ? bgr_pixel.color
                                               : spr_pixel.color;
 
-    // Doesn't actually draw anything when this->scan.cycle >= 256
+    // Doesn't actually draw anything when this->scan.cycle >= 255
     this->draw_dot(dot_color);
   }
 

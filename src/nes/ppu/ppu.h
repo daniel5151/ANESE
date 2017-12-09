@@ -59,7 +59,8 @@ private:
               // 0 = write to hi, 1 = write to lo
 
   struct { // Registers
-    union {     // PPUCTRL   - 0x2000 - PPU control register
+    // PPUCTRL - 0x2000 - PPU control register
+    union {
       u8 raw;
       BitField<7> V; // NMI enable
       BitField<6> P; // PPU master/slave
@@ -70,7 +71,8 @@ private:
       BitField<0, 2> N; // nametable select
     } ppuctrl;
 
-    union {     // PPUMASK   - 0x2001 - PPU mask register
+    // PPUMASK - 0x2001 - PPU mask register
+    union {
       u8 raw;
       BitField<7> B; // color emphasis Blue
       BitField<6> G; // color emphasis Green
@@ -82,7 +84,8 @@ private:
       BitField<0> g; // greyscale
     } ppumask;
 
-    union {     // PPUSTATUS - 0x2002 - PPU status register
+    // PPUSTATUS - 0x2002 - PPU status register
+    union {
       u8 raw;
       BitField<7> V; // vblank
       BitField<6> S; // sprite 0 hit
@@ -90,13 +93,18 @@ private:
       // the rest are irrelevant
     } ppustatus;
 
-    u8 oamaddr; // OAMADDR   - 0x2003 - OAM address port
-    u8 oamdata; // OAMDATA   - 0x2004 - OAM data port
+    u8 oamaddr; // OAMADDR - 0x2003 - OAM address port
+    u8 oamdata; // OAMDATA - 0x2004 - OAM data port
 
-    // Both 0x2005 and 0x2006 map to the same internal register, v
-    // 0x2005 is simply a convenience used to set scroll more easily!
-                // PPUSCROLL - 0x2005 - PPU scrolling position register
-    union {     // PPUADDR   - 0x2006 - PPU VRAM address register
+    // PPUSCROLL - 0x2005 - PPU scrolling position register
+    // PPUADDR   - 0x2006 - PPU VRAM address register
+    //     Note: Both 0x2005 and 0x2006 map to the same internal register, v
+    //     0x2005 is simply a convenience used to set scroll more easily!
+
+    u8 ppudata; // PPUDATA - 0x2007 - PPU VRAM data port
+
+
+    union {
       u16 val;            // the actual address
       BitField<8, 8> hi;  // hi byte of addr
       BitField<0, 8> lo;  // lo byte of addr
@@ -110,11 +118,12 @@ private:
       // quality-of-life methods (so i don't have to use v.val all the time)
       operator u16() const { return this->val; }
       u16 operator=(u16 new_val) { return this->val = new_val; }
-    }   v; // true vram address
-    u16 t; // temp vram address
-    u3  x; // fine x-scroll
+    } v, t;
 
-    u8 ppudata; // PPUDATA   - 0x2007 - PPU VRAM data port
+    // v is the true vram address
+    // t is the temp vram address
+
+    u3 x; // fine x-scroll register
   } reg;
 
   // What about OAMDMA - 0x4014 - PPU DMA register?

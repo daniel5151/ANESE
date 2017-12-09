@@ -9,12 +9,11 @@ namespace Instructions {
 // that make heavy use of them.
 //
 // The alternative is enum switch statements where every single case has to have
-// Instr:: and AddrM:: appended to the front of it.
+// Instr:: and AddrM:: appended to the front of it, which suuuuucks
 
 namespace Instr {
-enum Instr {
+enum Type {
   INVALID,
-  // What each opcode does is explained in cpu.cc
   ADC, AND, ASL, BCC, BCS, BEQ, BIT, BMI,
   BNE, BPL, BRK, BVC, BVS, CLC, CLD, CLI,
   CLV, CMP, CPX, CPY, DEC, DEX, DEY, EOR,
@@ -26,7 +25,7 @@ enum Instr {
 }
 
 namespace AddrM {
-enum AddrM {
+enum Type {
   INVALID,
   abs_, absX, absY, // Absolute (Indexed)
   ind_, indY, Xind, // Indirect (Indexed)
@@ -39,54 +38,45 @@ enum AddrM {
 }
 
 struct Opcode {
-  u8           raw;    // raw opcode byte
-  Instr::Instr instr;  // Instruction Enum
-  AddrM::AddrM addrm;  // Addressing Mode Enum
-  u8           cycles; // Base cycles
-  bool check_pg_cross; // If there shoudl be an extra cycle on page cross
+  u8          raw;    // raw opcode byte
+  Instr::Type instr;  // Instruction Enum
+  AddrM::Type addrm;  // Addressing Mode Enum
+  u8          cycles; // Base cycles
+
+  bool check_pg_cross; // Should be an extra cycle on page cross?
 
   const char* instr_name; // Instruction Name
   const char* addrm_type; // Addressing Mode Name
 };
 
-// This ugly mess of macro magic makes the Opcode definition list look a lot
-// nicer comapred to the raw alternative.
+// This macro magic makes the Opcode definition list look a lot nicer comapred
+// to the raw alternative.
 // Just compare a raw definition to a corresponding macro'd definition:
 //
-// raw:   /* 0x11 */ { Instr::ORA , AddrM::indY , 5 , true }
+// raw:   /* 0x11 */ { Instr::ORA , AddrM::indY , 5 , true, "ORA", "indY" }
 // macro: O( 0x11 , ORA , ind_ , 5 , * )
 //
-// Clean, eh?
+// PS: isn't it neat that I can use a * as a flag? pretty wicked imho
+
+#include "common/overload_macro.h"
+#define O(...) VFUNC(O, __VA_ARGS__)
 
 // Defines a invalid Opcode
-#define DEFN_UNIMPL(opcode) \
-  { opcode, Instr::INVALID , AddrM::INVALID , 0 , false , "KIL", "----" }
+#define O1(opcode) \
+  { opcode, Instr::INVALID , AddrM::INVALID , 0 , false , "KIL" , "----" }
 
 // Defines a regular Opcode
-#define DEFN_OPCODE(opcode, instr, addrm, cycles) \
-  { opcode, Instr::instr , AddrM::addrm , cycles , false , #instr, #addrm }
+#define O4(opcode, instr, addrm, cycles) \
+  { opcode, Instr:: instr , AddrM:: addrm , cycles , false , #instr, #addrm }
 
 // Defines a Opcode that takes 1 extra cycle when reading memory across pages
-#define DEFN_OPCODE_PG_CROSS(opcode, instr, addrm, cycles, page_cross) \
-  { opcode, Instr::instr , AddrM::addrm , cycles , true , #instr, #addrm }
-
-// https://stackoverflow.com/a/11763277
-#pragma GCC system_header // this macro magic is techincally not pedantic...
-#define EXPAND( x ) x
-#define GET_MACRO(_1,_2,_3,_4,_5,NAME,...) NAME
-#define O(...) EXPAND(GET_MACRO(__VA_ARGS__, \
-  /* Use different macros based on # of arguments */ \
-  /* 5 */ DEFN_OPCODE_PG_CROSS, \
-  /* 4 */ DEFN_OPCODE, \
-  /* 3 */ ,\
-  /* 2 */ ,\
-  /* 1 */ DEFN_UNIMPL \
-)(__VA_ARGS__))
+#define O5(opcode, instr, addrm, cycles, page_cross) \
+  { opcode, Instr:: instr , AddrM:: addrm , cycles , true  , #instr, #addrm }
 
 // Main Opcode lookup table
 constexpr Opcode Opcodes[256] = {
 O( 0x00 , BRK , impl , 0     ), // call to CPU::service_interrupt takes 7 cycles
-O( 0x01 , ORA , Xind,  6     ),
+O( 0x01 , ORA , Xind , 6     ),
 O( 0x02                      ),
 O( 0x03                      ),
 O( 0x04                      ),

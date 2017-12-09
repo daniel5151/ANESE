@@ -26,15 +26,20 @@ CPU_MMU::CPU_MMU(
 // 0x4017           : Joy2 Data (Read) and APU thing       (Write)
 // 0x4018 ... 0xFFFF: Cartridge ROM (may not be plugged in)
 
+#include "common/overload_macro.h"
+#define ADDR(...) VFUNC(ADDR, __VA_ARGS__)
+#define ADDR1(lo    ) if (in_range(addr, lo    ))
+#define ADDR2(lo, hi) if (in_range(addr, lo, hi))
+
 u8 CPU_MMU::read(u16 addr) {
-  if (in_range(addr, 0x0000, 0x1FFF)) return ram.read(addr % 0x800);
-  if (in_range(addr, 0x2000, 0x3FFF)) return ppu.read(addr % 8 + 0x2000);
-  if (in_range(addr, 0x4000, 0x4013)) return apu.read(addr);
-  if (in_range(addr, 0x4014        )) return ppu.read(addr);
-  if (in_range(addr, 0x4015        )) return apu.read(addr);
-  if (in_range(addr, 0x4016        )) return joy.read(addr);
-  if (in_range(addr, 0x4017        )) return joy.read(addr);
-  if (in_range(addr, 0x4018, 0xFFFF)) return cart ? cart->read(addr) : 0x0;
+  ADDR(0x0000, 0x1FFF) return this->ram.read(addr % 0x800);
+  ADDR(0x2000, 0x3FFF) return this->ppu.read(addr % 8 + 0x2000);
+  ADDR(0x4000, 0x4013) return this->apu.read(addr);
+  ADDR(0x4014        ) return this->ppu.read(addr);
+  ADDR(0x4015        ) return this->apu.read(addr);
+  ADDR(0x4016        ) return this->joy.read(addr);
+  ADDR(0x4017        ) return this->joy.read(addr);
+  ADDR(0x4018, 0xFFFF) return this->cart ? this->cart->read(addr) : 0x00;
 
   fprintf(stderr, "[CPU] unhandled address: 0x%04X\n", addr);
   assert(false);
@@ -43,14 +48,14 @@ u8 CPU_MMU::read(u16 addr) {
 
 // unfortunately, I have to duplicate this map for peek
 u8 CPU_MMU::peek(u16 addr) const {
-  if (in_range(addr, 0x0000, 0x1FFF)) return ram.peek(addr % 0x800);
-  if (in_range(addr, 0x2000, 0x3FFF)) return ppu.peek(addr % 8 + 0x2000);
-  if (in_range(addr, 0x4000, 0x4013)) return apu.peek(addr);
-  if (in_range(addr, 0x4014        )) return ppu.peek(addr);
-  if (in_range(addr, 0x4015        )) return apu.peek(addr);
-  if (in_range(addr, 0x4016        )) return joy.peek(addr);
-  if (in_range(addr, 0x4017        )) return joy.peek(addr); // not APU
-  if (in_range(addr, 0x4018, 0xFFFF)) return cart ? cart->peek(addr) : 0x0;
+  ADDR(0x0000, 0x1FFF) return this->ram.peek(addr % 0x800);
+  ADDR(0x2000, 0x3FFF) return this->ppu.peek(addr % 8 + 0x2000);
+  ADDR(0x4000, 0x4013) return this->apu.peek(addr);
+  ADDR(0x4014        ) return this->ppu.peek(addr);
+  ADDR(0x4015        ) return this->apu.peek(addr);
+  ADDR(0x4016        ) return this->joy.peek(addr);
+  ADDR(0x4017        ) return this->joy.peek(addr); // not APU
+  ADDR(0x4018, 0xFFFF) return this->cart ? this->cart->peek(addr) : 0x00;
 
   fprintf(stderr, "[CPU] unhandled address: 0x%04X\n", addr);
   assert(false);
@@ -58,14 +63,14 @@ u8 CPU_MMU::peek(u16 addr) const {
 }
 
 void CPU_MMU::write(u16 addr, u8 val) {
-  if (in_range(addr, 0x0000, 0x1FFF)) return ram.write(addr % 0x800, val);
-  if (in_range(addr, 0x2000, 0x3FFF)) return ppu.write(0x2000 + addr % 8, val);
-  if (in_range(addr, 0x4000, 0x4013)) return apu.write(addr, val);
-  if (in_range(addr, 0x4014        )) return ppu.write(addr, val);
-  if (in_range(addr, 0x4015        )) return apu.write(addr, val);
-  if (in_range(addr, 0x4016        )) return joy.write(addr, val);
-  if (in_range(addr, 0x4017        )) return apu.write(addr, val); // not JOY
-  if (in_range(addr, 0x4018, 0xFFFF)) return cart ? cart->write(addr, val) : void();
+  ADDR(0x0000, 0x1FFF) return this->ram.write(addr % 0x800, val);
+  ADDR(0x2000, 0x3FFF) return this->ppu.write(0x2000 + addr % 8, val);
+  ADDR(0x4000, 0x4013) return this->apu.write(addr, val);
+  ADDR(0x4014        ) return this->ppu.write(addr, val);
+  ADDR(0x4015        ) return this->apu.write(addr, val);
+  ADDR(0x4016        ) return this->joy.write(addr, val);
+  ADDR(0x4017        ) return this->apu.write(addr, val); // not JOY
+  ADDR(0x4018, 0xFFFF) return this->cart ? this->cart->write(addr, val) : void();
 
   fprintf(stderr, "[CPU] unhandled address: 0x%04X\n", addr);
   assert(false);
