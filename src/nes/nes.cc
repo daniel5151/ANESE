@@ -27,7 +27,7 @@ NES::NES() {
   // JOY* joy;
 
   // Create PPU
-  this->ppu_mmu = new PPU_MMU(
+  this->ppu_mmu = new PPU_MMU (
     /* vram */ *this->ppu_vram,
     /* pram */ *this->ppu_pram
   );
@@ -39,14 +39,38 @@ NES::NES() {
     this->interrupts
   );
 
+  // So, here's a fun fact: the APU is technically part of the CPU in the NES,
+  // and as such, shares the CPU's MMU.
+  //
+  // But that's not good, since the CPU MMU needs a reference to the APU.
+  //
+  // Looks like we are in a bit of a sticky situation, eh?
+  // Circular dependencies, with no clear way to resolve it.
+  //
+  // Well, instead of refactoring, fuck it, let's have some fun with pointers!
+  //
+  // After all, we are using C++ ;)
+
+  // First, allocate _raw_ memory for the APU object, wihhout ever calling the
+  // APU constructor!
+  this->apu = reinterpret_cast<APU*>(new u8 [sizeof(APU)]);
+
   // Create CPU
-  this->cpu_mmu = new CPU_MMU(
+  this->cpu_mmu = new CPU_MMU (
     /* ram */ *this->cpu_wram,
     /* ppu */ *this->ppu,
-    /* apu */ *Rand_Memory::Get(),
+    /* apu */ *this->apu,
     /* joy */ *Rand_Memory::Get()
   );
   this->cpu = new CPU (*this->cpu_mmu, this->interrupts);
+
+  // Finally, construct the APU using placement new, allocating it at apu_mem!
+  //
+  // Since references are simply pointers under the hood, cpu_mmu's apu pointer
+  // is still valid once a APU object is constructred :D
+  //
+  // Wewlad, that's what I call fun on the bun!
+  this->apu = new(this->apu) APU (*this->cpu_mmu, this->interrupts);
 
   /*----------  Emulator Vars  ----------*/
 
@@ -55,6 +79,10 @@ NES::NES() {
 
 NES::~NES() {
   // Don't delete Cartridge! It's not owned by NES!
+
+  // since APU was allocated with placement new, default ctor must be called
+  this->apu->~APU();
+  delete this->apu;
 
   delete this->cpu_mmu;
   delete this->cpu;
@@ -96,6 +124,7 @@ void NES::removeCartridge() {
 void NES::power_cycle() {
   this->is_running = true;
 
+  this->apu->power_cycle();
   this->cpu->power_cycle();
   this->ppu->power_cycle();
 
@@ -113,9 +142,11 @@ void NES::reset() {
   // cpu_wram, ppu_pram, and ppu_vram are not affected by resets
   // (i.e: they keep previous state)
 
+  this->apu->reset();
   this->cpu->reset();
   this->ppu->reset();
 
+  this->interrupts.clear();
   this->interrupts.request(Interrupts::RESET);
 }
 
@@ -125,15 +156,13 @@ void NES::cycle() {
   // Execute a CPU instruction
   uint cpu_cycles = this->cpu->step();
 
-    // Check if the CPU halted
-  if (this->cpu->getState() == CPU::State::Halted) {
-    this->is_running = false;
-    return;
-  }
+  // Run PPU 3x per cpu_cycle, and APU 1x per cpu_cycle
+  for (uint i = 0; i < cpu_cycles * 3; i++) this->ppu->cycle();
+  for (uint i = 0; i < cpu_cycles    ; i++) this->apu->cycle();
 
-  // Run the PPU 3x for every cpu_cycle it took
-  for (uint i = 0; i < cpu_cycles * 3; i++)
-    this->ppu->cycle();
+  // Check if the CPU halted, and stop NES if it is
+  if (this->cpu->getState() == CPU::State::Halted)
+    this->is_running = false;
 }
 
 void NES::step_frame() {

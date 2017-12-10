@@ -22,9 +22,6 @@ PPU::PPU(
 {
   this->framebuff = new u8[240 * 256 * 4]();
 
-  this->scan.line = 261; // start on pre-render scanline
-  this->scan.cycle = 0;
-
   this->power_cycle();
 
 #ifdef DEBUG_PPU
@@ -35,6 +32,9 @@ PPU::PPU(
 void PPU::power_cycle() {
   this->cycles = 0;
   this->frames = 0;
+
+  this->scan.line = 261; // start on pre-render scanline
+  this->scan.cycle = 0;
 
   this->cpu_data_bus = 0x00;
 
@@ -63,6 +63,9 @@ void PPU::power_cycle() {
 void PPU::reset() {
   this->cycles = 0;
   this->frames = 0;
+
+  this->scan.line = 261; // start on pre-render scanline
+  this->scan.cycle = 0;
 
   // http://wiki.nesdev.com/w/index.php/PPU_power_up_state
   this->reg.ppuctrl.raw = 0x00;

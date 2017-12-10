@@ -21,7 +21,7 @@ elseif (WIN32 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS_RELEASE " ")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   # MSVC doesn't compile ANESE optimally, and struggles to hit even 30 fups
-  # I reccoment using clang on Windows.
+  # I reccomend using clang on Windows.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /O2 /fp:fast")
   # suppress some MSVC warnings
   add_definitions(-D_CRT_SECURE_NO_WARNINGS) # unsafe funcs (fprintf and such)

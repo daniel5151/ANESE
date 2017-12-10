@@ -1,8 +1,10 @@
 #pragma once
 
+#include "common/util.h"
+
 #include "cartridge/cartridge.h"
 #include "nes/generic/ram/ram.h"
-#include "common/util.h"
+#include "apu/apu.h"
 #include "cpu/cpu.h"
 #include "ppu/dma.h"
 #include "ppu/ppu.h"
@@ -29,6 +31,7 @@ private:
 
   // Processors
   CPU* cpu;
+  APU* apu;
   PPU* ppu;
 
   // RAM
