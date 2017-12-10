@@ -16,6 +16,9 @@ NES::NES() {
   this->ppu_oam  = new RAM (256, "OAM");
   this->ppu_oam2 = new RAM (32, "Secondary OAM");
 
+  // Create Joypad controller
+  this->joy = new JOY ();
+
   // Create DMA component
   this->dma = new DMA (*this->cpu_wram);
 
@@ -60,7 +63,7 @@ NES::NES() {
     /* ram */ *this->cpu_wram,
     /* ppu */ *this->ppu,
     /* apu */ *this->apu,
-    /* joy */ *Void_Memory::Get()
+    /* joy */ *this->joy
   );
   this->cpu = new CPU (*this->cpu_mmu, this->interrupts);
 
@@ -90,9 +93,9 @@ NES::~NES() {
   delete this->ppu_mmu;
   delete this->ppu;
 
-  // delete this->joy;
-
   delete this->dma;
+
+  delete this->joy; // wow, just like exams, amirite
 
   delete this->cpu_wram;
   delete this->ppu_pram;
@@ -119,6 +122,9 @@ void NES::removeCartridge() {
   this->cpu_mmu->removeCartridge();
   this->ppu_mmu->removeCartridge();
 }
+
+void NES::attach_joy(uint port, Memory* joy) { this->joy->attach_joy(port, joy); }
+void NES::detach_joy(uint port)              { this->joy->detach_joy(port);      }
 
 // Power Cycling initializes all the components to their "power on" state
 void NES::power_cycle() {

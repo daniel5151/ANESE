@@ -51,6 +51,21 @@ the commandline: `anese [rom_file]`
 
 On Windows, make sure the executable can find SDL2.dll.
 
+## Controls
+
+Currently hardcoded to the following:
+
+Button | Key
+-------|-----
+A      | Z
+B      | X
+Start  | Enter
+Select | Right Shift
+Up     | Up arrow
+Down   | Down arrow
+Left   | Left arrow
+Right  | Right arrow
+
 ## TODO
 
 - Key Milestones
@@ -68,19 +83,24 @@ On Windows, make sure the executable can find SDL2.dll.
   - [ ] PPU
     - [x] Set Up Basic Rendering Context (SDL)
     - [x] Set Up Memory Map
-    - [ ] Hardware Structures
-      - [x] Framebuffer
+    - [x] Basic Hardware Structures
+      - [x] Framebuffer (technically not in hardware)
       - [x] Registers
         - [x] Memory Map them
-      - ...
     - [x] Implement DMA
     - [x] Generate NMI -> CPU
     - [ ] Core rendering loop
       - [ ] Background Rendering
-      - [ ] Sprite Rendering
-    - ...
+      - [x] Sprite Rendering - _not hardware accurate_
+      - [ ] Proper Background / Foreground blending
+    - [ ] Sprite Zero Hit
   - [ ] APU
-    - ...
+    - [x] Basic Register Layout
+    - [ ] Frame Timer IRQ
+  - [ ] Joypads
+    - [x] Basic Controller
+    - [ ] Zapper
+    - [ ] Multitap
 
 - Ongoing Tasks
   - Better Usability
@@ -90,6 +110,7 @@ On Windows, make sure the executable can find SDL2.dll.
       - [ ] Remap controls
     - [ ] Config File
     - [ ] Running NESTEST (behind a flag)
+    - [ ] Xbox Controller support
     - Saving
       - [ ] Battery Backed RAM
       - [ ] Save-states
@@ -110,6 +131,9 @@ On Windows, make sure the executable can find SDL2.dll.
       - [ ] _\(Stretch\)_ Switch to cycle-based emulation (vs instruction level)
     - PPU
       - [ ] Make value in PPU <-> CPU bus decay
+    - JOY
+      - [ ] Multitap support
+      - [ ] More nes controller types
   - Cleanup
     - [ ] Get SDL out of the main function!
     - [ ] Unify method naming (either camelCase or snake_case)
@@ -126,7 +150,7 @@ On Windows, make sure the executable can find SDL2.dll.
       - [ ] Serialize state
       - [ ] Step through instructions
     - [ ] PPU
-      - TBD
+      - [ ] proper NTSC artifacting
   - [ ] Write a NES rom to simulate TV static, and have that run if no ROM is
         chosen
   - Multiple Frontends

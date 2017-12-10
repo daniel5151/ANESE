@@ -4,6 +4,7 @@
 
 #include "cartridge/cartridge.h"
 #include "nes/generic/ram/ram.h"
+#include "joy/joy.h"
 #include "apu/apu.h"
 #include "cpu/cpu.h"
 #include "ppu/dma.h"
@@ -41,8 +42,8 @@ private:
   RAM* ppu_oam;  // 256 bytes PPU Object Attribute Memory (OAM)
   RAM* ppu_oam2; // 32 bytes secondary OAM
 
-  // Joypads
-  // JOY* joy;
+  // Joypad controller
+  JOY* joy;
 
   /*-----------  Static Resources  ------------*/
   // Fixed, non-stateful compnents
@@ -70,6 +71,9 @@ public:
 
   bool loadCartridge(Cartridge* cart);
   void removeCartridge();
+
+  void attach_joy(uint port, Memory* joy);
+  void detach_joy(uint port);
 
   void power_cycle(); // Set all volatile components to default power_on state
   void reset();       // Set all volatile components to default reset state

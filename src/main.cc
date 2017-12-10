@@ -1,5 +1,6 @@
 #include "common/util.h"
 #include "nes/cartridge/cartridge.h"
+#include "nes/joy/controllers/standard.h"
 #include "nes/nes.h"
 
 #include "common/debug.h"
@@ -54,6 +55,14 @@ int main(int argc, char* argv[]) {
 
   // Create a NES
   NES nes;
+
+  // Create some controllers
+  JOY_Standard joy_1;
+  JOY_Standard joy_2;
+
+  // And plug them in too!
+  nes.attach_joy(0, &joy_1);
+  nes.attach_joy(1, &joy_2);
 
   // Slap in a cartridge
   // (don't forget to blow on it)
@@ -125,20 +134,36 @@ int main(int argc, char* argv[]) {
         quit = true;
       }
 
-      if (event.type == SDL_KEYUP) {
-        if (event.key.keysym.sym == SDLK_r) {
-          fprintf(stderr, "NES Reset!\n");
-          nes.reset();
+      if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
+        // Joypad controls
+        bool new_state = (event.type == SDL_KEYDOWN) ? true : false;
+        switch (event.key.keysym.sym) {
+        case SDLK_z:      joy_1.set_button("A",      new_state); break;
+        case SDLK_x:      joy_1.set_button("B",      new_state); break;
+        case SDLK_RETURN: joy_1.set_button("Start",  new_state); break;
+        case SDLK_RSHIFT: joy_1.set_button("Select", new_state); break;
+        case SDLK_UP:     joy_1.set_button("Up",     new_state); break;
+        case SDLK_DOWN:   joy_1.set_button("Down",   new_state); break;
+        case SDLK_LEFT:   joy_1.set_button("Left",   new_state); break;
+        case SDLK_RIGHT:  joy_1.set_button("Right",  new_state); break;
         }
 
-        if (event.key.keysym.sym == SDLK_p) {
-          fprintf(stderr, "NES Power Cycled!\n");
-          nes.power_cycle();
-        }
+        // Misc operations
+        if (event.type == SDL_KEYUP) {
+          if (event.key.keysym.sym == SDLK_r) {
+            fprintf(stderr, "NES Reset!\n");
+            nes.reset();
+          }
 
-        if (event.key.keysym.sym == SDLK_c) {
-          bool log = DEBUG_VARS::Get()->print_nestest ^= 1;
-          fprintf(stderr, "NESTEST CPU logging: %s\n", log ? "ON" : "OFF");
+          if (event.key.keysym.sym == SDLK_p) {
+            fprintf(stderr, "NES Power Cycled!\n");
+            nes.power_cycle();
+          }
+
+          if (event.key.keysym.sym == SDLK_c) {
+            bool log = DEBUG_VARS::Get()->print_nestest ^= 1;
+            fprintf(stderr, "NESTEST CPU logging: %s\n", log ? "ON" : "OFF");
+          }
         }
       }
     }
