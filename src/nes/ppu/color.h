@@ -14,6 +14,8 @@ union Color {
   BitField<8,  8> g;
   BitField<0,  8> b;
 
+  Color& operator=(const Color& val2) { this->val = val2; return *this; }
+
   constexpr inline Color() : val { 0x00000000 } {}
   constexpr inline Color(u8 r, u8 g, u8 b, u8 a = 0xFF)
   : val { u32(a) << 24 | r << 16 | g << 8 | b << 0 }

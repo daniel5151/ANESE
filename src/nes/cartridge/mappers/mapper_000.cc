@@ -58,9 +58,10 @@ u8 Mapper_000::peek(u16 addr) const {
 }
 
 void Mapper_000::write(u16 addr, u8 val) {
-  if (in_range(addr, 0x0000, 0x1FFF)) {
-    if (this->chr_ram != nullptr)
+  if (this->chr_ram != nullptr) {
+    if (in_range(addr, 0x0000, 0x1FFF)) {
       this->chr_ram->write(addr, val);
+    }
   }
 
   // Otherwise, do nothing at all

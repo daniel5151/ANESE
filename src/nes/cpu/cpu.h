@@ -67,10 +67,8 @@ private:
 
   /*-------------  Testing  --------------*/
 
-#ifdef NESTEST
   // print nestest golden-log formatted CPU log data
   void nestest(const Instructions::Opcode& opcode) const;
-#endif
 
 public:
   ~CPU();

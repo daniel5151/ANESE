@@ -27,10 +27,6 @@ void CPU::power_cycle() {
 
   this->reg.s = 0xFD;
 
-#ifdef NESTEST
-  this->reg.pc = 0xC000;
-#endif
-
   this->state = CPU::State::Running;
 }
 
@@ -49,11 +45,15 @@ CPU::State CPU::getState() const { return this->state; }
 void CPU::service_interrupt(Interrupts::Type interrupt, bool brk /* = false */) {
   using namespace Interrupts;
 
-  assert(interrupt != NONE);;
+  assert(interrupt != NONE);
 
 #ifdef NESTEST
-  // only allow IRQs to pass through when running NESTEST
-  if (interrupt != IRQ) return;
+  // custom reset for headless nestest
+  if (interrupt == RESET) {
+    this->reg.pc = 0xC000;
+    this->interrupt.service(interrupt);
+    return;
+  }
 #endif
 
   this->reg.p.i = true; // don't want interrupts being interrupted
@@ -190,6 +190,8 @@ uint CPU::step() {
     case SEC: { this->reg.p.c = 1;
               } break;
     case CLC: { this->reg.p.c = 0;
+              } break;
+    case CLI: { this->reg.p.i = 0;
               } break;
     case BCS: { branch(this->reg.p.c);
               } break;
@@ -384,7 +386,7 @@ uint CPU::step() {
                 this->mem[addr] = val;
               } break;
     default:
-      fprintf(stderr, "[CPU] Unimplemented Instruction!\n");
+      fprintf(stderr, "[CPU] Unimplemented Instruction! 0x%02X\n", opcode.raw);
       this->state = CPU::State::Halted;
       break;
   }

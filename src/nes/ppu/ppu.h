@@ -103,7 +103,6 @@ private:
 
     u8 ppudata; // PPUDATA - 0x2007 - PPU VRAM data port
 
-
     union {
       u16 val;            // the actual address
       BitField<8, 8> hi;  // hi byte of addr
@@ -115,9 +114,8 @@ private:
       BitField<10, 2> nametable;
       BitField<12, 3> fine_y;
 
-      // quality-of-life methods (so i don't have to use v.val all the time)
+      // quality-of-life method (so i don't have to use v.val _all_ the time)
       operator u16() const { return this->val; }
-      u16 operator=(u16 new_val) { return this->val = new_val; }
     } v, t;
 
     // v is the true vram address
@@ -152,7 +150,8 @@ private:
   Pixel get_bgr_pixel();
   Pixel get_spr_pixel();
 
-  void sprite_eval();
+  void bgr_eval();
+  void spr_eval();
 
   /*----  Emulation Vars and Methods  ----*/
 
@@ -160,7 +159,7 @@ private:
   uint frames; // total frames rendered
 
   // framebuffer
-  u8 framebuff [240 * 256 * 4];
+  u8* framebuff;
   void draw_dot(Color color);
 
   // scanline tracker

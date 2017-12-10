@@ -41,8 +41,12 @@ private:
 
     typedef typename MinimumTypeHelper<Index + Bits>::type T;
 public:
-    template <class T2>
-    BitField &operator=(T2 value) {
+    BitField &operator=(const BitField& other_bf) {
+        *this = T(other_bf);
+        return *this;
+    };
+
+    BitField &operator=(T value) {
         value_ = (value_ & ~(Mask << Index)) | ((value & Mask) << Index);
         return *this;
     }
@@ -68,12 +72,17 @@ private:
 
     typedef typename MinimumTypeHelper<Index + Bits>::type T;
 public:
+    BitField &operator=(const BitField& other_bf) {
+        *this = bool(other_bf);
+        return *this;
+    };
+
     BitField &operator=(bool value) {
         value_ = (value_ & ~(Mask << Index)) | (value << Index);
         return *this;
     }
 
-    operator bool() const { return !!(value_ & (Mask << Index)); }
+    operator bool() const { return bool(value_ & (Mask << Index)); }
 
 private:
     T value_;

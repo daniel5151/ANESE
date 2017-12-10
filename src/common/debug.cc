@@ -2,17 +2,6 @@
 
 /*----------------------------------------------------------------------------*/
 
-u8 Void_Memory::read(u16 addr)       { (void)addr; return 0x00; };
-u8 Void_Memory::peek(u16 addr) const { (void)addr; return 0x00; };
-void Void_Memory::write(u16 addr, u8 val) { (void)addr; (void)val; };
-
-Void_Memory* Void_Memory::Get() {
-  static Void_Memory* the_void = nullptr;
-
-  if (!the_void) the_void = new Void_Memory ();
-  return the_void;
-}
-
 u8 Map_Memory::read(u16 addr)       { return this->mem[addr]; };
 u8 Map_Memory::peek(u16 addr) const { return this->mem.count(addr) != 0
                                         ? this->mem.at(addr)

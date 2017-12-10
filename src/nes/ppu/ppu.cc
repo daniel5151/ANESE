@@ -3,7 +3,9 @@
 #include <cassert>
 #include <cstdio>
 
-PPU::~PPU() {}
+PPU::~PPU() {
+  delete this->framebuff;
+}
 
 PPU::PPU(
   Memory& mem,
@@ -18,8 +20,7 @@ PPU::PPU(
   oam(oam),
   oam2(oam2)
 {
-  for (uint i = 0; i < 256 * 240 * 4; i++)
-    this->framebuff[i] = 0;
+  this->framebuff = new u8[240 * 256 * 4]();
 
   this->scan.line = 261; // start on pre-render scanline
   this->scan.cycle = 0;
@@ -50,8 +51,8 @@ void PPU::power_cycle() {
   this->reg.oamaddr = 0x00;
   this->reg.oamdata = 0x00; // ?
 
-  this->reg.v = 0x0000;
-  this->reg.t = 0x0000;
+  this->reg.v.val = 0x0000;
+  this->reg.t.val = 0x0000;
   this->reg.x = 0;
 
   this->reg.ppudata = 0x00; // ?
@@ -94,6 +95,8 @@ void PPU::draw_dot(Color color) {
     return;
   }
 
+  const u32 offset = (256 * 4 * this->scan.line) + this->scan.cycle * 4;
+  assert(offset + 3 < 240 * 256 * 4);
   // This array caused me a lot of heartache and headache.
   //
   // I spent ~1h trying to debug why this->scan.line and this->scan.cycle were
@@ -105,8 +108,10 @@ void PPU::draw_dot(Color color) {
   //
   // Why the hell did I decide to write this in C++ again?
 
-  u32* pixels = reinterpret_cast<u32*>(this->framebuff);
-  pixels[(256 * this->scan.line) + this->scan.cycle] = color;
+  /* b */ this->framebuff[offset + 0] = color.b;
+  /* g */ this->framebuff[offset + 1] = color.g;
+  /* r */ this->framebuff[offset + 2] = color.r;
+  /* a */ this->framebuff[offset + 3] = color.a;
 }
 
 /*----------------------------  Memory Interface  ----------------------------*/
@@ -142,16 +147,14 @@ u8 PPU::read(u16 addr) {
                       // retval = from internal buffer
                       retval = this->reg.ppudata;
                       // Fill read buffer with acutal data
-                      u8 val = this->mem[this->reg.v];
-                      this->reg.ppudata = val;
+                      this->reg.ppudata = this->mem[this->reg.v];
                     } else {
                       // Reading Pallete
                       // retval = directly from memory
                       retval = this->mem[this->reg.v];
                       // Fill read buffer with the mirrored nametable data
                       // Why? Because the wiki said so!
-                      u8 val = this->mem[this->reg.v % 0x2000];
-                      this->reg.ppudata = val;
+                      this->reg.ppudata = this->mem[this->reg.v];
                     }
 
                     // (0: add 1, going across; 1: add 32, going down)
@@ -165,10 +168,10 @@ u8 PPU::read(u16 addr) {
                     retval = 0x00;
                   } break;
   default:        { retval = this->cpu_data_bus;
-                    fprintf(stderr,
-                      "[PPU] Reading from Write-Only register: 0x%04X\n",
-                      addr
-                    );
+                    // fprintf(stderr,
+                    //   "[PPU] Reading from Write-Only register: 0x%04X\n",
+                    //   addr
+                    // );
                   } break;
   }
 
@@ -249,7 +252,7 @@ void PPU::write(u16 addr, u8 val) {
                     if (this->reg.ppuctrl.V && this->reg.ppustatus.V)
                       this->interrupts.request(Interrupts::Type::NMI);
                     // t: ....BA.. ........ = d: ......BA
-                    this->reg.t = (this->reg.t & 0xF3FF) | (u16(val & 0x03) << 10);
+                    this->reg.t.nametable = val & 0x03;
                   } return;
   case PPUMASK:   { this->reg.ppumask.raw = val;
                   } return;
@@ -279,7 +282,7 @@ void PPU::write(u16 addr, u8 val) {
                       // t: ........ HGFEDCBA = d: HGFEDCBA
                       this->reg.t.lo = val;
                       // v                    = t
-                      this->reg.v = this->reg.t;
+                      this->reg.v.val = this->reg.t.val;
                     }
                     this->latch = !this->latch;
                   } return;
@@ -303,12 +306,12 @@ void PPU::write(u16 addr, u8 val) {
                       this->cycle();
                     }
                   } return;
-  default:        { fprintf(stderr,
-                      "[PPU] Writing to Read-Only register: 0x%04X\n <- 0x%02X",
-                      addr,
-                      val
-                    );
-                  } return;
+  // default:        { fprintf(stderr,
+  //                     "[PPU] Writing to Read-Only register: 0x%04X\n <- 0x%02X",
+  //                     addr,
+  //                     val
+  //                   );
+  //                 } return;
   }
 }
 
@@ -316,7 +319,7 @@ void PPU::write(u16 addr, u8 val) {
 
 // TODO: cycle accurate
 // For now, it just performs all the calculations on cycle 0 of a scanline
-void PPU::sprite_eval() {
+void PPU::spr_eval() {
   if (this->scan.cycle != 0)
     return;
 
@@ -361,8 +364,9 @@ void PPU::sprite_eval() {
 // https://wiki.nesdev.com/w/index.php/PPU_rendering
 // TODO: make this more "hardware" accurate
 PPU::Pixel PPU::get_bgr_pixel() {
-  // First, evaluate the current pixel
-  // TODO: make this more "hardware" accurate
+  // If background rendering is disabled, return a empty pixel
+  if (this->reg.ppumask.b == false)
+    return Pixel();
 
   // What corner is this particular 8x8 tile in?
   //
@@ -392,16 +396,12 @@ PPU::Pixel PPU::get_bgr_pixel() {
 
   Color color = this->palette[this->mem[0x3F00 + palette * 4 + pixel_type]];
 
-  // Set the pixel to be returned
-  Pixel ret_pixel = Pixel { color, 0 };
+  return Pixel { color, 0 };
+}
 
-
-  // If background rendering is disabled, return a empty pixel
-  if (this->reg.ppumask.b == false)
-    ret_pixel = Pixel();
-
-  // now, perform memory accesses
-
+// https://wiki.nesdev.com/w/index.php/PPU_rendering
+// using ntsc_timing.png as a visual guide
+void PPU::bgr_eval() {
   /**/ if (in_range(this->scan.cycle, 0,   0  )) { /* idle cycle */ }
   else if (in_range(this->scan.cycle, 1,   256) ||
            in_range(this->scan.cycle, 321, 336)) {
@@ -409,7 +409,7 @@ PPU::Pixel PPU::get_bgr_pixel() {
     switch (this->scan.cycle % 8) {
     // 1) Fetch Nametable Byte
     // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Tile_and_attribute_fetching
-    case 1: {
+    case 2: {
       u16 nt_addr = 0x2000
                   | (this->reg.v & 0x0FFF);
       this->bgr.nt_byte = this->mem[nt_addr];
@@ -417,7 +417,7 @@ PPU::Pixel PPU::get_bgr_pixel() {
 
     // 2) Fetch Attribute Table Byte
     // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Tile_and_attribute_fetching
-    case 3: {
+    case 4: {
       u16 at_addr = 0x23C0
                   | ((this->reg.v >> 0) & 0x0C00)
                   | ((this->reg.v >> 4) & 0x38)
@@ -426,7 +426,7 @@ PPU::Pixel PPU::get_bgr_pixel() {
     } break;
 
     // 3) Fetch lo tile bitmap
-    case 5: {
+    case 6: {
       u16 tile_addr = this->reg.ppuctrl.B * 0x1000
                     + this->bgr.nt_byte * 16
                     + this->reg.v.fine_y;
@@ -435,7 +435,7 @@ PPU::Pixel PPU::get_bgr_pixel() {
     } break;
 
     // 4) Fetch hi tile bitmap
-    case 7: {
+    case 0: {
       u16 tile_addr = this->reg.ppuctrl.B * 0x1000
                     + this->bgr.nt_byte * 16
                     + this->reg.v.fine_y;
@@ -444,10 +444,12 @@ PPU::Pixel PPU::get_bgr_pixel() {
 
       // increment Coarse X
       // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Wrapping_around
-      if (this->reg.v.coarse_x == 31) {
-        this->reg.v = this->reg.v ^ 0x0400; // switch horizontal nametable
+      if (this->reg.ppumask.b) {
+        if (this->reg.v.coarse_x == 31) {
+          this->reg.v.val ^= 0x0400; // switch horizontal nametable
+        }
+        this->reg.v.coarse_x++;
       }
-      this->reg.v.coarse_x++;
     } break;
 
     default: break; // do nothing on odd-cycles
@@ -459,7 +461,7 @@ PPU::Pixel PPU::get_bgr_pixel() {
     // These fetches are 2 PPU cycles each.
     // Both of the bytes fetched here are the same nametable byte that will be
     // fetched at the beginning of the next scanline (tile 3, in other words).
-    if (this->scan.cycle % 2) {
+    if (this->scan.cycle % 2 == 0) {
       this->bgr.nt_byte = this->mem[this->reg.v];
     }
     // This is used for timing by some mappers.
@@ -472,9 +474,8 @@ PPU::Pixel PPU::get_bgr_pixel() {
     if (this->reg.v.fine_y == 7) {
       if (this->reg.v.coarse_y == 29) {
         this->reg.v.coarse_y = 0;
-        this->reg.v = this->reg.v ^ 0x0800; // switch vertical nametable
-      }
-      else {
+        this->reg.v.val ^= 0x0800; // switch vertical nametable
+      } else {
         this->reg.v.coarse_y++;
       }
     }
@@ -485,18 +486,18 @@ PPU::Pixel PPU::get_bgr_pixel() {
     if (this->scan.cycle == 257) {
     // copyX
     // v: .....F.. ...EDCBA = t: .....F.. ...EDCBA
-    this->reg.v = (this->reg.v & 0xFBE0) | (this->reg.t & 0x041F);
+    this->reg.v.coarse_x = this->reg.t.coarse_x;
+    this->reg.v.nametable = (this->reg.v.nametable & 2)
+                          | (this->reg.t.nametable & 1);
   }
-  if (this->scan.line == 261 && in_range(this->scan.cycle, 268, 304)) {
+  if (this->scan.line == 261 && in_range(this->scan.cycle, 280, 304)) {
     // copyY
     // v: .IHGF.ED CBA..... = t: .IHGF.ED CBA.....
-    this->reg.v = (this->reg.v & 0x841F) | (this->reg.t & 0x7BE0);
+    this->reg.v.coarse_y = this->reg.t.coarse_y;
+    this->reg.v.fine_y = this->reg.t.fine_y;
+    this->reg.v.nametable = (this->reg.v.nametable & 1)
+                          | (this->reg.t.nametable & 2);
   }
-
-
-
-  // finally, return pixel
-  return ret_pixel;
 }
 
 // TODO: make this more "hardware" accurate
@@ -554,7 +555,7 @@ PPU::Pixel PPU::get_spr_pixel() {
         continue;
 
       // Otherwise, fetch which pallete color to use, and return the pixel!
-      u8 palette = this->mem.peek(0x3F10 + attributes.palette * 4 + pixel_type);
+      u8 palette = this->mem[0x3F10 + attributes.palette * 4 + pixel_type];
       return Pixel { this->palette[palette], attributes.priority };
     }
 
@@ -593,6 +594,9 @@ void PPU::cycle() {
     PPU::Pixel bgr_pixel = this->get_bgr_pixel();
     PPU::Pixel spr_pixel = this->get_spr_pixel();
 
+    // fetch bgr btytes
+    this->bgr_eval();
+
     // Alpha channel of 0 means that pixel is not on
     bool bgr_on = bgr_pixel.color.a;
     bool spr_on = spr_pixel.color.a;
@@ -613,7 +617,7 @@ void PPU::cycle() {
 
   // Sprite Evaluation
   if (this->scan.line < 240) { // only on visible scanlines
-    this->sprite_eval();
+    this->spr_eval();
   }
 
   // Enable / Disable vblank

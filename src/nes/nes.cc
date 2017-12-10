@@ -43,8 +43,8 @@ NES::NES() {
   this->cpu_mmu = new CPU_MMU(
     /* ram */ *this->cpu_wram,
     /* ppu */ *this->ppu,
-    /* apu */ *new Map_Memory(), // this is leaky, but ees okai, since debug
-    /* joy */ *Void_Memory::Get()
+    /* apu */ *Rand_Memory::Get(),
+    /* joy */ *Rand_Memory::Get()
   );
   this->cpu = new CPU (*this->cpu_mmu, this->interrupts);
 

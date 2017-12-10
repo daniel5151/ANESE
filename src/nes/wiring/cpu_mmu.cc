@@ -63,6 +63,23 @@ u8 CPU_MMU::peek(u16 addr) const {
 }
 
 void CPU_MMU::write(u16 addr, u8 val) {
+  // Some test roms provide test status info in addr 0x6000, and write c-style
+  // null-terminated ascii strings starting at 0x6004
+  // They signal this behavior by writing 0xDEB061 to 0x6001 - 0x6003
+  static uint debug_log = 0;
+  if (in_range(addr, 0x6001, 0x6003))
+    debug_log |= val << ((2 - (addr - 0x6001)) * 8);
+
+  if (debug_log == 0xDEB061) {
+    if (addr == 0x6000)
+      fprintf(stderr, "Status: %X\n", val);
+
+    if (in_range(addr, 0x6004, 0x6100)) {
+      fprintf(stderr, "%c", val);
+    }
+  }
+  // END DEBUG
+
   ADDR(0x0000, 0x1FFF) return this->ram.write(addr % 0x800, val);
   ADDR(0x2000, 0x3FFF) return this->ppu.write(0x2000 + addr % 8, val);
   ADDR(0x4000, 0x4013) return this->apu.write(addr, val);

@@ -1,5 +1,7 @@
+#include "cpu.h"
+#include "instructions.h"
 
-#ifdef NESTEST
+#include <cstdio>
 
 void CPU::nestest(const Instructions::Opcode& opcode) const {
   using namespace Instructions;
@@ -121,15 +123,15 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
 
   // handle a few edge cases
   switch (opcode.instr) {
-    case JMP:
-    case JSR:
+    case Instr::JMP:
+    case Instr::JSR:
       if (opcode.addrm == AddrM::abs_)
         sprintf(instr_buf, "$%04X", addr);
       break;
-    case LSR:
-    case ASL:
-    case ROR:
-    case ROL:
+    case Instr::LSR:
+    case Instr::ASL:
+    case Instr::ROR:
+    case Instr::ROL:
       if (opcode.addrm == AddrM::acc)
         sprintf(instr_buf, "A");
       break;
@@ -152,5 +154,3 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
                            // ergo, multiply cycles by 3 should be fineee
   );
 }
-
-#endif /* NESTEST */

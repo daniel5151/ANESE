@@ -122,6 +122,13 @@ int main(int argc, char* argv[]) {
           event.window.event == SDL_WINDOWEVENT_CLOSE) {
         quit = true;
       }
+
+      if (event.type == SDL_KEYUP) {
+        if (event.key.keysym.sym == SDLK_r) {
+          fprintf(stderr, "NES Reset!\n");
+          nes.reset();
+        }
+      }
     }
 
     // run the NES for a frame

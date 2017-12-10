@@ -10,22 +10,37 @@
 #include "interfaces/memory.h"
 #include "util.h"
 
-// Void Memory Singleton
-// Returns 0x00 on read
-// No effect on write
-class Void_Memory : public Memory {
+// Memory Singleton Template
+// behavior defined by given function
+template <u8 (*F)()>
+class Func_Memory : public Memory {
 private:
-  Void_Memory() = default;
+  Func_Memory() = default;
 
 public:
   // <Memory>
-  u8 read(u16 addr)            override;
-  u8 peek(u16 addr) const      override;
-  void write(u16 addr, u8 val) override;
+  u8 read(u16 addr)            override { (void)addr; return F(); };
+  u8 peek(u16 addr) const      override { (void)addr; return F(); };
+  void write(u16 addr, u8 val) override { (void)addr; (void)val;  };
   // <Memory/>
 
-  static Void_Memory* Get();
+  static Func_Memory* Get() {
+    static Func_Memory* the_thing = nullptr;
+
+    if (!the_thing) the_thing = new Func_Memory ();
+    return the_thing;
+  }
 };
+
+// Some concrete singletons
+static auto init = [](){ srand(0xBADA55); };
+static u8 give_me_rand() { (void)init; return rand(); }
+static u8 give_me_zero() { return 0x00; }
+static u8 give_me_full() { return 0xFF; }
+
+typedef Func_Memory<give_me_zero> Void_Memory;
+typedef Func_Memory<give_me_full> Full_Memory;
+typedef Func_Memory<give_me_rand> Rand_Memory;
 
 // Map Memory
 // Uses STL map to store memory
