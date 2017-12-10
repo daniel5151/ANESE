@@ -3,8 +3,6 @@
 #include <cassert>
 #include <cstdio>
 
-// NES APU
-
 APU::~APU() {
 
 }
@@ -21,8 +19,9 @@ void APU::power_cycle() {
   this->cycles = 0;
 
   // clear internal registers (through mem interface, for convenience)
-  for (u16 addr = 0x4000; addr <= 0x4015; addr++)
+  for (u16 addr = 0x4000; addr <= 0x4013; addr++)
     (*this)[addr] = 0x00;
+  (*this)[0x4015] = 0x00;
   (*this)[0x4017] = 0x00;
 }
 
@@ -85,5 +84,7 @@ void APU::write(u16 addr, u8 val) {
 
 
 void APU::cycle() {
+
+
   this->cycles++;
 }

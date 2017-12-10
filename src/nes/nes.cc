@@ -60,7 +60,7 @@ NES::NES() {
     /* ram */ *this->cpu_wram,
     /* ppu */ *this->ppu,
     /* apu */ *this->apu,
-    /* joy */ *Rand_Memory::Get()
+    /* joy */ *Void_Memory::Get()
   );
   this->cpu = new CPU (*this->cpu_mmu, this->interrupts);
 

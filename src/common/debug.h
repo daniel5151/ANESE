@@ -10,6 +10,23 @@
 #include "interfaces/memory.h"
 #include "util.h"
 
+// Extreemly nasty debug variable singleton
+struct DEBUG_VARS {
+private:
+  DEBUG_VARS() = default;
+public:
+  static DEBUG_VARS* Get() {
+    static DEBUG_VARS* the_thing = nullptr;
+
+    if (!the_thing) the_thing = new DEBUG_VARS ();
+    return the_thing;
+  }
+public:
+
+  bool print_nestest = false;
+
+};
+
 // Memory Singleton Template
 // behavior defined by given function
 template <u8 (*F)()>

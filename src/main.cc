@@ -2,6 +2,8 @@
 #include "nes/cartridge/cartridge.h"
 #include "nes/nes.h"
 
+#include "common/debug.h"
+
 #include <iostream>
 #include <fstream>
 
@@ -127,6 +129,16 @@ int main(int argc, char* argv[]) {
         if (event.key.keysym.sym == SDLK_r) {
           fprintf(stderr, "NES Reset!\n");
           nes.reset();
+        }
+
+        if (event.key.keysym.sym == SDLK_p) {
+          fprintf(stderr, "NES Power Cycled!\n");
+          nes.power_cycle();
+        }
+
+        if (event.key.keysym.sym == SDLK_c) {
+          bool log = DEBUG_VARS::Get()->print_nestest ^= 1;
+          fprintf(stderr, "NESTEST CPU logging: %s\n", log ? "ON" : "OFF");
         }
       }
     }

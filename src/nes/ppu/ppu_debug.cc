@@ -183,7 +183,7 @@ void PPU::update_debug_windows() {
       }
     };
 
-    paint_nametable(0x2000, 0,        0       , true);
+    paint_nametable(0x2000, 0,        0       );
     paint_nametable(0x2400, 256 + 16, 0       );
     paint_nametable(0x2800, 0,        240 + 16);
     paint_nametable(0x2C00, 256 + 16, 240 + 16);

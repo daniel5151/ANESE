@@ -56,8 +56,6 @@ void CPU::service_interrupt(Interrupts::Type interrupt, bool brk /* = false */) 
   }
 #endif
 
-  this->reg.p.i = true; // don't want interrupts being interrupted
-
   // Push stack pointer and processor status onto stack for safekeeping
   if (interrupt != RESET) {
     this->s_push16(this->reg.pc);
@@ -74,6 +72,8 @@ void CPU::service_interrupt(Interrupts::Type interrupt, bool brk /* = false */) 
   case NMI:   this->reg.pc = this->mem.read16(0xFFFA); break;
   default: break;
   }
+
+  this->reg.p.i = true; // don't want interrupts being interrupted
 
   // Clear interrupt
   this->interrupt.service(interrupt);
@@ -130,6 +130,8 @@ u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
   return addr;
 }
 
+#include "common/debug.h"
+
 uint CPU::step() {
   uint old_cycles = this->cycles;
 
@@ -145,8 +147,11 @@ uint CPU::step() {
   // Lookup info about opcode
   Instructions::Opcode opcode = Instructions::Opcodes[op];
 
+  if (DEBUG_VARS::Get()->print_nestest) {
+    this->nestest(opcode);
+  }
 #ifdef NESTEST
-  this->nestest(opcode); // print NESTEST debug info
+  else this->nestest(opcode); // print NESTEST debug info
 #endif
 
   // Depending on what addrm this instruction uses, this will either be a u8

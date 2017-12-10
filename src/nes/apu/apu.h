@@ -6,6 +6,11 @@
 
 #include "nes/wiring/interrupt_lines.h"
 
+//
+// CURRENTLY A STUB
+// ONLY BASICS IMPLEMENTED FOR TIMING PURPOSES
+//
+
 // NES APU
 // Part of the NES RP2A03
 class APU : public Memory {

@@ -33,7 +33,7 @@ void PPU::power_cycle() {
   this->cycles = 0;
   this->frames = 0;
 
-  this->scan.line = 261; // start on pre-render scanline
+  this->scan.line = 0;
   this->scan.cycle = 0;
 
   this->cpu_data_bus = 0x00;
@@ -64,8 +64,10 @@ void PPU::reset() {
   this->cycles = 0;
   this->frames = 0;
 
-  this->scan.line = 261; // start on pre-render scanline
+  this->scan.line = 0;
   this->scan.cycle = 0;
+
+  this->cpu_data_bus = 0x00; // ?
 
   // http://wiki.nesdev.com/w/index.php/PPU_power_up_state
   this->reg.ppuctrl.raw = 0x00;
@@ -607,7 +609,7 @@ void PPU::cycle() {
     // Priority Multiplexer decision table
     // https://wiki.nesdev.com/w/index.php/PPU_rendering#Preface
     Color dot_color = Color();
-    /**/ if (!bgr_on && !spr_on) dot_color = Color(); // this->palette[this->mem[0x3F00]];
+    /**/ if (!bgr_on && !spr_on) dot_color = this->palette[this->mem[0x3F00]];
     else if (!bgr_on &&  spr_on) dot_color = spr_pixel.color;
     else if ( bgr_on && !spr_on) dot_color = bgr_pixel.color;
     else if ( bgr_on &&  spr_on) dot_color = spr_pixel.priority
@@ -624,7 +626,7 @@ void PPU::cycle() {
   }
 
   // Enable / Disable vblank
-  if (start_new_line) {
+  if (this->scan.cycle == 1) {
     // vblank start on line 241...
     if (this->scan.line == 241 && this->reg.ppuctrl.V) {
       this->reg.ppustatus.V = true;
@@ -633,8 +635,9 @@ void PPU::cycle() {
 
     // ...and ends after line 260
     if (this->scan.line == 261) {
-      this->reg.ppustatus.O = false;
       this->reg.ppustatus.V = false;
+      this->reg.ppustatus.S = false;
+      this->reg.ppustatus.O = false;
     }
   }
 
