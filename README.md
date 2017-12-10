@@ -66,6 +66,14 @@ Down   | Down arrow
 Left   | Left arrow
 Right  | Right arrow
 
+There are also a couple emulator actions:
+
+Action             | Keys
+-------------------|--------
+Reset              | Ctrl-R
+Power Cycle        | Ctrl-P
+Toggle CPU logging | Ctrl-C
+
 ## TODO
 
 - Key Milestones

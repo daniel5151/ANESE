@@ -148,8 +148,15 @@ int main(int argc, char* argv[]) {
         case SDLK_RIGHT:  joy_1.set_button("Right",  new_state); break;
         }
 
+        bool did_hit_ctrl = false;
+        if (std::string(SDL_GetPlatform()) == "Mac OS X") {
+          did_hit_ctrl = event.key.keysym.mod & (KMOD_LGUI | KMOD_RGUI);
+        } else {
+          did_hit_ctrl = event.key.keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
+        }
+
         // Misc operations
-        if (event.type == SDL_KEYUP) {
+        if (event.type == SDL_KEYDOWN && did_hit_ctrl) {
           if (event.key.keysym.sym == SDLK_r) {
             fprintf(stderr, "NES Reset!\n");
             nes.reset();
