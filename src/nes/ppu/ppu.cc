@@ -143,7 +143,7 @@ u8 PPU::read(u16 addr) {
                     if (on_visible_line && is_clearing_oam2) {
                       retval = 0xFF;
                     } else {
-                      retval = this->oam[this->reg.oamaddr++];
+                      retval = this->oam[this->reg.oamaddr];
                     }
                   } break;
   case PPUDATA:   { // PPUDATA read buffer (post-fetch) logic
@@ -229,6 +229,11 @@ u8 PPU::peek(u16 addr) const {
 }
 
 void PPU::write(u16 addr, u8 val) {
+  // if (this->scan.line <= 241 && this->scan.cycle <= 1) {
+    // fprintf(stderr, "wr to 0x%04X outside of vblank, at %d : %d\n", addr, this->scan.line, this->scan.cycle);
+    // this->draw_dot(Color(255, 255, 255));
+  // }
+
   assert((addr >= 0x2000 && addr <= 0x2007) || addr == 0x4014);
 
   using namespace PPURegisters;
@@ -561,7 +566,7 @@ PPU::Pixel PPU::get_spr_pixel() {
 
       // Otherwise, fetch which pallete color to use, and return the pixel!
       u8 palette = this->mem[0x3F10 + attributes.palette * 4 + pixel_type];
-      return Pixel { this->palette[palette], attributes.priority };
+      return Pixel { this->palette[palette], bool(attributes.priority) };
     }
 
     // Otherwise, keep looking
@@ -578,20 +583,6 @@ void PPU::cycle() {
 #ifdef DEBUG_PPU
   this->update_debug_windows();
 #endif
-
-  const bool start_new_line = this->scan.cycle == 341;
-
-  if (start_new_line) {
-    // update scanline tracking vars
-    this->scan.line += 1;
-    this->scan.cycle = 0;
-    // check for rollover
-    if (this->scan.line > 261) {
-      this->scan.line = 0;
-
-      this->frames += 1;
-    }
-  }
 
   // If there is stuff to render:
   if (this->reg.ppumask.s || this->reg.ppumask.b) {
@@ -635,7 +626,7 @@ void PPU::cycle() {
 
     // ...and ends after line 260
     if (this->scan.line == 261) {
-      this->reg.ppustatus.V = false;
+      this->reg.ppustatus.V = true; // Y DIS HAVE TO BE TRUE, I AM BAD DEV
       this->reg.ppustatus.S = false;
       this->reg.ppustatus.O = false;
     }
@@ -644,6 +635,29 @@ void PPU::cycle() {
   // Update cycle counts
   this->scan.cycle += 1;
   this->cycles += 1;
+
+  // Odd-Frame skip cycle
+  if (this->frames % 2 &&
+      this->scan.cycle == 340 &&
+      this->scan.line == 261 &&
+      (this->reg.ppumask.b || this->reg.ppumask.s)
+  ) {
+    this->cycles += 1;
+    this->scan.cycle +=1;
+  }
+
+  // Check to see if the cycle has finished
+  if (this->scan.cycle == 341) {
+    // update scanline tracking vars
+    this->scan.line += 1;
+    this->scan.cycle = 0;
+    // check for rollover
+    if (this->scan.line > 261) {
+      this->scan.line = 0;
+
+      this->frames += 1;
+    }
+  }
 }
 
 /*---------------------------------  Palette  --------------------------------*/

@@ -3,9 +3,7 @@
 #include <cassert>
 #include <cstdio>
 
-APU::~APU() {
-
-}
+APU::~APU() {}
 
 APU::APU(Memory& mem, InterruptLines& interrupt)
 : interrupt(interrupt)
@@ -48,6 +46,11 @@ u8 APU::peek(u16 addr) const {
 }
 
 void APU::write(u16 addr, u8 val) {
+  if (addr == 0x4017) {
+    if (this->reg.frame_counter.disable_frame_irq != !!(val & 0x40))
+      fprintf(stderr, "[APU] IRQ: %s\n", (val & 0x40) ? "OFF" : "ON");
+  }
+
   switch (addr) {
   case 0x4000: this->reg.pulse1.byte_0 = val; break;
   case 0x4001: this->reg.pulse1.byte_1 = val; break;

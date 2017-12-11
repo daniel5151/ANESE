@@ -32,9 +32,9 @@ PPU_MMU::PPU_MMU(
 inline u16 pram_mirror(u16 addr) {
   addr %= 32;
 
-  // Addresses $3F10/$3F14/$3F18/$3F1C are mirrors of $3F00/$3F04/$3F08/$3F0C
-  if (addr >= 16 && (addr % 4 == 0))
-    addr -= 16;
+  // This is some weird mirroring behavior (that SMB relies on lmao)
+  if (addr % 4 == 0)
+    addr = 0;
 
   return addr;
 }

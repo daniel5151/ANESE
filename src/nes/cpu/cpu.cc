@@ -89,6 +89,8 @@ u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
   #define arg8  (this->mem[this->reg.pc++])
   #define arg16 (this->mem.read16((this->reg.pc += 2) - 2))
 
+  #define dummy_read() this->mem.read(this->reg.pc)
+
   switch(opcode.addrm) {
     case abs_: addr = arg16;                                             break;
     case absX: addr = arg16 + this->reg.x;                               break;
@@ -99,10 +101,10 @@ u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
     case zpg_: addr = arg8;                                              break;
     case zpgX: addr = (arg8 + this->reg.x) & 0xFF;                       break;
     case zpgY: addr = (arg8 + this->reg.y) & 0xFF;                       break;
-    case rel : addr = this->reg.pc++;                                    break;
-    case imm : addr = this->reg.pc++;                                    break;
-    case acc : addr = this->reg.a;                                       break;
-    case impl: addr = u8(0xFACA11); /* no args, so return fack all :D */ break;
+    case rel : dummy_read(); addr = this->reg.pc++;                      break;
+    case imm : dummy_read(); addr = this->reg.pc++;                      break;
+    case acc : dummy_read(); addr = this->reg.a;                         break;
+    case impl: dummy_read(); addr = u8(0xFACA11);                        break;
     case INVALID:
       fprintf(stderr, "[CPU] Invalid Addressing Mode! Double check table!\n");
       // don't fail *just* yet, let it fail at the CPU instr decode switch
@@ -124,7 +126,7 @@ u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
     case indY: this->cycles += did_pg_cross(addr - this->reg.y, addr); break;
     default: break;
     }
-    #undef is_pg_cross
+    #undef did_pg_cross
   }
 
   return addr;
@@ -151,7 +153,7 @@ uint CPU::step() {
     this->nestest(opcode);
   }
 #ifdef NESTEST
-  else this->nestest(opcode); // print NESTEST debug info
+  this->nestest(opcode); // print NESTEST debug info
 #endif
 
   // Depending on what addrm this instruction uses, this will either be a u8
@@ -176,7 +178,7 @@ uint CPU::step() {
     this->cycles += 1;                                                 \
     /* Check if extra cycles due to jumping across pages */            \
     if ((this->reg.pc & 0xFF00) != ((this->reg.pc + offset) & 0xFF00)) \
-      this->cycles += 2;                                               \
+      this->cycles += 1;                                               \
     this->reg.pc += offset;                                            \
 
   switch (opcode.instr) {
@@ -231,7 +233,7 @@ uint CPU::step() {
               } break;
     case SED: { this->reg.p.d = 1;
               } break;
-    case PHP: { this->s_push(this->reg.p.raw);
+    case PHP: { this->s_push(this->reg.p.raw | 0x30);
               } break;
     case PLA: { this->reg.a = this->s_pull();
                 set_zn(this->reg.a);
@@ -391,7 +393,11 @@ uint CPU::step() {
                 this->mem[addr] = val;
               } break;
     default:
-      fprintf(stderr, "[CPU] Unimplemented Instruction! 0x%02X\n", opcode.raw);
+      fprintf(stderr,
+        "[CPU] [%d] Unimplemented Instruction! 0x%02X\n",
+        this->cycles,
+        opcode.raw
+      );
       this->state = CPU::State::Halted;
       break;
   }

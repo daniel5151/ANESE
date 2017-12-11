@@ -15,8 +15,13 @@ typedef u32 time_ms;
 int main(int argc, char* argv[]) {
   // Parse args
   if (argc < 2) {
-    std::cerr << "usage: anese [.nes]\n";
+    std::cerr << "usage: anese [.nes] [ --cpu-log ]\n";
     return -1;
+  }
+
+  // Set Flags
+  if (argc >= 3 && std::string(argv[2]) == "--cpu-log") {
+    DEBUG_VARS::Get()->print_nestest = 1;
   }
 
   // open ROM from file
