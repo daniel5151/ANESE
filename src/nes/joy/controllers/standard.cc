@@ -42,14 +42,14 @@ void JOY_Standard::set_button(const char* btn, bool state) {
     state ? "ON" : "OFF"
   );
 
-  if (!strcmp("A",      btn)) this->buttons.btn.A      = state; return;
-  if (!strcmp("B",      btn)) this->buttons.btn.B      = state; return;
-  if (!strcmp("Start",  btn)) this->buttons.btn.Start  = state; return;
-  if (!strcmp("Select", btn)) this->buttons.btn.Select = state; return;
-  if (!strcmp("Up",     btn)) this->buttons.btn.Up     = state; return;
-  if (!strcmp("Down",   btn)) this->buttons.btn.Down   = state; return;
-  if (!strcmp("Left",   btn)) this->buttons.btn.Left   = state; return;
-  if (!strcmp("Right",  btn)) this->buttons.btn.Right  = state; return;
+  if (!strcmp("A",      btn)) { this->buttons.btn.A      = state; return; }
+  if (!strcmp("B",      btn)) { this->buttons.btn.B      = state; return; }
+  if (!strcmp("Start",  btn)) { this->buttons.btn.Start  = state; return; }
+  if (!strcmp("Select", btn)) { this->buttons.btn.Select = state; return; }
+  if (!strcmp("Up",     btn)) { this->buttons.btn.Up     = state; return; }
+  if (!strcmp("Down",   btn)) { this->buttons.btn.Down   = state; return; }
+  if (!strcmp("Left",   btn)) { this->buttons.btn.Left   = state; return; }
+  if (!strcmp("Right",  btn)) { this->buttons.btn.Right  = state; return; }
 
   fprintf(stderr, "[JOY_Standard] Setting invalid button '%s'\n", btn);
   assert(false);
