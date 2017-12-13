@@ -40,9 +40,13 @@ cmake ..
 make
 ```
 
-Building on Windows has been tested with VS 2017 using both MSVC and Clang.
-At the moment, it is reccomended to build with Clang, as unlike MSVC, it can
-optimize ANESE code well enough to hit 60 fps.
+Building on Windows has been tested with VS 2017 using MSVC.
+Use the included `mk_msvc.ps1` PowerShell script to build it, or, use cmake to
+generate the `.sln` and run it from Visual Studio.
+
+**NOTE:** make sure to build ANESE in _release_ configuration, since without
+the compiler optimizations, it's bloody slow. This is because I wrote the code
+to be clean and neat, without worrying about performance.
 
 ## Running
 
