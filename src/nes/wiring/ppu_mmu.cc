@@ -29,14 +29,12 @@ PPU_MMU::PPU_MMU(
 // 0x3000 ... 0x3EFF: Mirrors of $2000-$2EFF
 // 0x3F00 ... 0x3FFF: Palette RAM indexes (Mirrored every 32 bytes)
 
+// Handles the weird Palette RAM mirroring behavior
+// (notably, SMB and relies on this)
 inline u16 pram_mirror(u16 addr) {
-  addr %= 32;
-
-  // This is some weird mirroring behavior (that SMB relies on lmao)
-  if (addr % 4 == 0)
-    addr = 0;
-
-  return addr;
+  return (addr % 4)
+    ? addr % 32
+    : 0;
 }
 
 #define ADDR(lo, hi) if (in_range(addr, lo, hi))

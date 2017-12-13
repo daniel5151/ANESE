@@ -8,9 +8,24 @@
 NES::NES() {
   this->cart = nullptr;
 
+  // Due to the very interconnected nature of hardware, there are several
+  // circular dependencies that occur when attempting to init NES hardware.
+  //
+  // Namely, several components all use the two MMUs, but those MMUs need
+  // to know about those components!
+  //
+  // We can use some fun with C++ pointers and custom memory allocation to
+  // work around this though!
+
+  // First, we allocate the _space_ for the PPU and CPU MMUs, and initialize
+  // the objects at a later point!
+  this->cpu_mmu = reinterpret_cast<CPU_MMU*>(new u8 [sizeof(CPU_MMU)]);
+  this->ppu_mmu = reinterpret_cast<PPU_MMU*>(new u8 [sizeof(PPU_MMU)]);
+  // Bam! Circular dependencies resolved, and no need to use raw pointers
+  // to refer to objects that will never be destroyed!
+
   // Create RAM modules
   this->cpu_wram = new RAM (0x800, "WRAM");
-
   this->ppu_vram = new RAM (0x800, "CIRAM");
   this->ppu_pram = new RAM (32, "Palette");
   this->ppu_oam  = new RAM (256, "OAM");
@@ -20,20 +35,19 @@ NES::NES() {
   this->joy = new JOY ();
 
   // Create DMA component
-  this->dma = new DMA (*this->cpu_wram);
+  this->dma = new DMA (*this->cpu_mmu);
 
   // Interrupt Lines are created automatically
   // That said, we may as well clear them
   this->interrupts.clear();
 
-  // Create Joypads
-  // JOY* joy;
+  // Create CPU
+  this->cpu = new CPU (
+    *this->cpu_mmu,
+    this->interrupts
+  );
 
   // Create PPU
-  this->ppu_mmu = new PPU_MMU (
-    /* vram */ *this->ppu_vram,
-    /* pram */ *this->ppu_pram
-  );
   this->ppu = new PPU (
     *this->ppu_mmu,
     *this->ppu_oam,
@@ -42,38 +56,26 @@ NES::NES() {
     this->interrupts
   );
 
-  // So, here's a fun fact: the APU is technically part of the CPU in the NES,
-  // and as such, shares the CPU's MMU.
-  //
-  // But that's not good, since the CPU MMU needs a reference to the APU.
-  //
-  // Looks like we are in a bit of a sticky situation, eh?
-  // Circular dependencies, with no clear way to resolve it.
-  //
-  // Well, instead of refactoring, fuck it, let's have some fun with pointers!
-  //
-  // After all, we are using C++ ;)
-
-  // First, allocate _raw_ memory for the APU object, wihhout ever calling the
-  // APU constructor!
-  this->apu = reinterpret_cast<APU*>(new u8 [sizeof(APU)]);
-
-  // Create CPU
-  this->cpu_mmu = new CPU_MMU (
-    /* ram */ *this->cpu_wram,
-    /* ppu */ *this->ppu,
-    /* apu */ *this->apu,
-    /* joy */ *this->joy
+  // Create APU
+  this->apu = new APU (
+    *this->cpu_mmu,
+    this->interrupts
   );
-  this->cpu = new CPU (*this->cpu_mmu, this->interrupts);
 
-  // Finally, construct the APU using placement new, allocating it at apu_mem!
-  //
-  // Since references are simply pointers under the hood, cpu_mmu's apu pointer
-  // is still valid once a APU object is constructred :D
-  //
-  // Wewlad, that's what I call fun on the bun!
-  this->apu = new(this->apu) APU (*this->cpu_mmu, this->interrupts);
+  // Finally, initialize the MMUs using _placement_ new, building them in the
+  // space previously allocated for them!
+
+  this->ppu_mmu = new(this->ppu_mmu) PPU_MMU(
+      /* vram */ *this->ppu_vram,
+      /* pram */ *this->ppu_pram
+  );
+
+  this->cpu_mmu = new(this->cpu_mmu) CPU_MMU(
+      /* ram */ *this->cpu_wram,
+      /* ppu */ *this->ppu,
+      /* apu */ *this->apu,
+      /* joy */ *this->joy
+  );
 
   /*----------  Emulator Vars  ----------*/
 
@@ -83,19 +85,20 @@ NES::NES() {
 NES::~NES() {
   // Don't delete Cartridge! It's not owned by NES!
 
-  // since APU was allocated with placement new, default ctor must be called
-  this->apu->~APU();
   delete this->apu;
-
-  delete this->cpu_mmu;
   delete this->cpu;
-
-  delete this->ppu_mmu;
   delete this->ppu;
 
   delete this->dma;
 
   delete this->joy; // wow, just like exams, amirite
+
+  // Since these two were allocated with placement new, they have to have dtors
+  // called manually
+  this->cpu_mmu->~CPU_MMU();
+  this->ppu_mmu->~PPU_MMU();
+  delete this->cpu_mmu;
+  delete this->ppu_mmu;
 
   delete this->cpu_wram;
   delete this->ppu_pram;

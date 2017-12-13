@@ -62,8 +62,8 @@ int main(int argc, char* argv[]) {
   NES nes;
 
   // Create some controllers
-  JOY_Standard joy_1;
-  JOY_Standard joy_2;
+  JOY_Standard joy_1 ("P1");
+  JOY_Standard joy_2 ("P2");
 
   // And plug them in too!
   nes.attach_joy(0, &joy_1);

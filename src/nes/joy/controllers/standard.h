@@ -22,7 +22,11 @@ private:
     } btn;
   } buttons;
 
+  const char* label;
+
 public:
+  JOY_Standard(const char* label = "?");
+
   // <Memory>
   u8 read(u16 addr)            override;
   u8 peek(u16 addr) const      override;

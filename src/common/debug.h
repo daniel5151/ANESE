@@ -50,14 +50,16 @@ public:
 };
 
 // Some concrete singletons
-static auto init = [](){ srand(0xBADA55); };
-static u8 give_me_rand() { (void)init; return rand(); }
-static u8 give_me_zero() { return 0x00; }
-static u8 give_me_full() { return 0xFF; }
+namespace Func_Memory_Functions {
+inline u8 give_me_rand() { return rand(); }
+inline u8 give_me_zero() { return 0x00; }
+inline u8 give_me_full() { return 0xFF; }
+}
 
-typedef Func_Memory<give_me_zero> Void_Memory;
-typedef Func_Memory<give_me_full> Full_Memory;
-typedef Func_Memory<give_me_rand> Rand_Memory;
+static auto init = [](){ srand(0xBADA55); };
+typedef Func_Memory<Func_Memory_Functions::give_me_zero> Void_Memory;
+typedef Func_Memory<Func_Memory_Functions::give_me_full> Full_Memory;
+typedef Func_Memory<Func_Memory_Functions::give_me_rand> Rand_Memory;
 
 // Map Memory
 // Uses STL map to store memory

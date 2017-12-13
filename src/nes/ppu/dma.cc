@@ -3,11 +3,11 @@
 #include <cassert>
 #include <cstdio>
 
-DMA::DMA(Memory& cpu_wram)
-: cpu_wram(cpu_wram)
+DMA::DMA(Memory& cpu_mmu)
+: cpu_mmu(cpu_mmu)
 {
   this->in_dma = false;
-  this->page = 0x00;
+  this->addr = 0x0000;
   this->step = 0x00;
 }
 
@@ -16,13 +16,13 @@ void DMA::start(u8 page) {
 
   this->in_dma = true;
 
-  this->page = page;
+  this->addr = u16(page << 8);
   this->step = 0x00;
 }
 
 u8 DMA::transfer() {
-  u16 cpu_addr = this->step + u16(this->page << 8);
-  u8 retval = this->cpu_wram[cpu_addr];
+  u16 cpu_addr = this->addr + this->step;
+  u8 retval = this->cpu_mmu[cpu_addr];
 
   this->step++;
 

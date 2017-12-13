@@ -47,14 +47,17 @@ void PPU::init_debug_windows() {
     0, 324
   );
 
-  // load in a debug palette
-  this->mem[0x3F00 + 0] = 0x1D;
-  this->mem[0x3F00 + 1] = 0x2D;
-  this->mem[0x3F00 + 2] = 0x3D;
-  this->mem[0x3F00 + 3] = 0x30;
+
 }
 
 void PPU::update_debug_windows() {
+  if (this->cycles == 0) {
+      // load in a debug palette
+      this->mem[0x3F00 + 0] = 0x1D;
+      this->mem[0x3F00 + 1] = 0x2D;
+      this->mem[0x3F00 + 2] = 0x3D;
+      this->mem[0x3F00 + 3] = 0x30;
+  }
   // i'm making it update every second right now
   static bool should_update = true;
   if (

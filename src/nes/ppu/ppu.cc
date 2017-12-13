@@ -159,7 +159,7 @@ u8 PPU::read(u16 addr) {
                       retval = this->mem[this->reg.v];
                       // Fill read buffer with the mirrored nametable data
                       // Why? Because the wiki said so!
-                      this->reg.ppudata = this->mem[this->reg.v];
+                      this->reg.ppudata = retval;
                     }
 
                     // (0: add 1, going across; 1: add 32, going down)
@@ -311,7 +311,7 @@ void PPU::write(u16 addr, u8 val) {
                     // 512 cycles of reading & writing
                     this->dma.start(val);
                     while (this->dma.isActive()) {
-                      this->mem[OAMDATA] = this->dma.transfer();
+                      this->oam[this->reg.oamaddr++] = this->dma.transfer();
                       this->cycle();
                       this->cycle();
                     }
