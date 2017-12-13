@@ -1,6 +1,8 @@
-# ANESE
+<h1 align="center">
+  <img height="128px" src="resources/icons/anese.ico" alt="ANESE Logo">
+</h1>
 
-ANESE (**A**nother **NES** **E**mulator) is a Nintendo Entertainment System
+**ANESE** (**A**nother **NES** **E**mulator) is a Nintendo Entertainment System
 Emulator being written for fun and learning.
 
 I am aiming for accuracy in the long run, but the primary goal is simply getting

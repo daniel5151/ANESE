@@ -7,9 +7,4 @@ roms/retail/*
 # build and debugging artifacts
 /build*
 /anese.dSYM
-
-# anese that's in the main directory
-/anese
-
-# don't want to push /bin yet
-/bin
+*.aps

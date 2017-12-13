@@ -21,6 +21,8 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   # 4310 - cast truncates constant value
   # 4068 - unknown pragma
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4458 /wd4310 /wd4068")
+  # and hey, let's add an icon too, for that extra bit of class
+
 endif()
 
 option(NESTEST "test CPU against NESTEST golden log" OFF)
@@ -43,6 +45,10 @@ include_directories(${SDL2_INCLUDE_DIR})
 
 include_directories(src)
 file(GLOB_RECURSE SRC_FILES src/*.cc src/*.h)
+
+if (WIN32)
+  set(SRC_FILES ${SRC_FILES} resources/icons/anese.rc)
+endif()
 
 add_executable(anese ${SRC_FILES})
 
