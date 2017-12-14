@@ -49,9 +49,9 @@ int main(int argc, char* argv[]) {
   rom_file.read((char*) data, data_len);
 
   // Generate cartridge from data
-  Cartridge* rom_cart = new Cartridge (data, data_len);
+  Cartridge rom_cart (data, data_len);
 
-  if (rom_cart->isValid()) {
+  if (rom_cart.isValid()) {
     std::cerr << "iNES file loaded successfully!\n";
   } else {
     std::cerr << "Given file was not an iNES file!\n";
@@ -71,9 +71,9 @@ int main(int argc, char* argv[]) {
 
   // Slap in a cartridge
   // (don't forget to blow on it)
-  rom_cart->blowOnContacts();
-  rom_cart->blowOnContacts();
-  nes.loadCartridge(rom_cart);
+  rom_cart.blowOnContacts();
+  rom_cart.blowOnContacts();
+  nes.loadCartridge(&rom_cart);
 
   // Power up the NES
   nes.power_cycle();
@@ -122,6 +122,20 @@ int main(int argc, char* argv[]) {
   // Frame Counter
   u32 total_frames = 0;
 
+  /* Open the first available controller. */
+  SDL_GameController* controller = nullptr;
+  for (int i = 0; i < SDL_NumJoysticks(); ++i) {
+    if (SDL_IsGameController(i)) {
+      controller = SDL_GameControllerOpen(i);
+      if (controller) {
+        break;
+      }
+      else {
+        fprintf(stderr, "Could not open gamecontroller %i: %s\n", i, SDL_GetError());
+      }
+    }
+  }
+
   // Main Loop
   bool quit = false;
   while (!quit) {
@@ -131,12 +145,28 @@ int main(int argc, char* argv[]) {
     while (SDL_PollEvent(&event) != 0) {
       if (event.type == SDL_QUIT) {
         quit = true;
+        continue;
       }
 
       // for now
       if (event.type == SDL_WINDOWEVENT &&
           event.window.event == SDL_WINDOWEVENT_CLOSE) {
         quit = true;
+        continue;
+      }
+
+      if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
+        bool new_state = (event.type == SDL_CONTROLLERBUTTONDOWN) ? true : false;
+        switch (event.cbutton.button) {
+        case SDL_CONTROLLER_BUTTON_X:          joy_1.set_button("A",      new_state); break;
+        case SDL_CONTROLLER_BUTTON_A:          joy_1.set_button("B",      new_state); break;
+        case SDL_CONTROLLER_BUTTON_START:      joy_1.set_button("Select", new_state); break;
+        case SDL_CONTROLLER_BUTTON_BACK:       joy_1.set_button("Start",  new_state); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_UP:    joy_1.set_button("Up",     new_state); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:  joy_1.set_button("Down",   new_state); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_LEFT:  joy_1.set_button("Left",   new_state); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: joy_1.set_button("Right",  new_state); break;
+        }
       }
 
       if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
@@ -161,6 +191,10 @@ int main(int argc, char* argv[]) {
         }
 
         // Misc operations
+        if (event.key.keysym.sym == SDLK_ESCAPE) {
+          quit = true;
+        }
+
         if (event.type == SDL_KEYDOWN && did_hit_ctrl) {
           if (event.key.keysym.sym == SDLK_r) {
             fprintf(stderr, "NES Reset!\n");
@@ -177,6 +211,7 @@ int main(int argc, char* argv[]) {
             fprintf(stderr, "NESTEST CPU logging: %s\n", log ? "ON" : "OFF");
           }
         }
+        continue;
       }
     }
 
@@ -238,13 +273,12 @@ int main(int argc, char* argv[]) {
     SDL_SetWindowTitle(window, window_title);
   }
 
+  // SDL Cleanup
+  SDL_GameControllerClose(controller);
   SDL_DestroyTexture(texture);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
-
-  // Throw away the Cartridge
-  delete rom_cart;
 
   return 0;
 }

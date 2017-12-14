@@ -118,13 +118,13 @@ Toggle CPU logging | Ctrl-C
 
 - Ongoing Tasks
   - Better Usability
-    - [ ] Menus
-      - [ ] Loading Files
-      - [ ] Run / Pause / Stop
-      - [ ] Remap controls
+    - [ ] Loading Files with picker
+    - [x] Reset / Power-cycle
+    - [ ] Run / Pause / Stop
     - [ ] Config File
-    - [ ] Running NESTEST (behind a flag)
-    - [ ] Xbox Controller support
+      - [ ] Remap controls
+    - [x] Running NESTEST (behind a flag)
+    - [x] Xbox Controller support
     - Saving
       - [ ] Battery Backed RAM
       - [ ] Save-states
@@ -146,27 +146,27 @@ Toggle CPU logging | Ctrl-C
     - PPU
       - [ ] Make value in PPU <-> CPU bus decay
     - JOY
-      - [ ] Multitap support
       - [ ] More nes controller types
   - Cleanup
-    - [ ] Get SDL out of the main function!
+    - [ ] Get SDL out of the main function!!
     - [ ] Unify method naming (either camelCase or snake_case)
     - [ ] Be more explicit with copy / move ctors
     - [ ] Add `const` throughout the codebase (?)
     - Better error handling & logging
-      - [ ] Remove asserts
+      - [ ] Remove fatal asserts (?)
       - [ ] Switch to a better logging system (\*cough\* not fprintf \*cough\*)
-    - Better cmake scripts
+    - Better cmake config
 
 - Fun Bonuses
+  - Features!
+    - [ ] Fast Forward
   - [ ] Debugger!
     - [ ] CPU
       - [ ] Serialize state
       - [ ] Step through instructions
     - [ ] PPU
       - [ ] proper NTSC artifacting
-  - [ ] Write a NES rom to simulate TV static, and have that run if no ROM is
-        chosen
+  - [ ] Write a NES rom to simulate TV static, and run it if no ROM inserted
   - Multiple Frontends
     - [x] SDL (current default)
     - [ ] LibRetro
