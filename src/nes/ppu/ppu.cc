@@ -258,8 +258,11 @@ void PPU::write(u16 addr, u8 val) {
   // }
 
   switch(addr) {
-  case PPUCTRL:   { this->reg.ppuctrl.raw = val;
-                    if (this->reg.ppuctrl.V && this->reg.ppustatus.V)
+  case PPUCTRL:   { // There is a chance an NMI will fire here
+                    bool old_ppuctrl_v = this->reg.ppuctrl.V;
+                    this->reg.ppuctrl.raw = val;
+                    bool toggled_v = !old_ppuctrl_v && this->reg.ppuctrl.V;
+                    if (toggled_v && this->reg.ppustatus.V)
                       this->interrupts.request(Interrupts::Type::NMI);
                     // t: ....BA.. ........ = d: ......BA
                     this->reg.t.nametable = val & 0x03;
@@ -619,14 +622,21 @@ void PPU::cycle() {
   // Enable / Disable vblank
   if (this->scan.cycle == 1) {
     // vblank start on line 241...
-    if (this->scan.line == 241 && this->reg.ppuctrl.V) {
+    if (this->scan.line == 241) {
+      // GODDAMIT THIS CAUSED SO MUCH HEARTACHE
+      // I DIDN'T REALIZE THAT THE V FLAG IS ALWAYS SET, EVEN IF THE INTERRUPT
+      // IS NOT REQUESTED.
+      // SO MANY THINGS WERE BROKEN BECAUSE OF THIS
+      // AAHHHHHH
       this->reg.ppustatus.V = true;
-      this->interrupts.request(Interrupts::NMI);
+      if (this->reg.ppuctrl.V) {
+        this->interrupts.request(Interrupts::NMI);
+      }
     }
 
     // ...and ends after line 260
     if (this->scan.line == 261) {
-      this->reg.ppustatus.V = true; // Y DIS HAVE TO BE TRUE, I AM BAD DEV
+      this->reg.ppustatus.V = false;
       this->reg.ppustatus.S = false;
       this->reg.ppustatus.O = false;
     }
