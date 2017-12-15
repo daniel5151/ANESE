@@ -20,7 +20,8 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   #   * non issue, since I tend to refer to class members through this->
   # 4310 - cast truncates constant value
   # 4068 - unknown pragma
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4458 /wd4310 /wd4068")
+  # 4244 - type conversion may lead to loss of data
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4458 /wd4310 /wd4068 /wd4244")
   # and hey, let's add an icon too, for that extra bit of class
 
 endif()
@@ -35,22 +36,39 @@ if (DEBUG_PPU)
   add_definitions(-DDEBUG_PPU)
 endif()
 
+# ANESE executable
 
-# since there is no standard install directory for sdl2 on windows, change this
-# variable to suit your needs
-set(SDL2_MORE_INCLUDE_DIR "C:/sdl2")
-
-find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIR})
-
+# anese source
 include_directories(src)
 file(GLOB_RECURSE SRC_FILES src/*.cc src/*.h)
 
+# some platform Dependant icon stuff
 if (WIN32)
   set(SRC_FILES ${SRC_FILES} resources/icons/anese.rc)
 endif()
 
 add_executable(anese ${SRC_FILES})
 
+# Here is my very shitty way of doing 3rd party dependencies: Manually.
+
+# ---- SDL2 ---- #
+# since there is no standard install directory for sdl2 on windows, change this
+# variable to point to _your_ SDL2 dev lib directory
+set(SDL2_MORE_INCLUDE_DIR "C:/sdl2")
+
+include_directories(${SDL2_INCLUDE_DIR})
+find_package(SDL2 REQUIRED)
 target_link_libraries(anese ${SDL2_LIBRARY})
+
+# ---- args ---- #
+add_subdirectory(thirdparty/args)
+target_link_libraries(anese args)
+
+# ---- tinyfiledialogs ---- #
+set(TINY_FILE_DIALOGS_DIR thirdparty/tinyfiledialogs/)
+include_directories(${TINY_FILE_DIALOGS_DIR})
+add_library(TINY_FILE_DIALOGS STATIC ${TINY_FILE_DIALOGS_DIR}/tinyfiledialogs.c)
+target_link_libraries(anese TINY_FILE_DIALOGS)
+
+# target_link_libraries(anese ${NFD_LIBRARY})
 install(TARGETS anese RUNTIME DESTINATION ${BIN_DIR})

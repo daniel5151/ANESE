@@ -22,7 +22,11 @@ since IMO, half the fun of writing a emulator is figuring things out yourself :D
 
 ## Building
 
-ANESE tries to keep external dependencies to a minimum
+ANESE uses **CMake**, so make sure it is installed.
+
+ANESE core doesn't have any hard dependencies (usually not even to C++stdlib!),
+but there are some UI libs. Most dependencies should _just work_, but some
+require additional installation:
 
 - **SDL2** (rendering layer)
   - _Linux_: `apt-get install libsdl2-dev` (on Ubuntu)
@@ -30,21 +34,18 @@ ANESE tries to keep external dependencies to a minimum
   - _Windows_:
     - Download dev libs from [here](https://www.libsdl.org/download-2.0.php)
     - Modfiy the `SDL2_MORE_INCLUDE_DIR` variable in `CMakeLists.txt` to point
-      to the SDL2 dev libs
+      to the SDL2 dev libs (or just plop them down into `C:\sdl2\`)
 
-ANESE uses **CMake**, so make sure you have it installed.
 
 ```bash
 # in ANESE root
 mkdir build
 cd build
-cmake ..
+cmake .. -DCMAKE_BUILD_TYPE=Release
 make
 ```
 
 Building on Windows has been tested with VS 2017 using MSVC.
-Use the included `mk_msvc.ps1` PowerShell script to build it, or, use cmake to
-generate the `.sln` and run it from Visual Studio.
 
 **NOTE:** make sure to build ANESE in _release_ configuration, since without
 the compiler optimizations, it's bloody slow. This is because I wrote the code
@@ -52,10 +53,11 @@ to be clean and neat, without worrying about performance.
 
 ## Running
 
-Until I get around to writing a proper UI for it, ANESE needs to be called from
-the commandline: `anese [rom_file]`
+Just open `anese`, and a file select dialog should prompt you for a rom file.
 
-On Windows, make sure the executable can find SDL2.dll.
+For a full list of switches, run `anese -h`
+
+Oh, and when running on Windows, make sure the executable can find SDL2.dll.
 
 ## Controls
 
@@ -72,10 +74,14 @@ Down   | Down arrow
 Left   | Left arrow
 Right  | Right arrow
 
+There is also basic controller support through SDL. Note: i've only tested with
+an xbox controller, so milage may vary.
+
 There are also a couple emulator actions:
 
 Action             | Keys
 -------------------|--------
+Exit               | Esc
 Reset              | Ctrl-R
 Power Cycle        | Ctrl-P
 Toggle CPU logging | Ctrl-C
@@ -124,7 +130,7 @@ Toggle CPU logging | Ctrl-C
     - [ ] Config File
       - [ ] Remap controls
     - [x] Running NESTEST (behind a flag)
-    - [x] Xbox Controller support
+    - [x] Controller support - _basic_
     - Saving
       - [ ] Battery Backed RAM
       - [ ] Save-states
@@ -148,9 +154,8 @@ Toggle CPU logging | Ctrl-C
     - JOY
       - [ ] More nes controller types
   - Cleanup
-    - [ ] Get SDL out of the main function!!
-    - [ ] Unify method naming (either camelCase or snake_case)
-    - [ ] Be more explicit with copy / move ctors
+    - [ ] Modularize UI code
+    - [ ] Unify naming conventions (either camelCase or snake_case)
     - [ ] Add `const` throughout the codebase (?)
     - Better error handling & logging
       - [ ] Remove fatal asserts (?)

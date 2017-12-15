@@ -2,12 +2,12 @@
 
 /*----------------------------------------------------------------------------*/
 
-u8 Map_Memory::read(u16 addr)       { return this->mem[addr]; };
+u8 Map_Memory::read(u16 addr)       { return this->mem[addr]; }
 u8 Map_Memory::peek(u16 addr) const { return this->mem.count(addr) != 0
                                         ? this->mem.at(addr)
                                         : 0x00;
-                                    };
-void Map_Memory::write(u16 addr, u8 val) { this->mem[addr] = val; };
+                                    }
+void Map_Memory::write(u16 addr, u8 val) { this->mem[addr] = val; }
 
 
 /*----------------------------------------------------------------------------*/
@@ -63,7 +63,7 @@ void Memory_Sniffer::write(u16 addr, u8 val) {
 
 /*----------------------------------------------------------------------------*/
 
-OffsetMemory::OffsetMemory(Memory* mem, i32 diff) : mem {mem}, diff {diff} {};
+OffsetMemory::OffsetMemory(Memory* mem, i32 diff) : mem {mem}, diff {diff} {}
 
 u8 OffsetMemory::read(u16 addr)            { return this->mem->read(addr - diff); }
 u8 OffsetMemory::peek(u16 addr) const      { return this->mem->peek(addr - diff); }

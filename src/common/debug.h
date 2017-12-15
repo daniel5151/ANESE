@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
 
 #include "interfaces/memory.h"
 #include "util.h"
@@ -51,7 +52,7 @@ public:
 
 // Some concrete singletons
 namespace Func_Memory_Functions {
-inline u8 give_me_rand() { return rand(); }
+inline u8 give_me_rand() { return u8(rand()); }
 inline u8 give_me_zero() { return 0x00; }
 inline u8 give_me_full() { return 0xFF; }
 }

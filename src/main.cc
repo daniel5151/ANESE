@@ -5,30 +5,70 @@
 
 #include "common/debug.h"
 
+#include <string>
 #include <iostream>
 #include <fstream>
 
+#include <tinyfiledialogs.h>
+#include <args.hxx>
+
 #include <SDL.h>
 
-typedef u32 time_ms;
-
 int main(int argc, char* argv[]) {
-  // Parse args
-  if (argc < 2) {
-    std::cerr << "usage: anese [.nes] [ --cpu-log ]\n";
-    return -1;
+  // --------------------------- Argument Parsing --------------------------- //
+
+  // use `args` to parse arguments
+  args::ArgumentParser parser("ANESE - A Nintendo Entertainment System Emulator", "");
+  args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
+  args::Flag log_cpu(parser, "log_cpu", "Output CPU execution over STDOUT", {"log-cpu"});
+  args::Positional<std::string> rom(parser, "rom", "Valid iNES rom");
+
+  try {
+    parser.ParseCLI(argc, argv);
+  } catch (args::Help) {
+    std::cout << parser;
+    return 0;
+  } catch (args::ParseError e) {
+    std::cerr << e.what() << std::endl;
+    std::cerr << parser;
+    return 1;
+  } catch (args::ValidationError e) {
+    std::cerr << e.what() << std::endl;
+    std::cerr << parser;
+    return 1;
   }
 
-  // Set Flags
-  if (argc >= 3 && std::string(argv[2]) == "--cpu-log") {
-    DEBUG_VARS::Get()->print_nestest = 1;
+  std::string rom_path;
+
+  if (!rom) {
+    // use `tinyfiledialogs` to open file-select dialog (if no rom provided)
+    const char* rom_formats[] = { "*.nes" };
+    const char* file = tinyfd_openFileDialog(
+      "Select ROM",
+      nullptr,
+      1, rom_formats,
+      "NES roms",
+      0
+    );
+    if (!file) {
+      printf("Canceled File Select. Closing...\n");
+      return -1;
+    } else {
+      rom_path = std::string(file);
+    }
+  } else {
+    rom_path = args::get(rom);
   }
+
+  if (log_cpu) { DEBUG_VARS::Get()->print_nestest = 1; }
+
+  // -------------------------- NES Initialization -------------------------- //
 
   // open ROM from file
-  std::ifstream rom_file (argv[1], std::ios::binary);
+  std::ifstream rom_file (rom_path, std::ios::binary);
 
   if (!rom_file.is_open()) {
-    std::cerr << "could not open '" << argv[1] << "'\n";
+    std::cerr << "could not open '" << rom_path << "'\n";
     return -1;
   }
 
@@ -38,7 +78,7 @@ int main(int argc, char* argv[]) {
   rom_file.seekg(0, rom_file.beg);
 
   if (rom_file_size == -1) {
-    std::cerr << "could not read '" << argv[1] << "'\n";
+    std::cerr << "could not read '" << rom_path << "'\n";
     return -1;
   }
 
@@ -78,10 +118,14 @@ int main(int argc, char* argv[]) {
   // Power up the NES
   nes.power_cycle();
 
+  // --------------------------- UI and Core Loop --------------------------- //
+
   /*===========================
   =            SDL            =
   ===========================*/
   // This needs to be moved out of main!
+
+  typedef u32 time_ms;
 
   SDL_Event event;
   SDL_Renderer* renderer;

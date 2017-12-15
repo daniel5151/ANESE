@@ -5,7 +5,7 @@
 
 JOY::JOY()
 : joy {nullptr}
-{};
+{}
 
 // TODO: more than 2 controller support
 u8 JOY::read(u16 addr) {
