@@ -150,7 +150,7 @@ private:
   Pixel get_bgr_pixel();
   Pixel get_spr_pixel();
 
-  void bgr_eval();
+  void bgr_fetch();
   void spr_eval();
 
   /*----  Emulation Vars and Methods  ----*/

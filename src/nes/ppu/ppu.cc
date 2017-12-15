@@ -229,10 +229,10 @@ u8 PPU::peek(u16 addr) const {
 }
 
 void PPU::write(u16 addr, u8 val) {
-  // if (this->scan.line <= 241 && this->scan.cycle <= 1) {
-    // fprintf(stderr, "wr to 0x%04X outside of vblank, at %d : %d\n", addr, this->scan.line, this->scan.cycle);
-    // this->draw_dot(Color(255, 255, 255));
-  // }
+   //if (!this->reg.ppustatus.V) {
+   //  fprintf(stderr, "wr to 0x%04X outside of vblank, at %d : %d\n", addr, this->scan.line, this->scan.cycle);
+   //  this->draw_dot(Color(0x00FF00));
+   //}
 
   assert((addr >= 0x2000 && addr <= 0x2007) || addr == 0x4014);
 
@@ -375,46 +375,12 @@ void PPU::spr_eval() {
 /*-----------------------  Pixel Evaluation Functions  -----------------------*/
 
 // https://wiki.nesdev.com/w/index.php/PPU_rendering
-// TODO: make this more "hardware" accurate
-PPU::Pixel PPU::get_bgr_pixel() {
-  // If background rendering is disabled, return a empty pixel
-  if (this->reg.ppumask.b == false)
-    return Pixel();
-
-  // What corner is this particular 8x8 tile in?
-  //
-  // top left = 0
-  // top right = 1
-  // bottom left = 2
-  // bottom right = 3
-  const u2 corner = (this->reg.v.coarse_x % 4) / 2
-                  + (this->reg.v.coarse_y % 4) / 2 * 2;
-
-  // Recall that the attribute byte stores the palette assignment data
-  // formatted as follows:
-  //
-  // attribute = (topleft << 0)
-  //           | (topright << 2)
-  //           | (bottomleft << 4)
-  //           | (bottomright << 6)
-  //
-  // thus, we can reverse the process with some clever bitmasking!
-  const u8 mask = 0x03 << (corner * 2);
-  const u2 palette = (this->bgr.at_byte & mask) >> (corner * 2);
-
-  const u3 x = 7 - ((this->scan.cycle + this->reg.x) % 8);
-
-  const u2 pixel_type = nth_bit(this->bgr.tile_lo, x)
-                      + nth_bit(this->bgr.tile_hi, x) * 2;
-
-  Color color = this->palette[this->mem[0x3F00 + palette * 4 + pixel_type]];
-
-  return Pixel { color, 0 };
-}
-
-// https://wiki.nesdev.com/w/index.php/PPU_rendering
 // using ntsc_timing.png as a visual guide
-void PPU::bgr_eval() {
+void PPU::bgr_fetch() {
+  // Don't fetch any data during vblank
+  if (this->scan.line >= 240 && this->scan.line != 261)
+    return;
+
   /**/ if (in_range(this->scan.cycle, 0,   0  )) { /* idle cycle */ }
   else if (in_range(this->scan.cycle, 1,   256) ||
            in_range(this->scan.cycle, 321, 336)) {
@@ -513,6 +479,44 @@ void PPU::bgr_eval() {
   }
 }
 
+// https://wiki.nesdev.com/w/index.php/PPU_rendering
+// TODO: make this more "hardware" accurate
+PPU::Pixel PPU::get_bgr_pixel() {
+  // If background rendering is disabled, return a empty pixel
+  if (this->reg.ppumask.b == false)
+    return Pixel();
+
+  // What corner is this particular 8x8 tile in?
+  //
+  // top left = 0
+  // top right = 1
+  // bottom left = 2
+  // bottom right = 3
+  const u2 corner = (this->reg.v.coarse_x % 4) / 2
+                  + (this->reg.v.coarse_y % 4) / 2 * 2;
+
+  // Recall that the attribute byte stores the palette assignment data
+  // formatted as follows:
+  //
+  // attribute = (topleft << 0)
+  //           | (topright << 2)
+  //           | (bottomleft << 4)
+  //           | (bottomright << 6)
+  //
+  // thus, we can reverse the process with some clever bitmasking!
+  const u8 mask = 0x03 << (corner * 2);
+  const u2 palette = (this->bgr.at_byte & mask) >> (corner * 2);
+
+  const u3 x = 7 - ((this->scan.cycle + this->reg.x) % 8);
+
+  const u2 pixel_type = nth_bit(this->bgr.tile_lo, x)
+                      + nth_bit(this->bgr.tile_hi, x) * 2;
+
+  Color color = this->palette[this->mem[0x3F00 + palette * 4 + pixel_type]];
+
+  return Pixel{ color, 0 };
+}
+
 // TODO: make this more "hardware" accurate
 // https://wiki.nesdev.com/w/index.php/PPU_rendering
 PPU::Pixel PPU::get_spr_pixel() {
@@ -593,8 +597,8 @@ void PPU::cycle() {
     PPU::Pixel bgr_pixel = this->get_bgr_pixel();
     PPU::Pixel spr_pixel = this->get_spr_pixel();
 
-    // fetch bgr btytes
-    this->bgr_eval();
+    // fetch bgr bytes
+    this->bgr_fetch();
 
     // Alpha channel of 0 means that pixel is not on
     bool bgr_on = bgr_pixel.color.a;
@@ -623,11 +627,6 @@ void PPU::cycle() {
   if (this->scan.cycle == 1) {
     // vblank start on line 241...
     if (this->scan.line == 241) {
-      // GODDAMIT THIS CAUSED SO MUCH HEARTACHE
-      // I DIDN'T REALIZE THAT THE V FLAG IS ALWAYS SET, EVEN IF THE INTERRUPT
-      // IS NOT REQUESTED.
-      // SO MANY THINGS WERE BROKEN BECAUSE OF THIS
-      // AAHHHHHH
       this->reg.ppustatus.V = true;
       if (this->reg.ppuctrl.V) {
         this->interrupts.request(Interrupts::NMI);
