@@ -29,8 +29,13 @@ u8 Cartridge::read(u16 addr)       { return this->mapper->read(addr); }
 u8 Cartridge::peek(u16 addr) const { return this->mapper->peek(addr); }
 void Cartridge::write(u16 addr, u8 val) { this->mapper->write(addr, val); }
 
-bool Cartridge::isValid() const {
-  return this->rom_data->is_valid && this->mapper != nullptr;
+uint Cartridge::getMapper() const { return this->rom_data->mapper; }
+
+Cartridge::Error Cartridge::getError() const {
+  if (!this->rom_data->is_valid) { return Cartridge::Error::BAD_DATA;   }
+  if (!this->mapper)             { return Cartridge::Error::BAD_MAPPER; }
+
+  return Cartridge::Error::NO_ERROR;
 }
 
 Cartridge::Mirroring Cartridge::mirroring() const {

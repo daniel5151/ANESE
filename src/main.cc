@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
 
   if (!rom_file.is_open()) {
     std::cerr << "could not open '" << rom_path << "'\n";
-    return -1;
+    return 1;
   }
 
   // get length of file
@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
 
   if (rom_file_size == -1) {
     std::cerr << "could not read '" << rom_path << "'\n";
-    return -1;
+    return 1;
   }
 
   uint data_len = static_cast<uint>(rom_file_size);
@@ -91,11 +91,17 @@ int main(int argc, char* argv[]) {
   // Generate cartridge from data
   Cartridge rom_cart (data, data_len);
 
-  if (rom_cart.isValid()) {
-    std::cerr << "iNES file loaded successfully!\n";
-  } else {
-    std::cerr << "Given file was not an iNES file!\n";
-    return -1;
+  Cartridge::Error error = rom_cart.getError();
+  switch (error) {
+  case Cartridge::Error::NO_ERROR:
+    std::cerr << "ROM successfully loaded successfully!\n";
+    break;
+  case Cartridge::Error::BAD_MAPPER:
+    std::cerr << "Mapper " << rom_cart.getMapper() << " isn't implemented!\n";
+    return 1;
+  case Cartridge::Error::BAD_DATA:
+    std::cerr << "ROM file format could not be parsed as iNES!\n";
+    return 1;
   }
 
   // Create a NES

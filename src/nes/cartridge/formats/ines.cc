@@ -63,7 +63,7 @@ INES::INES(const u8* data, u32 data_len) {
   this->flags.is_PC10 = nth_bit(data[7], 1);
   this->flags.is_VS   = nth_bit(data[7], 0);
 
-  this->mapper = data[6] >> 4 & (data[7] & 0xFF00);
+  this->mapper = data[6] >> 4 | (data[7] & 0xFF00);
 
   fprintf(stderr, "[iNES] Mapper: %d\n", this->mapper);
 

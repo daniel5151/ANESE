@@ -91,10 +91,10 @@ NES::~NES() {
 
   delete this->dma;
 
-  delete this->joy; // wow, just like exams, amirite
+  delete this->joy; // wow, just like exams, amirite?
 
-  // Since these two were allocated with placement new, they have to have dtors
-  // called manually
+  // Since these two were allocated with _placement_ new,
+  // they have to have dtors called manually
   this->cpu_mmu->~CPU_MMU();
   this->ppu_mmu->~PPU_MMU();
   delete this->cpu_mmu;
@@ -108,7 +108,7 @@ NES::~NES() {
 }
 
 bool NES::loadCartridge(Cartridge* cart) {
-  if (cart == nullptr || cart->isValid() == false)
+  if (cart == nullptr)
     return false;
 
   this->cart = cart;

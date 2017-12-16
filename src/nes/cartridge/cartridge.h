@@ -13,6 +13,13 @@ public:
     Horizontal,
     FourScreen
   };
+
+  enum class Error {
+    NO_ERROR,
+    BAD_MAPPER,
+    BAD_DATA
+  };
+
 private:
   const INES*   const rom_data; // ROM file data does not change
         Mapper* const mapper;
@@ -29,7 +36,8 @@ public:
   void write(u16 addr, u8 val) override;
   // </Memory>
 
-  bool isValid() const;
+  Error getError() const;
+  uint  getMapper() const;
 
   Mirroring mirroring() const; // get nametable mirroring type
 
