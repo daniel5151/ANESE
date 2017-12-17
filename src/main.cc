@@ -210,8 +210,8 @@ int main(int argc, char* argv[]) {
         switch (event.cbutton.button) {
         case SDL_CONTROLLER_BUTTON_X:          joy_1.set_button("A",      new_state); break;
         case SDL_CONTROLLER_BUTTON_A:          joy_1.set_button("B",      new_state); break;
-        case SDL_CONTROLLER_BUTTON_START:      joy_1.set_button("Select", new_state); break;
-        case SDL_CONTROLLER_BUTTON_BACK:       joy_1.set_button("Start",  new_state); break;
+        case SDL_CONTROLLER_BUTTON_START:      joy_1.set_button("Start",  new_state); break;
+        case SDL_CONTROLLER_BUTTON_BACK:       joy_1.set_button("Select", new_state); break;
         case SDL_CONTROLLER_BUTTON_DPAD_UP:    joy_1.set_button("Up",     new_state); break;
         case SDL_CONTROLLER_BUTTON_DPAD_DOWN:  joy_1.set_button("Down",   new_state); break;
         case SDL_CONTROLLER_BUTTON_DPAD_LEFT:  joy_1.set_button("Left",   new_state); break;

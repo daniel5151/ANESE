@@ -13,8 +13,8 @@ private:
     struct {
       u8 A;
       u8 B;
-      u8 Start;
       u8 Select;
+      u8 Start;
       u8 Up;
       u8 Down;
       u8 Left;
