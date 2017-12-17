@@ -331,6 +331,8 @@ void PPU::spr_fetch() {
   if (this->scan.cycle != 0)
     return;
 
+  this->spr.spr_zero_on_line = false;
+
   // (This will break games that switch sprite_height mid-scanline)
   const uint sprite_height = this->reg.ppuctrl.H ? 16 : 8;
 
@@ -350,8 +352,13 @@ void PPU::spr_fetch() {
       i16(this->scan.line) - 1
     );
 
-    if (!on_this_line)
+    if (!on_this_line) {
       continue;
+    }
+
+    if (sprite == 0) {
+      this->spr.spr_zero_on_line = true;
+    }
 
     // Otherwise, copy this sprite into OAM2 (room permitting)
     if (oam2_addr < 32) {
@@ -493,18 +500,6 @@ void PPU::bgr_fetch() {
 PPU::Pixel PPU::get_bgr_pixel() {
   assert(this->scan.line < 240 || this->scan.line == 261);
 
-  // "The shifters are reloaded during ticks 9, 17, 25, ..., 257"
-  if (in_range(this->scan.cycle, 0, 257) && this->scan.cycle % 8 == 1) {
-    // this->bgr.shift.tile[0] &= 0xFF00;
-    // this->bgr.shift.tile[0] |= this->bgr.tile_lo;
-
-    // this->bgr.shift.tile[1] &= 0xFF00;
-    // this->bgr.shift.tile[1] |= this->bgr.tile_hi;
-
-    // this->bgr.shift.at_latch[0] = this->bgr.at_byte & 1;
-    // this->bgr.shift.at_latch[1] = this->bgr.at_byte & 2;
-  }
-
   uint pixel_type = (nth_bit(this->bgr.shift.tile[1], 15 - this->reg.x) << 1)
                 | (nth_bit(this->bgr.shift.tile[0], 15 - this->reg.x) << 0);
 
@@ -527,22 +522,32 @@ PPU::Pixel PPU::get_bgr_pixel() {
   // Perform data fetches
   this->bgr_fetch();
 
+  // Check for background mask disable
+  if (!this->reg.ppumask.m && (this->scan.cycle - 2) < 8)
+    return Pixel();
+
   // If background rendering is disabled, return a empty pixel
   if (this->reg.ppumask.b == false || this->scan.line >= 240)
     return Pixel();
 
-  return Pixel { true, this->mem[0x3F00 + palette * 4 + pixel_type], 0 };
+  return Pixel { pixel_type != 0, this->mem[0x3F00 + palette * 4 + pixel_type], 0 };
 }
 
 // TODO: make this more "hardware" accurate
 // https://wiki.nesdev.com/w/index.php/PPU_rendering
-PPU::Pixel PPU::get_spr_pixel() {
+PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
   // Fetch data
   this->spr_fetch();
 
+  // Check to see if sprite rendering is even enabled
   if (this->reg.ppumask.s == false)
     return Pixel();
 
+  // Check for sprite mask disable
+  if (!this->reg.ppumask.M && (this->scan.cycle - 2) < 8)
+    return Pixel();
+
+  // (this breaks when games switch sprite size mid-scanline)
   const uint sprite_height = this->reg.ppuctrl.H ? 16 : 8;
 
   // Scan through OAM2 to see if there is a sprite to draw at this scan.cycle
@@ -570,7 +575,7 @@ PPU::Pixel PPU::get_spr_pixel() {
     ) return Pixel();
 
     // Does this sprite have a pixel at the current x addr?
-    if (in_range(x_pos, this->scan.cycle - 2 - 7, this->scan.cycle - 2)) {
+    if (in_range(x_pos, (this->scan.cycle - 2) - 7, (this->scan.cycle - 2))) {
       // Cool! There is a sprite here!
 
       // Now we just need to get the actual pixel data for this sprite...
@@ -590,6 +595,14 @@ PPU::Pixel PPU::get_spr_pixel() {
       // If the pixel is transparent, continue looking for a valid sprite...
       if (pixel_type == 0)
         continue;
+
+      if (this->reg.ppumask.is_rendering && // When rendering
+          this->reg.ppustatus.S == 0 &&     // And there has not been a spr hit
+          this->spr.spr_zero_on_line &&     // And there is a sprite on the line
+          (this->scan.cycle - 2) != 0xFF && // And not on dot 255
+          sprite == 0 &&                    // And this is sprite 0
+          bgr_pixel.is_on                   // And the bgr pixel is on
+      ) this->reg.ppustatus.S = 1; // Only then does sprite hit occur
 
       // Otherwise, fetch which pallete color to use, and return the pixel!
       u8 palette = this->mem[0x3F10 + attributes.palette * 4 + pixel_type];
@@ -616,7 +629,7 @@ void PPU::cycle() {
   if (this->scan.line < 240 || this->scan.line == 261) {
     // Fetch Pixels
     PPU::Pixel bgr_pixel = this->get_bgr_pixel();
-    PPU::Pixel spr_pixel = this->get_spr_pixel();
+    PPU::Pixel spr_pixel = this->get_spr_pixel(bgr_pixel);
 
     // Priority Multiplexer decision table
     // https://wiki.nesdev.com/w/index.php/PPU_rendering#Preface
@@ -631,7 +644,7 @@ void PPU::cycle() {
                                               ? bgr_pixel.palette
                                               : spr_pixel.palette;
 
-    uint x = this->scan.cycle - 2;
+    uint x = (this->scan.cycle - 2);
     if (x < 256 && this->scan.line != 261) {
       this->draw_dot(this->palette[palette], x, this->scan.line);
     }

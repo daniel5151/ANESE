@@ -186,6 +186,8 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  float target_fups = 60.0;
+
   // Main Loop
   bool quit = false;
   while (!quit) {
@@ -208,8 +210,8 @@ int main(int argc, char* argv[]) {
       if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
         bool new_state = (event.type == SDL_CONTROLLERBUTTONDOWN) ? true : false;
         switch (event.cbutton.button) {
-        case SDL_CONTROLLER_BUTTON_X:          joy_1.set_button("A",      new_state); break;
-        case SDL_CONTROLLER_BUTTON_A:          joy_1.set_button("B",      new_state); break;
+        case SDL_CONTROLLER_BUTTON_A:          joy_1.set_button("A",      new_state); break;
+        case SDL_CONTROLLER_BUTTON_X:          joy_1.set_button("B",      new_state); break;
         case SDL_CONTROLLER_BUTTON_START:      joy_1.set_button("Start",  new_state); break;
         case SDL_CONTROLLER_BUTTON_BACK:       joy_1.set_button("Select", new_state); break;
         case SDL_CONTROLLER_BUTTON_DPAD_UP:    joy_1.set_button("Up",     new_state); break;
@@ -260,6 +262,17 @@ int main(int argc, char* argv[]) {
             bool log = DEBUG_VARS::Get()->print_nestest ^= 1;
             fprintf(stderr, "NESTEST CPU logging: %s\n", log ? "ON" : "OFF");
           }
+
+          if (event.key.keysym.sym == SDLK_EQUALS) {
+            target_fups += 5.0;
+            fprintf(stderr, "New target fups: %f\n", target_fups);
+          }
+
+          if (event.key.keysym.sym == SDLK_MINUS) {
+            target_fups -= 5.0;
+            fprintf(stderr, "New target fups: %f\n", target_fups);
+          }
+
         }
         continue;
       }
@@ -301,10 +314,10 @@ int main(int argc, char* argv[]) {
 
     // ---- Limit Framerate ---- //
     // NES runs as 60 fups, so don't run faster!
-    constexpr time_ms TARGET_FPS = static_cast<time_ms>(1000.0 / 60.0);
+    time_ms TARGET_FRAME_DT = static_cast<time_ms>(1000.0 / target_fups);
     time_ms frame_dt = SDL_GetTicks() - frame_start_time;
-    if (frame_dt < TARGET_FPS)
-      SDL_Delay(TARGET_FPS - frame_dt);
+    if (frame_dt < TARGET_FRAME_DT)
+      SDL_Delay(TARGET_FRAME_DT - frame_dt);
 
     time_ms frame_end_time = SDL_GetTicks();
 

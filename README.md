@@ -105,11 +105,11 @@ Toggle CPU logging | Ctrl-C
     - [x] Implement Registers + Memory Map them
     - [x] Implement DMA
     - [x] Generate NMI -> CPU
-    - [ ] Core rendering loop
+    - [x] Core rendering loop
       - [x] Background Rendering
-      - [ ] Sprite Rendering - _currently not hardware accurate_
+      - [x] Sprite Rendering - _currently not hardware accurate_
       - [x] Proper Background / Foreground blending
-    - [ ] Sprite Zero Hit
+    - [x] Sprite Zero Hit
   - [ ] APU
     - [x] Implement Registers + Memory Map them
     - [ ] Frame Timer IRQ

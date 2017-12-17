@@ -47,6 +47,15 @@ private:
   Memory& oam;  // Primary OAM - 256 bytes (Object Attribute Memory)
   Memory& oam2; // Secondary OAM - 32 bytes (8 sprites to render on scanline)
 
+  struct {
+    struct {
+      u8 tile [8][2]; // 8 pairs of 8-bit shift registers (for bitmaps)
+      u8 at   [8];    // Attribute byte (per sprite)
+      u8 xpos [8];    // x-position of sprites
+    } shift;
+    bool spr_zero_on_line; // temp, not in hardware (just a workaround for now)
+  } spr;
+
   // ---- Background Hardware ---- //
 
   struct {
@@ -57,8 +66,8 @@ private:
     u8 tile_hi;
     // Shift Registers
     struct {
-      bool at_latch [2];
       u8   at       [2];
+      bool at_latch [2];
       u16  tile     [2];
     } shift;
   } bgr;
@@ -157,7 +166,7 @@ private:
   };
 
   Pixel get_bgr_pixel();
-  Pixel get_spr_pixel();
+  Pixel get_spr_pixel(Pixel& bgr_pixel);
 
   void bgr_fetch();
   void spr_fetch();

@@ -32,9 +32,12 @@ PPU_MMU::PPU_MMU(
 // Handles the weird Palette RAM mirroring behavior
 // (notably, SMB and relies on this)
 inline u16 pram_mirror(u16 addr) {
-  return (addr % 4)
-    ? addr % 32
-    : 0;
+  addr %= 32;
+
+  if (addr % 4 == 0) {
+    if (addr >= 16) return addr -= 16;
+  }
+  return addr;
 }
 
 #define ADDR(lo, hi) if (in_range(addr, lo, hi))
@@ -92,14 +95,14 @@ void PPU_MMU::loadCartridge(Cartridge* cart) {
   // range (0x0000 -> 0x2000)
 
   switch(cart->mirroring()) {
-  case Cartridge::Mirroring::Vertical:
+  case Cartridge::Mirroring::Horizontal:
     this->vram = &this->ciram;
     this->nt_0 = 0x2000; // 0x2000 -> 0x0000
     this->nt_1 = 0x2000; // 0x2400 -> 0x0400
     this->nt_2 = 0x2800; // 0x2800 -> 0x0000
     this->nt_3 = 0x2800; // 0x2C00 -> 0x0400
     break;
-  case Cartridge::Mirroring::Horizontal:
+  case Cartridge::Mirroring::Vertical:
     this->vram = &this->ciram;
     this->nt_0 = 0x2000; // 0x2000 -> 0x0000
     this->nt_1 = 0x2400; // 0x2400 -> 0x0000
