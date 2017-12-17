@@ -57,7 +57,7 @@ void PPU::power_cycle() {
 
   this->reg.ppudata = 0x00; // ?
 
-  this->bgr = {0, 0, 0, 0};
+  this->bgr = {0, 0, 0, 0, { { 0 }, { 0 }, { 0 }}};
 }
 
 void PPU::reset() {
@@ -92,15 +92,10 @@ uint PPU::getFrames() const { return this->frames; }
 
 const u8* PPU::getFramebuff() const { return this->framebuff; }
 
-void PPU::draw_dot(Color color) {
-  if (color.a == 0) return;
+void PPU::draw_dot(Color color, uint x, uint y) {
+  assert(x < 256 && y < 240);
 
-  if (this->scan.line >= 240 || !in_range(this->scan.cycle, 0, 255)) {
-    // these pixels are not actually rendered...
-    return;
-  }
-
-  const u32 offset = (256 * 4 * this->scan.line) + this->scan.cycle * 4;
+  const uint offset = (256 * 4 * y) + x * 4;
   assert(offset + 3 < 240 * 256 * 4);
   // This array caused me a lot of heartache and headache.
   //
@@ -332,7 +327,7 @@ void PPU::write(u16 addr, u8 val) {
 
 // TODO: cycle accurate
 // For now, it just performs all the calculations on cycle 0 of a scanline
-void PPU::spr_eval() {
+void PPU::spr_fetch() {
   if (this->scan.cycle != 0)
     return;
 
@@ -350,9 +345,9 @@ void PPU::spr_eval() {
     // Check if sprite is on current line
     u8 y_pos = this->oam[sprite * 4 + 0];
     bool on_this_line = in_range(
-      y_pos,
-      this->scan.line - sprite_height,
-      this->scan.line - 1
+      i16(y_pos),
+      i16(this->scan.line) - i16(sprite_height),
+      i16(this->scan.line) - 1
     );
 
     if (!on_this_line)
@@ -372,20 +367,26 @@ void PPU::spr_eval() {
   }
 }
 
-/*-----------------------  Pixel Evaluation Functions  -----------------------*/
-
 // https://wiki.nesdev.com/w/index.php/PPU_rendering
 // using ntsc_timing.png as a visual guide
 void PPU::bgr_fetch() {
-  // Don't fetch any data during vblank
-  if (this->scan.line >= 240 && this->scan.line != 261)
-    return;
+  assert(this->scan.line < 240 || this->scan.line == 261);
 
   /**/ if (in_range(this->scan.cycle, 0,   0  )) { /* idle cycle */ }
   else if (in_range(this->scan.cycle, 1,   256) ||
            in_range(this->scan.cycle, 321, 336)) {
     // Each mem-access takes 2 cycles to perform
     switch (this->scan.cycle % 8) {
+    case 1: {
+      this->bgr.shift.tile[0] &= 0xFF00;
+      this->bgr.shift.tile[0] |= this->bgr.tile_lo;
+
+      this->bgr.shift.tile[1] &= 0xFF00;
+      this->bgr.shift.tile[1] |= this->bgr.tile_hi;
+
+      this->bgr.shift.at_latch[0] = this->bgr.at_byte & 1;
+      this->bgr.shift.at_latch[1] = this->bgr.at_byte & 2;
+    }
     // 1) Fetch Nametable Byte
     // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Tile_and_attribute_fetching
     case 2: {
@@ -402,6 +403,10 @@ void PPU::bgr_fetch() {
                   | ((this->reg.v >> 4) & 0x38)
                   | ((this->reg.v >> 2) & 0x07);
       this->bgr.at_byte = this->mem[at_addr];
+
+      if (this->reg.v.coarse_y & 2) this->bgr.at_byte >>= 4;
+      if (this->reg.v.coarse_x & 2) this->bgr.at_byte >>= 2;
+
     } break;
 
     // 3) Fetch lo tile bitmap
@@ -423,7 +428,7 @@ void PPU::bgr_fetch() {
 
       // increment Coarse X
       // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Wrapping_around
-      if (this->reg.ppumask.b) {
+      if (this->reg.ppumask.is_rendering) {
         if (this->reg.v.coarse_x == 31) {
           this->reg.v.val ^= 0x0400; // switch horizontal nametable
         }
@@ -445,11 +450,11 @@ void PPU::bgr_fetch() {
     }
     // This is used for timing by some mappers.
   }
-  else { /* idle */ }
+  else { assert(false); /* This should not happen. */ }
 
   // Y increment
   // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Wrapping_around
-  if (this->scan.cycle == 256 && this->reg.ppumask.b) {
+  if (this->scan.cycle == 256 && this->reg.ppumask.is_rendering) {
     if (this->reg.v.fine_y == 7) {
       if (this->reg.v.coarse_y == 29) {
         this->reg.v.coarse_y = 0;
@@ -461,65 +466,80 @@ void PPU::bgr_fetch() {
     this->reg.v.fine_y++;
   }
 
-  // Check for any copyX / copyY
+  // ---- Copy X / Copy Y ---- //
+  if (this->reg.ppumask.is_rendering) {
     if (this->scan.cycle == 257) {
-    // copyX
-    // v: .....F.. ...EDCBA = t: .....F.. ...EDCBA
-    this->reg.v.coarse_x = this->reg.t.coarse_x;
-    this->reg.v.nametable = (this->reg.v.nametable & 2)
-                          | (this->reg.t.nametable & 1);
-  }
-  if (this->scan.line == 261 && in_range(this->scan.cycle, 280, 304)) {
-    // copyY
-    // v: .IHGF.ED CBA..... = t: .IHGF.ED CBA.....
-    this->reg.v.coarse_y = this->reg.t.coarse_y;
-    this->reg.v.fine_y = this->reg.t.fine_y;
-    this->reg.v.nametable = (this->reg.v.nametable & 1)
-                          | (this->reg.t.nametable & 2);
+      // copyX
+      // v: .....F.. ...EDCBA = t: .....F.. ...EDCBA
+      this->reg.v.coarse_x = this->reg.t.coarse_x;
+      this->reg.v.nametable = (this->reg.v.nametable & 2)
+                            | (this->reg.t.nametable & 1);
+    }
+    if (this->scan.line == 261 && in_range(this->scan.cycle, 280, 304)) {
+      // copyY
+      // v: .IHGF.ED CBA..... = t: .IHGF.ED CBA.....
+      this->reg.v.coarse_y = this->reg.t.coarse_y;
+      this->reg.v.fine_y = this->reg.t.fine_y;
+      this->reg.v.nametable = (this->reg.v.nametable & 1)
+                            | (this->reg.t.nametable & 2);
+    }
   }
 }
 
+
+/*-----------------------  Pixel Evaluation Functions  -----------------------*/
+
 // https://wiki.nesdev.com/w/index.php/PPU_rendering
-// TODO: make this more "hardware" accurate
 PPU::Pixel PPU::get_bgr_pixel() {
+  assert(this->scan.line < 240 || this->scan.line == 261);
+
+  // "The shifters are reloaded during ticks 9, 17, 25, ..., 257"
+  if (in_range(this->scan.cycle, 0, 257) && this->scan.cycle % 8 == 1) {
+    // this->bgr.shift.tile[0] &= 0xFF00;
+    // this->bgr.shift.tile[0] |= this->bgr.tile_lo;
+
+    // this->bgr.shift.tile[1] &= 0xFF00;
+    // this->bgr.shift.tile[1] |= this->bgr.tile_hi;
+
+    // this->bgr.shift.at_latch[0] = this->bgr.at_byte & 1;
+    // this->bgr.shift.at_latch[1] = this->bgr.at_byte & 2;
+  }
+
+  uint pixel_type = (nth_bit(this->bgr.shift.tile[1], 15 - this->reg.x) << 1)
+                | (nth_bit(this->bgr.shift.tile[0], 15 - this->reg.x) << 0);
+
+  uint palette = (nth_bit(this->bgr.shift.at[1], 7 - this->reg.x) << 1)
+               | (nth_bit(this->bgr.shift.at[0], 7 - this->reg.x) << 0);
+
+  // Shift Background registers
+  if (in_range(this->scan.cycle, 1,   256) ||
+      in_range(this->scan.cycle, 321, 336))
+  {
+    this->bgr.shift.tile[0] <<= 1;
+    this->bgr.shift.tile[1] <<= 1;
+
+    this->bgr.shift.at[0] <<= 1;
+    this->bgr.shift.at[0] |= this->bgr.shift.at_latch[0];
+    this->bgr.shift.at[1] <<= 1;
+    this->bgr.shift.at[1] |= this->bgr.shift.at_latch[1];
+  }
+
+  // Perform data fetches
+  this->bgr_fetch();
+
   // If background rendering is disabled, return a empty pixel
-  if (this->reg.ppumask.b == false)
+  if (this->reg.ppumask.b == false || this->scan.line >= 240)
     return Pixel();
 
-  // What corner is this particular 8x8 tile in?
-  //
-  // top left = 0
-  // top right = 1
-  // bottom left = 2
-  // bottom right = 3
-  const u2 corner = (this->reg.v.coarse_x % 4) / 2
-                  + (this->reg.v.coarse_y % 4) / 2 * 2;
-
-  // Recall that the attribute byte stores the palette assignment data
-  // formatted as follows:
-  //
-  // attribute = (topleft << 0)
-  //           | (topright << 2)
-  //           | (bottomleft << 4)
-  //           | (bottomright << 6)
-  //
-  // thus, we can reverse the process with some clever bitmasking!
-  const u8 mask = 0x03 << (corner * 2);
-  const u2 palette = (this->bgr.at_byte & mask) >> (corner * 2);
-
-  const u3 x = 7 - ((this->scan.cycle + this->reg.x) % 8);
-
-  const u2 pixel_type = nth_bit(this->bgr.tile_lo, x)
-                      + nth_bit(this->bgr.tile_hi, x) * 2;
-
-  Color color = this->palette[this->mem[0x3F00 + palette * 4 + pixel_type]];
-
-  return Pixel{ color, 0 };
+  return Pixel { true, this->mem[0x3F00 + palette * 4 + pixel_type], 0 };
 }
 
 // TODO: make this more "hardware" accurate
 // https://wiki.nesdev.com/w/index.php/PPU_rendering
 PPU::Pixel PPU::get_spr_pixel() {
+  // Fetch data
+  this->spr_fetch();
+
   if (this->reg.ppumask.s == false)
     return Pixel();
 
@@ -550,13 +570,13 @@ PPU::Pixel PPU::get_spr_pixel() {
     ) return Pixel();
 
     // Does this sprite have a pixel at the current x addr?
-    if (in_range(x_pos, this->scan.cycle - 7, this->scan.cycle)) {
+    if (in_range(x_pos, this->scan.cycle - 2 - 7, this->scan.cycle - 2)) {
       // Cool! There is a sprite here!
 
       // Now we just need to get the actual pixel data for this sprite...
       // First, which pixel of the sprite are we rendering?
       uint spr_row = this->scan.line - y_pos - 1;
-      uint spr_col = 7 - (this->scan.cycle - x_pos);
+      uint spr_col = 7 - (this->scan.cycle - 2 - x_pos);
 
       if (attributes.flip_vertical)   spr_row = sprite_height - 1 - spr_row;
       if (attributes.flip_horizontal) spr_col =             8 - 1 - spr_col;
@@ -573,7 +593,7 @@ PPU::Pixel PPU::get_spr_pixel() {
 
       // Otherwise, fetch which pallete color to use, and return the pixel!
       u8 palette = this->mem[0x3F10 + attributes.palette * 4 + pixel_type];
-      return Pixel { this->palette[palette], bool(attributes.priority) };
+      return Pixel { true, palette, bool(attributes.priority) };
     }
 
     // Otherwise, keep looking
@@ -591,43 +611,40 @@ void PPU::cycle() {
   this->update_debug_windows();
 #endif
 
-  // If there is stuff to render:
-  if (this->reg.ppumask.s || this->reg.ppumask.b) {
-    // Get pixel data
+  // ---- Core Loop ---- //
+
+  if (this->scan.line < 240 || this->scan.line == 261) {
+    // Fetch Pixels
     PPU::Pixel bgr_pixel = this->get_bgr_pixel();
     PPU::Pixel spr_pixel = this->get_spr_pixel();
 
-    // fetch bgr bytes
-    this->bgr_fetch();
-
-    // Alpha channel of 0 means that pixel is not on
-    bool bgr_on = bgr_pixel.color.a;
-    bool spr_on = spr_pixel.color.a;
-
     // Priority Multiplexer decision table
     // https://wiki.nesdev.com/w/index.php/PPU_rendering#Preface
-    Color dot_color = Color();
-    /**/ if (!bgr_on && !spr_on) dot_color = this->palette[this->mem[0x3F00]];
-    else if (!bgr_on &&  spr_on) dot_color = spr_pixel.color;
-    else if ( bgr_on && !spr_on) dot_color = bgr_pixel.color;
-    else if ( bgr_on &&  spr_on) dot_color = spr_pixel.priority
-                                              ? bgr_pixel.color
-                                              : spr_pixel.color;
+    const bool bgr_on = bgr_pixel.is_on;
+    const bool spr_on = spr_pixel.is_on;
 
-    // Doesn't actually draw anything when this->scan.cycle >= 255
-    this->draw_dot(dot_color);
+    u8 palette = 0x00;
+    /**/ if (!bgr_on && !spr_on) palette = this->mem[0x3F00];
+    else if (!bgr_on &&  spr_on) palette = spr_pixel.palette;
+    else if ( bgr_on && !spr_on) palette = bgr_pixel.palette;
+    else if ( bgr_on &&  spr_on) palette = spr_pixel.priority
+                                              ? bgr_pixel.palette
+                                              : spr_pixel.palette;
+
+    uint x = this->scan.cycle - 2;
+    if (x < 256 && this->scan.line != 261) {
+      this->draw_dot(this->palette[palette], x, this->scan.line);
+    }
   }
 
-  // Sprite Evaluation
-  if (this->scan.line < 240) { // only on visible scanlines
-    this->spr_eval();
-  }
+  // ---- Enable / Disable vblank ---- //
 
-  // Enable / Disable vblank
   if (this->scan.cycle == 1) {
     // vblank start on line 241...
     if (this->scan.line == 241) {
+      // MAJOR KEY: The vblank flag is _always_ set!
       this->reg.ppustatus.V = true;
+      // Only the interrupt is affected by ppuctrl.V (not the flag!)
       if (this->reg.ppuctrl.V) {
         this->interrupts.request(Interrupts::NMI);
       }
@@ -641,6 +658,8 @@ void PPU::cycle() {
     }
   }
 
+  // ---- Update Counter ---- //
+
   // Update cycle counts
   this->scan.cycle += 1;
   this->cycles += 1;
@@ -649,7 +668,7 @@ void PPU::cycle() {
   if (this->frames % 2 &&
       this->scan.cycle == 340 &&
       this->scan.line == 261 &&
-      (this->reg.ppumask.b || this->reg.ppumask.s)
+      (this->reg.ppumask.is_rendering)
   ) {
     this->cycles += 1;
     this->scan.cycle +=1;

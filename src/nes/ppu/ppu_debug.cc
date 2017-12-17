@@ -60,13 +60,15 @@ void PPU::update_debug_windows() {
   }
   // i'm making it update every second right now
   static bool should_update = true;
+  static u16 offset = 0;
   if (
     should_update == false &&
     this->frames % UPDATE_EVERY_X_FRAMES == UPDATE_EVERY_X_FRAMES - 1
   ) should_update = true;
 
-  if (should_update && this->frames % UPDATE_EVERY_X_FRAMES == 0) {
+  if ((this->cycles % 0xFFFF) == offset && should_update && this->frames % UPDATE_EVERY_X_FRAMES == 0) {
     should_update = false;
+    offset++;
 
     auto paint_tile = [=](
       u16 tile_addr,

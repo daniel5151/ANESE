@@ -49,7 +49,19 @@ private:
 
   // ---- Background Hardware ---- //
 
-  // TBD
+  struct {
+    // Temporary Registers
+    u8 nt_byte;
+    u8 at_byte;
+    u8 tile_lo;
+    u8 tile_hi;
+    // Shift Registers
+    struct {
+      bool at_latch [2];
+      u8   at       [2];
+      u16  tile     [2];
+    } shift;
+  } bgr;
 
   // ---- Memory Mapped Registers ---- //
 
@@ -82,6 +94,8 @@ private:
       BitField<2> M; // sprite left column enable
       BitField<1> m; // background left column enable
       BitField<0> g; // greyscale
+
+      BitField<3, 2> is_rendering;
     } ppumask;
 
     // PPUSTATUS - 0x2002 - PPU status register
@@ -134,24 +148,19 @@ private:
   // but all that actually happens is that it calls this->dma.transfer(), pushes
   // that data to OAMDATA, and cycles itself for the requisite number of cycles
 
-  /*---- Helper Functions ----*/
+  /*----------- PPU Functions -----------*/
 
   struct Pixel {
-    Color color;    // pixel color (color.a determines if pixel is visible)
-    bool  priority; // sprite priority bit (unused in brg_pixels)
+    bool is_on;
+    u8   palette;  // pixel color - by palette
+    bool priority; // sprite priority bit (always 0 for bgr pixels)
   };
 
-  struct {
-    u8 nt_byte;
-    u8 at_byte;
-    u8 tile_lo;
-    u8 tile_hi;
-  } bgr;
   Pixel get_bgr_pixel();
   Pixel get_spr_pixel();
 
   void bgr_fetch();
-  void spr_eval();
+  void spr_fetch();
 
   /*----  Emulation Vars and Methods  ----*/
 
@@ -160,7 +169,7 @@ private:
 
   // framebuffer
   u8* framebuff;
-  void draw_dot(Color color);
+  void draw_dot(Color color, uint x, uint y);
 
   // scanline tracker
   struct {

@@ -102,21 +102,25 @@ Toggle CPU logging | Ctrl-C
     - [x] Handle Interrupts
   - [ ] PPU
     - [x] Set Up Basic Rendering Context (SDL)
-    - [x] Set Up Memory Map
-    - [x] Basic Hardware Structures
-      - [x] Framebuffer (technically not in hardware)
-      - [x] Registers
-        - [x] Memory Map them
+    - [x] Implement Registers + Memory Map them
     - [x] Implement DMA
     - [x] Generate NMI -> CPU
     - [ ] Core rendering loop
-      - [ ] Background Rendering
-      - [x] Sprite Rendering - _not hardware accurate_
-      - [ ] Proper Background / Foreground blending
+      - [x] Background Rendering
+      - [ ] Sprite Rendering - _currently not hardware accurate_
+      - [x] Proper Background / Foreground blending
     - [ ] Sprite Zero Hit
   - [ ] APU
-    - [x] Basic Register Layout
+    - [x] Implement Registers + Memory Map them
     - [ ] Frame Timer IRQ
+    - [ ] Set Up Basic Sound Ouput Context (SDL)
+    - [ ] Channels
+      - [ ] PCM 1
+      - [ ] PCM 2
+      - [ ] Triangle
+      - [ ] Noise
+      - [ ] DMC
+    - [ ] DMC DMA
   - [ ] Joypads
     - [x] Basic Controller
     - [ ] Zapper
@@ -124,13 +128,13 @@ Toggle CPU logging | Ctrl-C
 
 - Ongoing Tasks
   - Better Usability
-    - [ ] Loading Files with picker
+    - [x] Loading Files with picker
     - [x] Reset / Power-cycle
     - [ ] Run / Pause / Stop
     - [ ] Config File
       - [ ] Remap controls
     - [x] Running NESTEST (behind a flag)
-    - [x] Controller support - _basic_
+    - [x] Controller support - _currently very basic_
     - Saving
       - [ ] Battery Backed RAM
       - [ ] Save-states
@@ -147,17 +151,16 @@ Toggle CPU logging | Ctrl-C
     - [ ] Proper PAL handling
     - CPU
       - [ ] Implement Unofficial Opcodes
-      - [ ] Better handling of simultaneous interrupts
+      - [ ] Pass More Tests yo
       - [ ] _\(Stretch\)_ Switch to cycle-based emulation (vs instruction level)
     - PPU
       - [ ] Make value in PPU <-> CPU bus decay
-    - JOY
-      - [ ] More nes controller types
-  - Cleanup
-    - [ ] Modularize UI code
+      - [ ] Pass More Tests yo
+  - Cleanup Code
+    - [ ] Modularize UI code (i.e: get it out of main.cc)
     - [ ] Unify naming conventions (either camelCase or snake_case)
     - [ ] Add `const` throughout the codebase (?)
-    - Better error handling & logging
+    - Better error handling and logging
       - [ ] Remove fatal asserts (?)
       - [ ] Switch to a better logging system (\*cough\* not fprintf \*cough\*)
     - Better cmake config
