@@ -74,17 +74,20 @@ Down   | Down arrow
 Left   | Left arrow
 Right  | Right arrow
 
-There is also basic controller support through SDL. Note: i've only tested with
-an xbox controller, so milage may vary.
+There is also basic controller support through SDL.
+Note: i've only tested with an xbox controller, so your milage may vary.
 
 There are also a couple emulator actions:
 
 Action             | Keys
 -------------------|--------
 Exit               | Esc
-Reset              | Ctrl-R
-Power Cycle        | Ctrl-P
-Toggle CPU logging | Ctrl-C
+Reset              | Ctrl - R
+Power Cycle        | Ctrl - P
+Toggle CPU logging | Ctrl - C
+Speed++            | Ctrl - =
+Speed--            | Ctrl - -
+Fast-Forward       | Space
 
 ## TODO
 
@@ -131,6 +134,7 @@ Toggle CPU logging | Ctrl-C
     - [x] Loading Files with picker
     - [x] Reset / Power-cycle
     - [ ] Run / Pause / Stop
+    - [x] Fast Forward
     - [ ] Config File
       - [ ] Remap controls
     - [x] Running NESTEST (behind a flag)
@@ -167,7 +171,7 @@ Toggle CPU logging | Ctrl-C
 
 - Fun Bonuses
   - Features!
-    - [ ] Fast Forward
+    - [ ] Rewind
   - [ ] Debugger!
     - [ ] CPU
       - [ ] Serialize state

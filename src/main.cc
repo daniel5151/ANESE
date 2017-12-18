@@ -154,9 +154,11 @@ int main(int argc, char* argv[]) {
     SDL_WINDOW_RESIZABLE
   );
 
-  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED
-                                          // | SDL_RENDERER_PRESENTVSYNC
-                                          );
+  renderer = SDL_CreateRenderer(
+    window,
+    -1,
+    SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+  );
 
   // nes screen texture
   SDL_Texture* texture = SDL_CreateTexture(
@@ -186,7 +188,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  float target_fups = 60.0;
+  uint speedup = 1;
 
   // Main Loop
   bool quit = false;
@@ -222,7 +224,8 @@ int main(int argc, char* argv[]) {
       }
 
       if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
-        // Joypad controls
+        // ------ Joypad controls ------ //
+
         bool new_state = (event.type == SDL_KEYDOWN) ? true : false;
         switch (event.key.keysym.sym) {
         case SDLK_z:      joy_1.set_button("A",      new_state); break;
@@ -242,9 +245,23 @@ int main(int argc, char* argv[]) {
           did_hit_ctrl = event.key.keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
         }
 
-        // Misc operations
+        // ------ Misc controls ------ //
+
+        // Quit
         if (event.key.keysym.sym == SDLK_ESCAPE) {
           quit = true;
+        }
+
+        if (event.key.keysym.sym == SDLK_SPACE) {
+          if (event.type == SDL_KEYDOWN) {
+            if (speedup != 2)
+              fprintf(stderr, "Fast Forward: ON\n");
+
+            speedup = 2;
+          } else {
+            fprintf(stderr, "Fast Forward: OFF\n");
+            speedup = 1;
+          }
         }
 
         if (event.type == SDL_KEYDOWN && did_hit_ctrl) {
@@ -264,13 +281,14 @@ int main(int argc, char* argv[]) {
           }
 
           if (event.key.keysym.sym == SDLK_EQUALS) {
-            target_fups += 5.0;
-            fprintf(stderr, "New target fups: %f\n", target_fups);
+            speedup++;
+            fprintf(stderr, "Speed: %dx\n", speedup);
           }
 
           if (event.key.keysym.sym == SDLK_MINUS) {
-            target_fups -= 5.0;
-            fprintf(stderr, "New target fups: %f\n", target_fups);
+            speedup--;
+            if (speedup == 0) speedup = 1;
+            fprintf(stderr, "Speed: %dx\n", speedup);
           }
 
         }
@@ -278,8 +296,9 @@ int main(int argc, char* argv[]) {
       }
     }
 
-    // run the NES for a frame
-    nes.step_frame();
+    // run the NES
+    for (uint i = 0; i < speedup; i++)
+      nes.step_frame();
 
     if (nes.isRunning() == false) {
       // quit = true;
@@ -312,14 +331,16 @@ int main(int argc, char* argv[]) {
     // Reveal out the composited image
     SDL_RenderPresent(renderer);
 
-    // ---- Limit Framerate ---- //
-    // NES runs as 60 fups, so don't run faster!
-    time_ms TARGET_FRAME_DT = static_cast<time_ms>(1000.0 / target_fups);
-    time_ms frame_dt = SDL_GetTicks() - frame_start_time;
-    if (frame_dt < TARGET_FRAME_DT)
-      SDL_Delay(TARGET_FRAME_DT - frame_dt);
-
     time_ms frame_end_time = SDL_GetTicks();
+
+    // ---- Limit Framerate ---- //
+    // NOTE: This is currently disabled, since it doesn't work as well as just
+    //       enabling vsync.
+    // NES runs as 60 fups, so don't run faster!
+    // time_ms TARGET_FRAME_DT = static_cast<time_ms>(1000.0 / 60.0);
+    // time_ms frame_dt = SDL_GetTicks() - frame_start_time;
+    // if (frame_dt < TARGET_FRAME_DT)
+    //   SDL_Delay(TARGET_FRAME_DT - frame_dt);
 
     // ---- Count Framerate ---- //
     static double past_fps [20] = {60.0}; // more samples == less FPS jutter
