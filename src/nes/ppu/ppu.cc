@@ -347,9 +347,9 @@ void PPU::spr_fetch() {
     // Check if sprite is on current line
     u8 y_pos = this->oam[sprite * 4 + 0];
     bool on_this_line = in_range(
-      i16(y_pos),
-      i16(this->scan.line) - i16(sprite_height),
-      i16(this->scan.line) - 1
+      int(y_pos),
+      int(this->scan.line) - int(sprite_height),
+      int(this->scan.line) - 1
     );
 
     if (!on_this_line) {
@@ -533,7 +533,8 @@ PPU::Pixel PPU::get_bgr_pixel() {
   return Pixel { pixel_type != 0, this->mem[0x3F00 + palette * 4 + pixel_type], 0 };
 }
 
-// TODO: make this more "hardware" accurate
+// TODO: make this more "hardware" accurate.
+//       this should make all the dumb -2 go away
 // https://wiki.nesdev.com/w/index.php/PPU_rendering
 PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
   // Fetch data
@@ -544,8 +545,9 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
     return Pixel();
 
   // Check for sprite mask disable
-  if (!this->reg.ppumask.M && (this->scan.cycle - 2) < 8)
+  if (!this->reg.ppumask.M && (this->scan.cycle - 2) < 8) {
     return Pixel();
+  }
 
   // (this breaks when games switch sprite size mid-scanline)
   const uint sprite_height = this->reg.ppuctrl.H ? 16 : 8;
@@ -575,13 +577,18 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
     ) return Pixel();
 
     // Does this sprite have a pixel at the current x addr?
-    if (in_range(x_pos, (this->scan.cycle - 2) - 7, (this->scan.cycle - 2))) {
+    bool x_in_range = in_range(
+      int(x_pos),
+      int((this->scan.cycle - 2)) - 7,
+      int((this->scan.cycle - 2))
+    );
+    if (x_in_range) {
       // Cool! There is a sprite here!
 
       // Now we just need to get the actual pixel data for this sprite...
       // First, which pixel of the sprite are we rendering?
       uint spr_row = this->scan.line - y_pos - 1;
-      uint spr_col = 7 - (this->scan.cycle - 2 - x_pos);
+      uint spr_col = 7 - ((this->scan.cycle - 2) - x_pos);
 
       if (attributes.flip_vertical)   spr_row = sprite_height - 1 - spr_row;
       if (attributes.flip_horizontal) spr_col =             8 - 1 - spr_col;
