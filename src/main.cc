@@ -9,10 +9,10 @@
 #include <iostream>
 #include <fstream>
 
-#include <tinyfiledialogs.h>
 #include <args.hxx>
-
 #include <SDL.h>
+#include <tinyfiledialogs.h>
+#include <miniz_zip.h>
 
 int main(int argc, char* argv[]) {
   // --------------------------- Argument Parsing --------------------------- //
@@ -42,14 +42,15 @@ int main(int argc, char* argv[]) {
 
   if (!rom) {
     // use `tinyfiledialogs` to open file-select dialog (if no rom provided)
-    const char* rom_formats[] = { "*.nes" };
+    const char* rom_formats[] = { "*.nes", "*.zip" };
     const char* file = tinyfd_openFileDialog(
       "Select ROM",
       nullptr,
-      1, rom_formats,
+      2, rom_formats,
       "NES roms",
       0
     );
+
     if (!file) {
       printf("Canceled File Select. Closing...\n");
       return -1;
@@ -62,33 +63,94 @@ int main(int argc, char* argv[]) {
 
   if (log_cpu) { DEBUG_VARS::Get()->print_nestest = 1; }
 
+  // ----------------------------- Read ROM File ---------------------------- //
+
+  // We need to fill up this pointer with some data:
+  u8* data = nullptr;
+  uint data_len = 0;
+
+  std::string rom_ext = rom_path.substr(rom_path.find_last_of("."));
+
+  // Read data in .nes file directly
+  if (rom_ext == ".nes") {
+    std::ifstream rom_file (rom_path, std::ios::binary);
+
+    if (!rom_file.is_open()) {
+      std::cerr << "could not open '" << rom_path << "'\n";
+      return 1;
+    }
+
+    // get length of file
+    rom_file.seekg(0, rom_file.end);
+    std::streamoff rom_file_size = rom_file.tellg();
+    rom_file.seekg(0, rom_file.beg);
+
+    if (rom_file_size == -1) {
+      std::cerr << "could not read '" << rom_path << "'\n";
+      return 1;
+    }
+
+    data_len = static_cast<uint>(rom_file_size);
+    data = new u8 [data_len];
+
+    rom_file.read((char*) data, data_len);
+  }
+  // If given a zip, try to decompress it
+  else if (rom_ext == ".zip") {
+    mz_zip_archive zip_archive;
+    memset(&zip_archive, 0, sizeof(zip_archive));
+    mz_bool status = mz_zip_reader_init_file(
+      &zip_archive,
+      rom_path.c_str(),
+      0
+    );
+    if (!status) {
+      std::cerr << "could not read zip file'" << rom_path << "'\n";
+      return 1;
+    }
+
+    // Try to find a .nes file in the archive
+    for (uint i = 0; i < mz_zip_reader_get_num_files(&zip_archive); i++) {
+      mz_zip_archive_file_stat file_stat;
+      mz_zip_reader_file_stat(&zip_archive, i, &file_stat);
+
+      std::string file_name = std::string(file_stat.m_filename);
+      std::string file_ext = file_name.substr(file_name.find_last_of("."));
+
+      if (file_ext == ".nes") {
+        printf("Found .nes file in archive: '%s'\n", file_stat.m_filename);
+
+        size_t uncomp_size;
+        void* p = mz_zip_reader_extract_file_to_heap(
+          &zip_archive,
+          file_stat.m_filename,
+          &uncomp_size,
+          0
+        );
+
+        if (!p) {
+          std::cerr << "Could not decompress zip file'" << rom_path << "'\n";
+          return 1;
+        }
+
+        // Nice! We got data!
+        data_len = uncomp_size;
+        data = new u8 [data_len];
+        memcpy(data, p, data_len);
+
+        // Free the redundant decompressed file mem
+        mz_free(p);
+
+        // Close the archive, freeing any resources it was using
+        mz_zip_reader_end(&zip_archive);
+      }
+    }
+  }
+
   // -------------------------- NES Initialization -------------------------- //
 
-  // open ROM from file
-  std::ifstream rom_file (rom_path, std::ios::binary);
-
-  if (!rom_file.is_open()) {
-    std::cerr << "could not open '" << rom_path << "'\n";
-    return 1;
-  }
-
-  // get length of file
-  rom_file.seekg(0, rom_file.end);
-  std::streamoff rom_file_size = rom_file.tellg();
-  rom_file.seekg(0, rom_file.beg);
-
-  if (rom_file_size == -1) {
-    std::cerr << "could not read '" << rom_path << "'\n";
-    return 1;
-  }
-
-  uint data_len = static_cast<uint>(rom_file_size);
-
-  u8* data = new u8 [data_len];
-
-  rom_file.read((char*) data, data_len);
-
   // Generate cartridge from data
+  // Note: cartridge now owns data
   Cartridge rom_cart (data, data_len);
 
   Cartridge::Error error = rom_cart.getError();

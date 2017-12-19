@@ -171,13 +171,14 @@ Fast-Forward       | Space
 
 - Fun Bonuses
   - Features!
+    - [x] Zipped ROM support
     - [ ] Rewind
   - [ ] Debugger!
     - [ ] CPU
       - [ ] Serialize state
       - [ ] Step through instructions
     - [ ] PPU
-      - [ ] proper NTSC artifacting
+      - [ ] Proper NTSC artifacting
   - [ ] Write a NES rom to simulate TV static, and run it if no ROM inserted
   - Multiple Frontends
     - [x] SDL (current default)

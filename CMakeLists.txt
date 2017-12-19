@@ -36,8 +36,6 @@ if (DEBUG_PPU)
   add_definitions(-DDEBUG_PPU)
 endif()
 
-# ANESE executable
-
 # anese source
 include_directories(src)
 file(GLOB_RECURSE SRC_FILES src/*.cc src/*.h)
@@ -47,28 +45,33 @@ if (WIN32)
   set(SRC_FILES ${SRC_FILES} resources/icons/anese.rc)
 endif()
 
+# ANESE executable
 add_executable(anese ${SRC_FILES})
 
-# Here is my very shitty way of doing 3rd party dependencies: Manually.
+# And now, for some shit-tier dependency management
 
-# ---- SDL2 ---- #
 # since there is no standard install directory for sdl2 on windows, change this
 # variable to point to _your_ SDL2 dev lib directory
 set(SDL2_MORE_INCLUDE_DIR "C:/sdl2")
 
-include_directories(${SDL2_INCLUDE_DIR})
+# ---- SDL2 ---- #
 find_package(SDL2 REQUIRED)
+include_directories(${SDL2_INCLUDE_DIR})
 target_link_libraries(anese ${SDL2_LIBRARY})
+
+# ---- miniz ---- #
+add_subdirectory(thirdparty/miniz)
+include_directories(thirdparty/miniz)
+target_link_libraries(anese miniz)
 
 # ---- args ---- #
 add_subdirectory(thirdparty/args)
+include_directories(thirdparty/args)
 target_link_libraries(anese args)
 
 # ---- tinyfiledialogs ---- #
-set(TINY_FILE_DIALOGS_DIR thirdparty/tinyfiledialogs/)
-include_directories(${TINY_FILE_DIALOGS_DIR})
-add_library(TINY_FILE_DIALOGS STATIC ${TINY_FILE_DIALOGS_DIR}/tinyfiledialogs.c)
-target_link_libraries(anese TINY_FILE_DIALOGS)
+include_directories(thirdparty/tinyfiledialogs)
+add_library(tinyfiledialogs STATIC thirdparty/tinyfiledialogs/tinyfiledialogs.c)
+target_link_libraries(anese tinyfiledialogs)
 
-# target_link_libraries(anese ${NFD_LIBRARY})
 install(TARGETS anese RUNTIME DESTINATION ${BIN_DIR})
