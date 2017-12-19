@@ -1,9 +1,9 @@
 #pragma once
 
 #include "common/util.h"
-#include "common/interfaces/memory.h"
+#include "nes/interfaces/memory.h"
 
-class JOY_Standard : public Memory {
+class JOY_Standard final : public Memory {
 private:
   bool strobe = false;
   uint curr_btn = 0; // from 0 - 7

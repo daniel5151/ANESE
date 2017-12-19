@@ -1,10 +1,10 @@
 #pragma once
 
 #include "common/util.h"
-#include "common/interfaces/memory.h"
+#include "nes/interfaces/memory.h"
 
 // Joypad router
-class JOY : public Memory {
+class JOY final : public Memory {
 private:
   Memory* joy [2];
 

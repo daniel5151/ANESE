@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/interfaces/memory.h"
 #include "common/util.h"
+#include "nes/interfaces/memory.h"
 
 // Dead simple 16 bit ROM ADT
 // (max 64K of ROM)

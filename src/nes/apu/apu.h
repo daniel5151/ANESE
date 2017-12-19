@@ -1,8 +1,8 @@
 #pragma once
 
-#include "common/util.h"
-#include "common/interfaces/memory.h"
 #include "common/bitfield.h"
+#include "common/util.h"
+#include "nes/interfaces/memory.h"
 
 #include "nes/wiring/interrupt_lines.h"
 
@@ -13,7 +13,7 @@
 
 // NES APU
 // Part of the NES RP2A03
-class APU : public Memory {
+class APU final : public Memory {
 private:
   /*----------  Hardware  ----------*/
 
@@ -141,7 +141,8 @@ private:
 
   /*----------  Emulation Vars  ----------*/
 
-  uint cycles; // Cycles elapsed
+  uint cycles;   // Cycles elapsed
+  uint seq_step; // Frame Sequence Step
 
 public:
   ~APU();

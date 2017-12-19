@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../formats/ines.h"
-#include "common/interfaces/memory.h"
 #include "common/util.h"
+#include "nes/interfaces/memory.h"
 
 // Mapper Interface
 

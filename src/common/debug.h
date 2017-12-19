@@ -8,10 +8,10 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "interfaces/memory.h"
+#include "nes/interfaces/memory.h"
 #include "util.h"
 
-// Extreemly nasty debug variable singleton
+// Extremely nasty debug variable singleton
 struct DEBUG_VARS {
 private:
   DEBUG_VARS() = default;
@@ -79,7 +79,7 @@ public:
   // <Memory/>
 };
 
-// Wrapper that transaparently intercepts all transactions that occur through a
+// Wrapper that transparently intercepts all transactions that occur through a
 // given Memory* and logs them.
 //
 // Kind of annoying since there is no GC to automatically clean these guys up,

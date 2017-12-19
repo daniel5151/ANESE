@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/interfaces/memory.h"
 #include "common/util.h"
+#include "nes/interfaces/memory.h"
 
 // Thin class that gives PPU access to CPU WRAM for Direct Memory Access (DMA)
 class DMA final {

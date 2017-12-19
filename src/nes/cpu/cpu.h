@@ -1,9 +1,9 @@
 #pragma once
 
-#include "common/util.h"
-#include "common/interfaces/memory.h"
 #include "common/bitfield.h"
+#include "common/util.h"
 #include "instructions.h"
+#include "nes/interfaces/memory.h"
 
 #include "nes/wiring/interrupt_lines.h"
 

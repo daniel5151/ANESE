@@ -1,8 +1,8 @@
 #pragma once
 
-#include "common/util.h"
-#include "common/interfaces/memory.h"
 #include "common/bitfield.h"
+#include "common/util.h"
+#include "nes/interfaces/memory.h"
 
 #include "color.h"
 #include "dma.h"

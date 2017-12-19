@@ -41,6 +41,9 @@ private:
 
     typedef typename MinimumTypeHelper<Index + Bits>::type T;
 public:
+    BitField() = default;
+    BitField(const BitField& other_bf) = default;
+
     BitField &operator=(const BitField& other_bf) {
         *this = T(other_bf);
         return *this;
@@ -72,6 +75,9 @@ private:
 
     typedef typename MinimumTypeHelper<Index + Bits>::type T;
 public:
+    BitField() = default;
+    BitField(const BitField& other_bf) = default;
+
     BitField &operator=(const BitField& other_bf) {
         *this = bool(other_bf);
         return *this;

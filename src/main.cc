@@ -28,11 +28,11 @@ int main(int argc, char* argv[]) {
   } catch (args::Help) {
     std::cout << parser;
     return 0;
-  } catch (args::ParseError e) {
+  } catch (args::ParseError& e) {
     std::cerr << e.what() << std::endl;
     std::cerr << parser;
     return 1;
-  } catch (args::ValidationError e) {
+  } catch (args::ValidationError& e) {
     std::cerr << e.what() << std::endl;
     std::cerr << parser;
     return 1;
@@ -344,13 +344,13 @@ int main(int argc, char* argv[]) {
 
           if (event.key.keysym.sym == SDLK_EQUALS) {
             speedup++;
-            fprintf(stderr, "Speed: %dx\n", speedup);
+            fprintf(stderr, "Speed: %ux\n", speedup);
           }
 
           if (event.key.keysym.sym == SDLK_MINUS) {
             speedup--;
             if (speedup == 0) speedup = 1;
-            fprintf(stderr, "Speed: %dx\n", speedup);
+            fprintf(stderr, "Speed: %ux\n", speedup);
           }
 
         }

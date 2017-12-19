@@ -57,7 +57,9 @@ void PPU::power_cycle() {
 
   this->reg.ppudata = 0x00; // ?
 
-  this->bgr = {0, 0, 0, 0, { { 0 }, { 0 }, { 0 }}};
+  // Yeah, this is ugly, but ah well
+  this->bgr = { 0, 0, 0, 0, { {0}, {0}, {0} } };
+  this->spr = { { {{0}}, {0}, {0} }, 0};
 }
 
 void PPU::reset() {

@@ -16,6 +16,8 @@ APU::APU(Memory& mem, InterruptLines& interrupt)
 void APU::power_cycle() {
   this->cycles = 0;
 
+  this->seq_step = 0;
+
   // clear internal registers (through mem interface, for convenience)
   for (u16 addr = 0x4000; addr <= 0x4013; addr++)
     (*this)[addr] = 0x00;
@@ -26,6 +28,8 @@ void APU::power_cycle() {
 // https://wiki.nesdev.com/w/index.php/CPU_power_up_state
 void APU::reset() {
   this->cycles = 0;
+
+  this->seq_step = 0;
 
   // silence APU
   (*this)[0x4015] = 0x00;
@@ -49,6 +53,8 @@ void APU::write(u16 addr, u8 val) {
   if (addr == 0x4017) {
     if (this->reg.frame_counter.disable_frame_irq != !!(val & 0x40))
       fprintf(stderr, "[APU] IRQ: %s\n", (val & 0x40) ? "OFF" : "ON");
+    if (this->reg.frame_counter.disable_frame_irq != !!(val & 0x80))
+      fprintf(stderr, "[APU] mode: %s\n", (val & 0x80) ? "5" : "4");
   }
 
   switch (addr) {
@@ -85,9 +91,39 @@ void APU::write(u16 addr, u8 val) {
   }
 }
 
+// mode 0:    mode 1:       function
+// ---------  -----------  -----------------------------
+//  - - - f    - - - - -    IRQ (if bit 6 is clear)
+//  - l - l    l - l - -    Length counter and sweep
+//  e e e e    e e e e -    Envelope and linear counter
+
 
 void APU::cycle() {
-
-
   this->cycles++;
+
+  // The APU is cycled at 240Hz.
+  // The CPU runs at 1789773 Hz
+  // Thus, only step frame counter CPUSPEED / 240 cycles
+  if (this->cycles % (1789773 / 240) == 0) {
+    if (this->reg.frame_counter.five_frame_seq) {
+      switch(this->seq_step % 5) {
+      case 0: /* do stuff */ break;
+      case 1: /* do stuff */ break;
+      case 2: /* do stuff */ break;
+      case 3: /* do stuff */ break;
+      case 4: /* do stuff */ break;
+      }
+    } else {
+      switch(this->seq_step % 4) {
+      case 0: /* do stuff */ break;
+      case 1: /* do stuff */ break;
+      case 2: /* do stuff */ break;
+      case 3:
+        // if (!this->reg.frame_counter.disable_frame_irq && /* something */)
+        //   this->interrupt.request(Interrupts::IRQ);
+        break;
+      }
+    }
+    this->seq_step++;
+  }
 }

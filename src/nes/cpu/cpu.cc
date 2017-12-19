@@ -394,7 +394,7 @@ uint CPU::step() {
               } break;
     default:
       fprintf(stderr,
-        "[CPU] [%d] Unimplemented Instruction! 0x%02X\n",
+        "[CPU] [%u] Unimplemented Instruction! 0x%02X\n",
         this->cycles,
         opcode.raw
       );
