@@ -142,7 +142,8 @@ const blargg_err_t blargg_success = 0;
 // BLARGG_NEW is used in place of 'new' to create objects. By default,
 // nothrow new is used.
 #ifndef BLARGG_NEW
-	#define BLARGG_NEW new (STD::nothrow)
+	#include <new>
+	#define BLARGG_NEW new (std::nothrow)
 #endif
 
 // BLARGG_BIG_ENDIAN and BLARGG_LITTLE_ENDIAN

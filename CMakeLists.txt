@@ -80,8 +80,10 @@ include_directories(SYSTEM thirdparty/nes_snd_emu/nes_apu)
 file(GLOB_RECURSE NES_SND_EMU_FILES
   thirdparty/nes_snd_emu/*.cpp
   thirdparty/nes_snd_emu/*.h)
-set_source_files_properties(${NES_SND_EMU_FILES} PROPERTIES
-  COMPILE_FLAGS "-O3 -Wno-everything") # it was written in 2005!
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+  set_source_files_properties(${NES_SND_EMU_FILES} PROPERTIES
+    COMPILE_FLAGS "-O3 -Wno-everything") # it was written in 2005!
+endif()
 add_library(nes_snd_emu STATIC ${NES_SND_EMU_FILES})
 target_include_directories(nes_snd_emu PUBLIC thirdparty/nes_snd_emu)
 
