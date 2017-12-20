@@ -38,7 +38,12 @@ endif()
 
 # anese source
 include_directories(src)
-file(GLOB_RECURSE SRC_FILES src/*.cc src/*.h)
+file(GLOB_RECURSE SRC_FILES
+  src/*.cc
+  src/*.cpp
+  src/*.h
+  src/*.hpp
+)
 
 # some platform Dependant icon stuff
 if (WIN32)
@@ -57,21 +62,34 @@ set(SDL2_MORE_INCLUDE_DIR "C:/sdl2")
 # ---- SDL2 ---- #
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIR})
-target_link_libraries(anese ${SDL2_LIBRARY})
 
 # ---- miniz ---- #
 add_subdirectory(thirdparty/miniz)
 include_directories(thirdparty/miniz)
-target_link_libraries(anese miniz)
 
 # ---- args ---- #
 add_subdirectory(thirdparty/args)
 include_directories(thirdparty/args)
-target_link_libraries(anese args)
 
 # ---- tinyfiledialogs ---- #
 include_directories(thirdparty/tinyfiledialogs)
 add_library(tinyfiledialogs STATIC thirdparty/tinyfiledialogs/tinyfiledialogs.c)
+
+# ---- nes_snd_emu ---- #
+include_directories(SYSTEM thirdparty/nes_snd_emu/nes_apu)
+file(GLOB_RECURSE NES_SND_EMU_FILES
+  thirdparty/nes_snd_emu/*.cpp
+  thirdparty/nes_snd_emu/*.h)
+set_source_files_properties(${NES_SND_EMU_FILES} PROPERTIES
+  COMPILE_FLAGS "-O3 -Wno-everything") # it was written in 2005!
+add_library(nes_snd_emu STATIC ${NES_SND_EMU_FILES})
+target_include_directories(nes_snd_emu PUBLIC thirdparty/nes_snd_emu)
+
+# Finally, link up!
+target_link_libraries(anese ${SDL2_LIBRARY})
+target_link_libraries(anese miniz)
+target_link_libraries(anese args)
 target_link_libraries(anese tinyfiledialogs)
+target_link_libraries(anese nes_snd_emu)
 
 install(TARGETS anese RUNTIME DESTINATION ${BIN_DIR})

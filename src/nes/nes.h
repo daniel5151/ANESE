@@ -59,6 +59,8 @@ private:
   =            Emulator Vars            =
   =====================================*/
 
+  uint speed;
+
   bool is_running;
 
 public:
@@ -68,6 +70,8 @@ public:
   // Until I am at a point where I can serialize the state of the NES, i'm
   // disallowing copying NES instances
   NES(const NES&) = delete;
+
+  /*-----------  Key Operation Functions  ------------*/
 
   bool loadCartridge(Cartridge* cart);
   void removeCartridge();
@@ -83,6 +87,12 @@ public:
                      // (calls cycle() internally)
 
   const u8* getFramebuff() const;
+  void getAudiobuff(short*& samples, uint& len);
 
   bool isRunning() const;
+
+  /*-----------  "Fun" Options  ------------*/
+  // i.e: functions that do things the original hardware doesn't
+
+  void set_speed(uint speed);
 };

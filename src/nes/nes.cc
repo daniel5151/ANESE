@@ -79,6 +79,8 @@ NES::NES() {
 
   /*----------  Emulator Vars  ----------*/
 
+  this->speed = 1;
+
   this->is_running = false;
 }
 
@@ -177,12 +179,27 @@ void NES::cycle() {
 void NES::step_frame() {
   if (this->is_running == false) return;
 
-  const uint curr_frame = this->ppu->getFrames();
-  while (this->is_running && this->ppu->getFrames() == curr_frame) {
-    this->cycle();
+  for (uint i = 0; i < this->speed; i++) {
+    const uint curr_frame = this->ppu->getFrames();
+    while (this->is_running && this->ppu->getFrames() == curr_frame) {
+      this->cycle();
+    }
   }
 }
 
-const u8* NES::getFramebuff() const { return this->ppu->getFramebuff(); }
+const u8* NES::getFramebuff() const {
+  return this->ppu->getFramebuff();
+}
+
+void NES::getAudiobuff(short*& samples, uint& len) {
+  this->apu->getAudiobuff(samples, len);
+}
 
 bool NES::isRunning() const { return this->is_running; }
+
+void NES::set_speed(uint speed) {
+  if (speed == 0) return;
+  this->speed = speed;
+  // Also tell Blaarg's APU of this development
+  this->apu->set_speed(speed);
+}

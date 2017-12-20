@@ -1,3 +1,6 @@
+// WARNING: This file is currently super messy!
+// I'll clean it up (eventually)
+
 #include "common/util.h"
 #include "nes/cartridge/cartridge.h"
 #include "nes/joy/controllers/standard.h"
@@ -13,6 +16,15 @@
 #include <SDL.h>
 #include <tinyfiledialogs.h>
 #include <miniz_zip.h>
+
+#include "ui/sdl/Sound_Queue.h"
+
+#include <algorithm>
+static inline std::string get_file_ext(std::string filename) {
+  std::string ext = filename.substr(filename.find_last_of("."));
+  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+  return ext;
+}
 
 int main(int argc, char* argv[]) {
   // --------------------------- Argument Parsing --------------------------- //
@@ -69,7 +81,7 @@ int main(int argc, char* argv[]) {
   u8* data = nullptr;
   uint data_len = 0;
 
-  std::string rom_ext = rom_path.substr(rom_path.find_last_of("."));
+  std::string rom_ext = get_file_ext(rom_path);
 
   // Read data in .nes file directly
   if (rom_ext == ".nes") {
@@ -115,10 +127,10 @@ int main(int argc, char* argv[]) {
       mz_zip_reader_file_stat(&zip_archive, i, &file_stat);
 
       std::string file_name = std::string(file_stat.m_filename);
-      std::string file_ext = file_name.substr(file_name.find_last_of("."));
+      std::string file_ext = get_file_ext(file_name);
 
       if (file_ext == ".nes") {
-        printf("Found .nes file in archive: '%s'\n", file_stat.m_filename);
+        printf("[UnZip] Found .nes file in archive: '%s'\n", file_stat.m_filename);
 
         size_t uncomp_size;
         void* p = mz_zip_reader_extract_file_to_heap(
@@ -145,6 +157,9 @@ int main(int argc, char* argv[]) {
         mz_zip_reader_end(&zip_archive);
       }
     }
+  } else {
+    fprintf(stderr, "Invalid file format.\n");
+    return 1;
   }
 
   // -------------------------- NES Initialization -------------------------- //
@@ -208,7 +223,7 @@ int main(int argc, char* argv[]) {
   int window_h = RES_Y * 2;
   char window_title [64] = "anese";
 
-  SDL_Init(SDL_INIT_EVERYTHING);
+  SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
   window = SDL_CreateWindow(
     window_title,
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -249,6 +264,9 @@ int main(int argc, char* argv[]) {
       }
     }
   }
+
+  Sound_Queue sound_queue;
+  sound_queue.init(44100);
 
   uint speedup = 1;
 
@@ -319,10 +337,10 @@ int main(int argc, char* argv[]) {
             if (speedup != 2)
               fprintf(stderr, "Fast Forward: ON\n");
 
-            speedup = 2;
+            nes.set_speed(speedup = 2);
           } else {
             fprintf(stderr, "Fast Forward: OFF\n");
-            speedup = 1;
+            nes.set_speed(speedup = 1);
           }
         }
 
@@ -343,12 +361,12 @@ int main(int argc, char* argv[]) {
           }
 
           if (event.key.keysym.sym == SDLK_EQUALS) {
-            speedup++;
+            nes.set_speed(++speedup);
             fprintf(stderr, "Speed: %ux\n", speedup);
           }
 
           if (event.key.keysym.sym == SDLK_MINUS) {
-            speedup--;
+            nes.set_speed(--speedup);
             if (speedup == 0) speedup = 1;
             fprintf(stderr, "Speed: %ux\n", speedup);
           }
@@ -359,12 +377,17 @@ int main(int argc, char* argv[]) {
     }
 
     // run the NES
-    for (uint i = 0; i < speedup; i++)
-      nes.step_frame();
+    nes.step_frame();
 
     if (nes.isRunning() == false) {
       // quit = true;
     }
+
+    // output audio!
+    short* samples = nullptr;
+    uint count = 0;
+    nes.getAudiobuff(samples, count);
+    if (count) sound_queue.write(samples, count);
 
     // output!
     SDL_GetWindowSize(window, &window_w, &window_h);

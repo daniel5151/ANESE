@@ -5,12 +5,18 @@
 **ANESE** (**A**nother **NES** **E**mulator) is a Nintendo Entertainment System
 Emulator being written for fun and learning.
 
-I am aiming for accuracy in the long run, but the primary goal is simply getting
-it to play some of the more popular titles :smile:
+Strong Accuracy is a long-term goal, but the primary goal is simply getting
+ANESE to play some of the more popular titles :smile:
 
 I am aiming for clean and _interesting_ C++11 code, with a emphasis on keeping
 the source readable, maintainable, and comprehensible. Performance is important,
 but not a primary focus.
+
+**NOTE:** The APU is _not my code_. I wanted to get ANESE up and running before
+new-years 2018, so i've decided to use Blargg's venerable `nes_snd_emu` library
+to handle sound (for now). Once I polish up some of the other aspects of the
+emulator, I will revisit my own APU implementation (which is currently just a
+stub)
 
 It is being built with _cross-platform_ in mind, with builds being tested on
 MacOS, Linux (Ubuntu), and Windows regularly, with strict compiler flags, and
@@ -20,15 +26,19 @@ regular `cppcheck` linting.
 Lastly, I am trying to avoid looking at the source codes of other NES emulators,
 since IMO, half the fun of writing a emulator is figuring things out yourself :D
 
+(That said, big shoutout to [LaiNES](https://github.com/AndreaOrru/LaiNES) and
+[fogleman/nes](https://github.com/fogleman/nes), two solid projects who's code I
+referenced when implementing some particularly tricky parts of the PPU)
+
 ## Building
 
 ANESE uses **CMake**, so make sure it is installed.
 
-ANESE core doesn't have any hard dependencies (usually not even to C++stdlib!),
-but there are some UI libs. Most dependencies should _just work_, but some
-require additional installation:
+ANESE's core doesn't have any hard dependencies, but there are a couple used by
+the UI. Most of these dependencies are either bundled with ANESE
+(see: /thirdparty), although some do require additional installation:
 
-- **SDL2** (rendering layer)
+- **SDL2** (video/audio/controls)
   - _Linux_: `apt-get install libsdl2-dev` (on Ubuntu)
   - _MacOS_: `brew install SDL2`
   - _Windows_:
@@ -55,9 +65,12 @@ to be clean and neat, without worrying about performance.
 
 Just open `anese`, and a file select dialog should prompt you for a rom file.
 
+Alternatively, it can be called from the shell using the standard
+`anese [rom.nes]` syntax.
+
 For a full list of switches, run `anese -h`
 
-Oh, and when running on Windows, make sure the executable can find SDL2.dll.
+**Windows Users:** make sure the executable can find SDL2.dll.
 
 ## Controls
 
@@ -113,7 +126,7 @@ Fast-Forward       | Space
       - [x] Sprite Rendering - _currently not hardware accurate_
       - [x] Proper Background / Foreground blending
     - [x] Sprite Zero Hit
-  - [ ] APU
+  - [ ] APU - ***Uses `nes_snd_emu` by Blargg***
     - [x] Implement Registers + Memory Map them
     - [ ] Frame Timer IRQ
     - [ ] Set Up Basic Sound Ouput Context (SDL)
@@ -161,9 +174,9 @@ Fast-Forward       | Space
       - [ ] Make value in PPU <-> CPU bus decay
       - [ ] Pass More Tests yo
   - Cleanup Code
-    - [ ] Modularize UI code (i.e: get it out of main.cc)
+    - [ ] OH GOD DON'T LOOK AT `main.cc` I'M SORRY IN ADVANCE
+      - [ ] Modularize UI code (i.e: get it out of main.cc)
     - [ ] Unify naming conventions (either camelCase or snake_case)
-    - [ ] Add `const` throughout the codebase (?)
     - Better error handling and logging
       - [ ] Remove fatal asserts (?)
       - [ ] Switch to a better logging system (\*cough\* not fprintf \*cough\*)
