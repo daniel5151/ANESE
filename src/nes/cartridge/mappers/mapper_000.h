@@ -8,18 +8,17 @@
 // http://wiki.nesdev.com/w/index.php/NROM
 class Mapper_000 final : public Mapper {
 private:
-  // const INES& rom_file; // inherited from Mapper
+  // const ROM_File& rom_file; // inherited from Mapper
 
-  // PGR ROM
-  const ROM* lo_rom; // 0x8000 ... 0xBFFF
-  const ROM* hi_rom; // 0xC000 ... 0xFFFF
+  // CPU Memory Space
+  ROM* lo_rom;     // 0x8000 ... 0xBFFF
+  ROM* hi_rom;     // 0xC000 ... 0xFFFF
 
-  // CHR ROM / RAM
-  const ROM* chr_rom;
-        RAM* chr_ram;
+  // PPU Memory Space
+  Memory* chr_mem; // 0x0000 ... 0x1FFF
 
 public:
-  Mapper_000(const INES& rom_file);
+  Mapper_000(const ROM_File& rom_file);
   ~Mapper_000();
 
   // <Memory>
@@ -27,4 +26,8 @@ public:
   u8 peek(u16 addr) const override;
   void write(u16 addr, u8 val) override;
   // <Memory/>
+
+  Mirroring::Type mirroring() const override;
+
+  void cycle() override {}; // not an active mapper
 };

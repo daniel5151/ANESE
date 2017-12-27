@@ -1,19 +1,13 @@
 #pragma once
 
 #include "common/util.h"
-#include "formats/ines.h"
+#include "file_formats/rom_file.h"
 #include "mappers/mapper.h"
 #include "nes/interfaces/memory.h"
 
-// Contains Mapper and iNES cartridge
+// Converts raw ROM data into a proper, ready to use Cartridge
 class Cartridge final : public Memory {
 public:
-  enum class Mirroring {
-    Vertical,
-    Horizontal,
-    FourScreen
-  };
-
   enum class Error {
     NO_ERROR,
     BAD_MAPPER,
@@ -21,10 +15,8 @@ public:
   };
 
 private:
-  const INES*   const rom_data; // ROM file data does not change
-        Mapper* const mapper;
-
-  Mirroring mirroring_type;
+  const ROM_File rom_file; // Structured container for raw ROM data
+  Mapper* mapper;          // iNES mapper hardware, varies game-per-game
 
 public:
   ~Cartridge();
@@ -39,7 +31,9 @@ public:
   Error getError() const;
   uint  getMapper() const;
 
-  Mirroring mirroring() const; // get nametable mirroring type
+  Mirroring::Type mirroring() const;
+
+  void cycle();
 
   // Critical importance
   void blowOnContacts() const;

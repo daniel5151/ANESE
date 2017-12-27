@@ -65,8 +65,8 @@ to be clean and neat, without worrying about performance.
 
 Just open `anese`, and a file select dialog should prompt you for a rom file.
 
-Alternatively, it can be called from the shell using the standard
-`anese [rom.nes]` syntax.
+Alternatively, it can be called from the shell using standard `anese [rom.nes]`
+syntax.
 
 For a full list of switches, run `anese -h`
 
@@ -76,19 +76,18 @@ For a full list of switches, run `anese -h`
 
 Currently hardcoded to the following:
 
-Button | Key
--------|-----
-A      | Z
-B      | X
-Start  | Enter
-Select | Right Shift
-Up     | Up arrow
-Down   | Down arrow
-Left   | Left arrow
-Right  | Right arrow
+Button | Key         | Controller
+-------|-------------|------------
+A      | Z           | X
+B      | X           | A
+Start  | Enter       | Start
+Select | Right Shift | Select
+Up     | Up arrow    | D-Pad
+Down   | Down arrow  | D-Pad
+Left   | Left arrow  | D-Pad
+Right  | Right arrow | D-Pad
 
-There is also basic controller support through SDL.
-Note: i've only tested with an xbox controller, so your milage may vary.
+Any xbox-compatible controller should work.
 
 There are also a couple emulator actions:
 
@@ -126,6 +125,7 @@ Fast-Forward       | Space
       - [x] Sprite Rendering - _currently not hardware accurate_
       - [x] Proper Background / Foreground blending
     - [x] Sprite Zero Hit
+    - [ ] Misc PPU flags (emphasize RGB, Greyscale, etc...)
   - [ ] APU - ***Uses `nes_snd_emu` by Blargg***
     - [x] Implement Registers + Memory Map them
     - [ ] Frame Timer IRQ
@@ -158,7 +158,7 @@ Fast-Forward       | Space
   - Accuracy & Compatibility improvements
     - More Mappers
       - [x] 000
-      - [ ] 001
+      - [x] 001
       - [ ] 002
       - [ ] 003
       - [ ] 004
@@ -186,6 +186,7 @@ Fast-Forward       | Space
   - Features!
     - [x] Zipped ROM support
     - [ ] Rewind
+    - [ ] Game Genie
   - [ ] Debugger!
     - [ ] CPU
       - [ ] Serialize state

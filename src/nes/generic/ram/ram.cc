@@ -27,7 +27,8 @@ RAM::~RAM() {
 u8 RAM::read(u16 addr) { return this->peek(addr); }
 u8 RAM::peek(u16 addr) const {
   if (addr > this->size) {
-    fprintf(stderr, "[RAM][%s] invalid read 0x%04X\n",
+    fprintf(stderr, "[RAM][0x%04X][%s] invalid read/peek 0x%04X\n",
+      this->size,
       this->label,
       addr
     );
@@ -38,7 +39,8 @@ u8 RAM::peek(u16 addr) const {
 
 void RAM::write(u16 addr, u8 val) {
   if (addr > this->size) {
-    fprintf(stderr, "[RAM][%s] invalid write 0x%04X <- 0x%02X\n",
+    fprintf(stderr, "[RAM][0x%04X][%s] invalid write 0x%04X <- 0x%02X\n",
+      this->size,
       this->label,
       addr,
       val

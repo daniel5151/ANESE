@@ -2,6 +2,7 @@
 
 #include "common/util.h"
 #include "nes/cartridge/cartridge.h"
+#include "nes/cartridge/mappers/mapper.h"
 #include "nes/interfaces/memory.h"
 
 // PPU Memory Map (MMU)
@@ -17,11 +18,14 @@ private:
   Cartridge* cart;  // Plugged in cartridge
   Memory* vram;     // VRAM can be ciram or cart (depending on mirroring)
 
-  // Nametable offsets
+  // Nametable offsets + Mirror mode
+  Mirroring::Type mirroring;
   u16 nt_0;
   u16 nt_1;
   u16 nt_2;
   u16 nt_3;
+
+  void set_mirroring();
 
 public:
   ~PPU_MMU() = default; // no owned resources

@@ -10,8 +10,10 @@ private:
   u8* rom;
   u32 size;
 
+  const char* label;
+
 public:
-  ROM(u32 ram_size, const u8* content);
+  ROM(u32 ram_size, const u8* content, const char* label = "?");
   ~ROM();
 
   // <Memory>

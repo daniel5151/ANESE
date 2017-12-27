@@ -3,43 +3,31 @@
 #include <cstdio>
 
 Cartridge::Cartridge(const u8* data, u32 data_len)
-: rom_data(new INES(data, data_len)),
-  mapper(Mapper::Factory(*this->rom_data))
-{
-  if (this->rom_data->flags.has_4screen) {
-    fprintf(stderr, "[Mirroring] FourScreen\n");
-    this->mirroring_type = Cartridge::Mirroring::FourScreen;
-  }
-  else if (this->rom_data->flags.mirror_type == 0) {
-    fprintf(stderr, "[Mirroring] Vertical\n");
-    this->mirroring_type = Cartridge::Mirroring::Vertical;
-  }
-  else /* (this->rom_data->flags.mirror_type == 1) */ {
-    fprintf(stderr, "[Mirroring] Horizontal\n");
-    this->mirroring_type = Cartridge::Mirroring::Horizontal;
-  }
-}
+: rom_file(data, data_len)
+, mapper(Mapper::Factory(this->rom_file))
+{}
 
-Cartridge::~Cartridge() {
-  delete this->rom_data;
-  delete this->mapper;
-}
+Cartridge::~Cartridge() { delete this->mapper; }
 
 u8 Cartridge::read(u16 addr)       { return this->mapper->read(addr); }
 u8 Cartridge::peek(u16 addr) const { return this->mapper->peek(addr); }
 void Cartridge::write(u16 addr, u8 val) { this->mapper->write(addr, val); }
 
-uint Cartridge::getMapper() const { return this->rom_data->mapper; }
+uint Cartridge::getMapper() const { return this->rom_file.meta.mapper; }
 
 Cartridge::Error Cartridge::getError() const {
-  if (!this->rom_data->is_valid) { return Cartridge::Error::BAD_DATA;   }
+  if (!this->rom_file.is_valid) { return Cartridge::Error::BAD_DATA;   }
   if (!this->mapper)             { return Cartridge::Error::BAD_MAPPER; }
 
   return Cartridge::Error::NO_ERROR;
 }
 
-Cartridge::Mirroring Cartridge::mirroring() const {
-  return this->mirroring_type;
+Mirroring::Type Cartridge::mirroring() const {
+  return this->mapper->mirroring();
+}
+
+void Cartridge::cycle() {
+  this->mapper->cycle();
 }
 
 

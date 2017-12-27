@@ -3,6 +3,8 @@
 
 #include "Nes_Apu.h"
 
+#include <cstdio>
+
 /* Copyright (C) 2003-2005 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
 General Public License as published by the Free Software Foundation; either
@@ -133,6 +135,7 @@ void Nes_Apu::irq_changed()
 
 void Nes_Apu::run_until( cpu_time_t end_time )
 {
+	// fprintf(stderr, "ads\n");
 	require( end_time >= last_time );
 
 	if ( end_time == last_time )
