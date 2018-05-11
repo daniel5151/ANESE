@@ -80,7 +80,7 @@ private:
     union {
       u8 val;
       BitField<0, 4> bank;
-      BitField<5>    ram_enable;
+      BitField<4>    ram_enable;
     } prg;
 
     // Shift Register
@@ -90,8 +90,6 @@ private:
   // ---- Emulation Vars and Heplers ---- //
 
   uint write_just_happened;
-
-  Mirroring::Type mirror_mode;
 
   void update_banks();
 

@@ -113,7 +113,8 @@ void PPU_MMU::set_mirroring() {
 
   if (old_mirroring != this->mirroring) {
     fprintf(stderr,
-      "[PPU_MMU] Mirroring: %s\n",
+      "[PPU_MMU] Mirroring: %s -> %s\n",
+      Mirroring::toString(old_mirroring),
       Mirroring::toString(this->mirroring)
     );
   }
@@ -164,5 +165,12 @@ void PPU_MMU::set_mirroring() {
   }
 }
 
-void PPU_MMU::loadCartridge(Cartridge* cart) { this->cart = cart;    }
-void PPU_MMU::removeCartridge()              { this->cart = nullptr; }
+void PPU_MMU::loadCartridge(Cartridge* cart) { 
+  this->cart = cart;
+  this->set_mirroring();
+}
+
+void PPU_MMU::removeCartridge() { 
+  this->cart = nullptr;
+  this->set_mirroring();
+}

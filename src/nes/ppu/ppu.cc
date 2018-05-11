@@ -155,7 +155,6 @@ u8 PPU::read(u16 addr) {
                       // retval = directly from memory
                       retval = this->mem[this->reg.v];
                       // Fill read buffer with the mirrored nametable data
-                      // Why? Because the wiki said so!
                       this->reg.ppudata = retval;
                     }
 
@@ -370,8 +369,6 @@ void PPU::spr_fetch() {
       this->oam2[oam2_addr++] = this->oam[sprite * 4 + 3];
     } else {
       this->reg.ppustatus.O = true; // Sprite Overflow
-      // Also, early return too
-      return;
     }
   }
 }
@@ -539,6 +536,8 @@ PPU::Pixel PPU::get_bgr_pixel() {
 //       this should make all the dumb -2 go away
 // https://wiki.nesdev.com/w/index.php/PPU_rendering
 PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
+  const uint x = this->scan.cycle - 2;
+
   // Fetch data
   this->spr_fetch();
 
@@ -547,7 +546,7 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
     return Pixel();
 
   // Check for sprite mask disable
-  if (!this->reg.ppumask.M && (this->scan.cycle - 2) < 8) {
+  if (!this->reg.ppumask.M && x < 8) {
     return Pixel();
   }
 
@@ -572,25 +571,21 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
     // If the sprite is invalid (i.e: all 0xFF), early return, since there won't
     // be any more sprites after this
     if (
-      y_pos == 0xFF &&
-      y_pos == x_pos &&
-      y_pos == tile_index &&
-      y_pos == attributes.val
+      0xFF == y_pos &&
+      0xFF == x_pos &&
+      0xFF == tile_index &&
+      0xFF == attributes.val
     ) return Pixel();
 
     // Does this sprite have a pixel at the current x addr?
-    bool x_in_range = in_range(
-      int(x_pos),
-      int((this->scan.cycle - 2)) - 7,
-      int((this->scan.cycle - 2))
-    );
+    bool x_in_range = in_range(int(x_pos), int(x) - 7, int(x));
     if (x_in_range) {
       // Cool! There is a sprite here!
 
       // Now we just need to get the actual pixel data for this sprite...
       // First, which pixel of the sprite are we rendering?
       uint spr_row = this->scan.line - y_pos - 1;
-      uint spr_col = 7 - ((this->scan.cycle - 2) - x_pos);
+      uint spr_col = 7 - (x - x_pos);
 
       if (attributes.flip_vertical)   spr_row = sprite_height - 1 - spr_row;
       if (attributes.flip_horizontal) spr_col =             8 - 1 - spr_col;
@@ -605,12 +600,15 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
       if (pixel_type == 0)
         continue;
 
-      if (this->reg.ppumask.is_rendering && // When rendering
-          this->reg.ppustatus.S == 0 &&     // And there has not been a spr hit
-          this->spr.spr_zero_on_line &&     // And there is a sprite on the line
-          (this->scan.cycle - 2) != 0xFF && // And not on dot 255
-          sprite == 0 &&                    // And this is sprite 0
-          bgr_pixel.is_on                   // And the bgr pixel is on
+      // The rules for Sprite0 hit are fairly obtuse...
+      // You can only get a sprite 0 hit when:
+      if (
+        sprite == 0 &&                    // This is Sprite 0
+        this->reg.ppumask.is_rendering && // And rendering is enabled
+        this->reg.ppustatus.S == 0 &&     // And there has not been a spr hit
+        this->spr.spr_zero_on_line &&     // And there is a sprite on the line
+        (x_pos != 0xFF && x != 0xFF) &&   // And not when dot/spr is at 255
+        bgr_pixel.is_on                   // And the bgr pixel is on
       ) this->reg.ppustatus.S = 1; // Only then does sprite hit occur
 
       // Otherwise, fetch which pallete color to use, and return the pixel!
@@ -672,7 +670,7 @@ void PPU::cycle() {
       }
     }
 
-    // ...and ends after line 260
+    // ...and is cleared in the pre-render line
     if (this->scan.line == 261) {
       this->reg.ppustatus.V = false;
       this->reg.ppustatus.S = false;
@@ -687,24 +685,24 @@ void PPU::cycle() {
   this->cycles += 1;
 
   // Odd-Frame skip cycle
-  if (this->frames % 2 &&
-      this->scan.cycle == 340 &&
-      this->scan.line == 261 &&
-      (this->reg.ppumask.is_rendering)
+  if (
+    this->frames % 2 == 1 &&
+    this->scan.cycle == 0 &&
+    this->scan.line == 0 &&
+    this->reg.ppumask.is_rendering
   ) {
     this->cycles += 1;
-    this->scan.cycle +=1;
+    this->scan.cycle += 1;
   }
 
   // Check to see if the cycle has finished
   if (this->scan.cycle == 341) {
     // update scanline tracking vars
-    this->scan.line += 1;
     this->scan.cycle = 0;
+    this->scan.line += 1;
     // check for rollover
-    if (this->scan.line > 261) {
+    if (this->scan.line == 262) {
       this->scan.line = 0;
-
       this->frames += 1;
     }
   }

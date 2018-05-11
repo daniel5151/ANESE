@@ -17,7 +17,7 @@ uint Cartridge::getMapper() const { return this->rom_file.meta.mapper; }
 
 Cartridge::Error Cartridge::getError() const {
   if (!this->rom_file.is_valid) { return Cartridge::Error::BAD_DATA;   }
-  if (!this->mapper)             { return Cartridge::Error::BAD_MAPPER; }
+  if (!this->mapper)            { return Cartridge::Error::BAD_MAPPER; }
 
   return Cartridge::Error::NO_ERROR;
 }

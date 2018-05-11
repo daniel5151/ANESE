@@ -35,12 +35,12 @@ void JOY_Standard::write(u16 addr, u8 val) {
 }
 
 void JOY_Standard::set_button(const char* btn, bool state) {
-  fprintf(stderr,
-    "[JOY_Standard][%s] %s : %s\n",
-    this->label,
-    btn,
-    state ? "ON" : "OFF"
-  );
+  // fprintf(stderr,
+  //   "[JOY_Standard][%s] %s : %s\n",
+  //   this->label,
+  //   btn,
+  //   state ? "ON" : "OFF"
+  // );
 
   if (!strcmp("A",      btn)) { this->buttons.btn.A      = state; return; }
   if (!strcmp("B",      btn)) { this->buttons.btn.B      = state; return; }

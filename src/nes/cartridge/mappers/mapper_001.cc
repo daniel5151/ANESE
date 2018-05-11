@@ -29,7 +29,7 @@ Mapper_001::Mapper_001(const ROM_File& rom_file)
     this->banks.chr.len = raw_rom.chr.len / 0x1000;
     this->banks.chr.bank = new ROM* [this->banks.chr.len];
 
-    fprintf(stderr, "[Mapper_001] 4K  CHR ROM Banks: %d\n", this->banks.prg.len);
+    fprintf(stderr, "[Mapper_001] 4K  CHR ROM Banks: %d\n", this->banks.chr.len);
 
     const u8* chr_data_p = raw_rom.chr.data;
     for (uint i = 0; i < this->banks.chr.len; i++) {
@@ -38,13 +38,13 @@ Mapper_001::Mapper_001(const ROM_File& rom_file)
     }
   } else {
     // use CHR RAM
-    fprintf(stderr, "[Mapper_001] 8K  CHR RAM\n");
+    fprintf(stderr, "[Mapper_001] No CHR ROM detected. Using 8K CHR RAM\n");
     this->chr_lo = new RAM (0x1000, "Mapper_001 CHR Lo");
     this->chr_hi = new RAM (0x1000, "Mapper_001 CHR Hi");
   }
 
   // Clear all registers to initial state
-  this->reg.sr = 0;
+  this->reg.sr          = 0x10;
   this->reg.control.val = 0x00;
   this->reg.chr0.val    = 0x00;
   this->reg.chr1.val    = 0x00;
@@ -52,6 +52,18 @@ Mapper_001::Mapper_001(const ROM_File& rom_file)
 
   // this isn't documented anywhere, but seems to be needed
   this->reg.control.prg_bank_mode = 3;
+
+  // And check iNES header for initial mirroring mode
+  switch(this->rom_file.meta.mirror_mode) {
+  case Mirroring::SingleScreenLo: this->reg.control.mirroring = 0; break;
+  case Mirroring::SingleScreenHi: this->reg.control.mirroring = 1; break;
+  case Mirroring::Vertical:       this->reg.control.mirroring = 2; break;
+  case Mirroring::Horizontal:     this->reg.control.mirroring = 3; break;
+  default:
+    fprintf(stderr, "[Mapper_001] Invalid initial mirroring mode!\n");
+    assert(false);
+    break;
+  }
 
   this->update_banks();
 
@@ -116,14 +128,9 @@ void Mapper_001::write(u16 addr, u8 val) {
   this->write_just_happened = 2;
 
   // If writing to RAM, do it, and then return
-  if (in_range(addr, 0x0000, 0x0FFF)) {
-    this->chr_lo->write(addr - 0x0000, val);
-    return;
-  }
-  if (in_range(addr, 0x1000, 0x1FFF)) {
-    this->chr_hi->write(addr - 0x1000, val);
-    return;
-  }
+  if (in_range(addr, 0x0000, 0x0FFF)) return this->chr_lo->write(addr - 0x0000, val);
+  if (in_range(addr, 0x1000, 0x1FFF)) return this->chr_hi->write(addr - 0x1000, val);
+  if (in_range(addr, 0x4020, 0x5FFF)) return; // do nothing to expansion ROM
   if (in_range(addr, 0x6000, 0x7FFF)) {
     if (this->reg.prg.ram_enable) {
       this->prg_ram.write(addr - 0x6000, val);
@@ -133,38 +140,46 @@ void Mapper_001::write(u16 addr, u8 val) {
 
   // Otherwise, handle writing to registers
 
-  // The shift register is "cleared" to 0x01 to make it easiy to track when the
-  // final write is happening (by checking bit 5 of the sr for a value of 1)
+  // "Unlike almost all other mappers, the MMC1 is configured through a serial 
+  //  port in order to reduce pin count." - Wiki
+  // Yep, that's right! There is not direct writes to internal registers!
+  // Instead, one carfeuly loads data into an internal shift register by writing
+  // to the cartridge's address space 5 times, with the address of the final
+  // write designating which internal register to load the shift register into!
+  // WEEEEEE
+  // 
+  // Anywhere from 0x8000 ... 0xFFFF
+  // 7  bit  0
+  // ---- ----
+  // Rxxx xxxD
+  // |       |
+  // |       +- Data bit to be shifted into shift register, LSB first
+  // +--------- 1: Reset shift register and write Control with (Control OR $0C),
+  //               locking PRG ROM at $C000-$FFFF to the last bank.
 
   if (nth_bit(val, 7) == 1) {
-    this->reg.sr = 0x01;
+    // Reset SR
+    this->reg.sr = 0x10;
     this->reg.control.prg_bank_mode = 3;
-    this->update_banks();
-    return;
+  } else {
+    bool done = this->reg.sr & 1; // sentinel bit
+    // Just to make life interesting, the shift register is filled from LSB to
+    // MSB, which complicates loading a little bit.
+    this->reg.sr >>= 1;
+    this->reg.sr |= (val & 1) << 4;
+    if (done) {
+      // Write the shift register to the appropriate internal register based on 
+      // what range this final write occured in.
+      const u8 sr = this->reg.sr;
+      if (in_range(addr, 0x8000, 0x9FFF)) { this->reg.control.val = sr; }
+      if (in_range(addr, 0xA000, 0xBFFF)) { this->reg.chr0.val    = sr; }
+      if (in_range(addr, 0xC000, 0xDFFF)) { this->reg.chr1.val    = sr; }
+      if (in_range(addr, 0xE000, 0xFFFF)) { this->reg.prg.val     = sr; }
+      this->reg.sr = 0x10; // and reset the shift-register
+      
+      this->update_banks();
+    }
   }
-
-  // The shift register is actually filled left-to-right, i.e: from LSB to MSB,
-  // but that is hard to do in c, so instead, i'm going to fill it from the MSB
-  // to LSB, and just give it a quick reversearoo later
-  this->reg.sr = (this->reg.sr << 1) | (val & 1);
-
-  // If 5 writes have not been performed yet, return;
-  if (nth_bit(this->reg.sr, 5) == 0)
-    return;
-
-
-  // Otherwise, write the shift register to the appropriate internal register
-  // based on what range this final write occured in
-  // But first, do the 'ol reversaroo on the shift register...
-  const u8 true_val = reverse_u8(this->reg.sr & 0x1F) >> (8 - 5);
-  if (in_range(addr, 0x8000, 0x9FFF)) this->reg.control.val = true_val;
-  if (in_range(addr, 0xA000, 0xBFFF)) this->reg.chr0.val    = true_val;
-  if (in_range(addr, 0xC000, 0xDFFF)) this->reg.chr1.val    = true_val;
-  if (in_range(addr, 0xE000, 0xFFFF)) this->reg.prg.val     = true_val;
-
-  this->reg.sr = 0x01; // reset SR
-
-  this->update_banks();
 }
 
 void Mapper_001::update_banks() {
@@ -173,9 +188,9 @@ void Mapper_001::update_banks() {
   case 0: case 1: {
     // switch 32 KB at $8000, ignoring low bit of bank number
     const u8 bank = (this->reg.prg.bank & 0xFE) % this->banks.prg.len;
-    assert(bank + 1 < this->banks.prg.len);
+    assert((bank | 1) < this->banks.prg.len);
     this->prg_lo = this->banks.prg.bank[bank + 0];
-    this->prg_hi = this->banks.prg.bank[bank + 1];
+    this->prg_hi = this->banks.prg.bank[bank | 1];
   } break;
   case 2: {
     const u8 bank = this->reg.prg.bank % this->banks.prg.len;
@@ -198,30 +213,29 @@ void Mapper_001::update_banks() {
   }
 
   // Update CHR Banks
+  const uint n_chr_banks = this->banks.chr.len;
   if (this->rom_file.rom.chr.len != 0) {
     if (this->reg.control.chr_bank_mode == 0) {
-      // switch 8 KB at a time
-      const u8 bank = this->reg.chr0.bank & 0xFE;
-      assert(bank + 1 < this->banks.chr.len);
+      // switch 8 KB at a time (ignoring low bit)
+      const u8 bank = (this->reg.chr0.bank & 0xFE) % n_chr_banks;
       this->chr_lo = this->banks.chr.bank[bank + 0];
-      this->chr_hi = this->banks.chr.bank[bank + 1];
+      this->chr_hi = this->banks.chr.bank[bank | 1];
     } else {
       // switch two separate 4 KB banks
-      assert(this->reg.chr0.bank < this->banks.chr.len);
-      assert(this->reg.chr1.bank < this->banks.chr.len);
-      this->chr_lo = this->banks.chr.bank[this->reg.chr0.bank];
-      this->chr_hi = this->banks.chr.bank[this->reg.chr1.bank];
+      this->chr_lo = this->banks.chr.bank[this->reg.chr0.bank % n_chr_banks];
+      this->chr_hi = this->banks.chr.bank[this->reg.chr1.bank % n_chr_banks];
     }
   } else {
     // No need to do any switching with CHR RAM (?)
   }
+}
 
-  // Set mirroring mode
+Mirroring::Type Mapper_001::mirroring() const {
   switch(u8(this->reg.control.mirroring)) {
-  case 0: this->mirror_mode = Mirroring::SingleScreenLo; break;
-  case 1: this->mirror_mode = Mirroring::SingleScreenHi; break;
-  case 2: this->mirror_mode = Mirroring::Vertical;       break;
-  case 3: this->mirror_mode = Mirroring::Horizontal;     break;
+  case 0: return Mirroring::SingleScreenLo;
+  case 1: return Mirroring::SingleScreenHi;
+  case 2: return Mirroring::Vertical;
+  case 3: return Mirroring::Horizontal;
   default:
     // This should never happen. 2 bits == 4 possible states.
     fprintf(stderr, "[Mapper_001] Unhandled mirroring case %d. Dying...\n",
@@ -230,8 +244,6 @@ void Mapper_001::update_banks() {
     break;
   }
 }
-
-Mirroring::Type Mapper_001::mirroring() const { return this->mirror_mode; }
 
 void Mapper_001::cycle() {
   if (this->write_just_happened)

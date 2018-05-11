@@ -171,7 +171,7 @@ int main(int argc, char* argv[]) {
   Cartridge::Error error = rom_cart.getError();
   switch (error) {
   case Cartridge::Error::NO_ERROR:
-    std::cerr << "ROM successfully loaded successfully!\n";
+    std::cerr << "ROM loaded successfully!\n";
     break;
   case Cartridge::Error::BAD_MAPPER:
     std::cerr << "Mapper " << rom_cart.getMapper() << " isn't implemented!\n";

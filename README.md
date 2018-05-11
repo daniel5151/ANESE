@@ -5,28 +5,28 @@
 **ANESE** (**A**nother **NES** **E**mulator) is a Nintendo Entertainment System
 Emulator being written for fun and learning.
 
-Strong Accuracy is a long-term goal, but the primary goal is simply getting
-ANESE to play some of the more popular titles :smile:
+Accuracy is a long-term goal, but the primary goal is simply getting ANESE to 
+play some of the more popular titles :smile:
 
-I am aiming for clean and _interesting_ C++11 code, with a emphasis on keeping
-the source readable, maintainable, and comprehensible. Performance is important,
-but not a primary focus.
+I'm aiming for clean and _interesting_ C++11 code, with a emphasis on keeping
+the source readable and maintainable. Performance is important, but it's not a 
+primary focus.
 
-**NOTE:** The APU is _not my code_. I wanted to get ANESE up and running before
-new-years 2018, so i've decided to use Blargg's venerable `nes_snd_emu` library
-to handle sound (for now). Once I polish up some of the other aspects of the
-emulator, I will revisit my own APU implementation (which is currently just a
-stub)
+**NOTE:** The APU is _not my code_. I wanted to get ANESE partially up and 
+running before new-years 2018, so I've used Blargg's venerable `nes_snd_emu` 
+library to handle sound (for now). Once I polish up some of the other aspects 
+of the emulator, I will revisit my own APU implementation (which is currently
+stubbed)
 
-It is being built with _cross-platform_ in mind, with builds being tested on
-MacOS, Linux (Ubuntu), and Windows regularly, with strict compiler flags, and
-regular `cppcheck` linting.
-
+ANESE is built with _cross-platform_ in mind, and builds are regularly tested on
+macOS, Linux (Ubuntu), and Windows regularly. The C++ doesn't rely on 
+vendor-specific extentions, and is compiled with strict compiler flags. The code
+is linted regularly.
 
 Lastly, I am trying to avoid looking at the source codes of other NES emulators,
 since IMO, half the fun of writing a emulator is figuring things out yourself :D
 
-(That said, big shoutout to [LaiNES](https://github.com/AndreaOrru/LaiNES) and
+(That said, big shout-out to [LaiNES](https://github.com/AndreaOrru/LaiNES) and
 [fogleman/nes](https://github.com/fogleman/nes), two solid projects who's code I
 referenced when implementing some particularly tricky parts of the PPU)
 
@@ -57,24 +57,24 @@ make
 
 Building on Windows has been tested with VS 2017 using MSVC.
 
-**NOTE:** make sure to build ANESE in _release_ configuration, since without
-the compiler optimizations, it's bloody slow. This is because I wrote the code
-to be clean and neat, without worrying about performance.
+**NOTE: make sure to build ANESE in _release_ configuration!**
+Without some (aggressive) compiler optimizations, ANESE is bloody slow.
+The code looks good (imo), but only at the expense of performance.
 
 ## Running
 
-Just open `anese`, and a file select dialog should prompt you for a rom file.
+ANESE can run from the shell using `anese [rom.nes]` syntax.
 
-Alternatively, it can be called from the shell using standard `anese [rom.nes]`
-syntax.
+If no ROM is provided, a simple dialog window pops-up prompting the user to
+select a valid NES rom.
 
 For a full list of switches, run `anese -h`
 
-**Windows Users:** make sure the executable can find SDL2.dll.
+**Windows Users:** make sure the executable can find `SDL2.dll`!
 
 ## Controls
 
-Currently hardcoded to the following:
+Currently hard-coded to the following:
 
 Button | Key         | Controller
 -------|-------------|------------
@@ -129,7 +129,7 @@ Fast-Forward       | Space
   - [ ] APU - ***Uses `nes_snd_emu` by Blargg***
     - [x] Implement Registers + Memory Map them
     - [ ] Frame Timer IRQ
-    - [ ] Set Up Basic Sound Ouput Context (SDL)
+    - [ ] Set Up Basic Sound Output Context (SDL)
     - [ ] Channels
       - [ ] PCM 1
       - [ ] PCM 2
@@ -158,7 +158,7 @@ Fast-Forward       | Space
   - Accuracy & Compatibility improvements
     - More Mappers
       - [x] 000
-      - [x] 001
+      - [x] 001 - Not really... very buggy.
       - [ ] 002
       - [ ] 003
       - [ ] 004
