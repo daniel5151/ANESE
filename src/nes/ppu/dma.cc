@@ -21,6 +21,8 @@ void DMA::start(u8 page) {
 }
 
 u8 DMA::transfer() {
+  assert(this->in_dma == true);
+
   u16 cpu_addr = this->addr + this->step;
   u8 retval = this->cpu_mmu[cpu_addr];
 

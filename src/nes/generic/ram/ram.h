@@ -7,13 +7,13 @@
 // (max 64K of RAM)
 class RAM final : public Memory {
 private:
-  u8* ram;
-  u32 size;
+  u8*  ram;
+  uint size;
 
   const char* label;
 
 public:
-  RAM(u32 ram_size, const char* label = "?");
+  RAM(uint ram_size, const char* label = "?");
   ~RAM();
 
   // <Memory>

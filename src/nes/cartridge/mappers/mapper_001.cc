@@ -5,33 +5,34 @@
 
 Mapper_001::Mapper_001(const ROM_File& rom_file)
 : Mapper(rom_file)
-, prg_ram(0x1000)
+, prg_ram(0x2000)
 {
   // Parse the raw memory from the rom file into some ROM banks
 
-  // this small alias makes the code easier to read
-  const auto& raw_rom = this->rom_file.rom;
+  // Set up PRG Banks
 
   // Split PRG ROM into 16K banks
-  this->banks.prg.len = raw_rom.prg.len / 0x4000;
+  this->banks.prg.len = this->rom_file.rom.prg.len / 0x4000;
   this->banks.prg.bank = new ROM* [this->banks.prg.len];
 
   fprintf(stderr, "[Mapper_001] 16K PRG ROM Banks: %d\n", this->banks.prg.len);
 
-  const u8* prg_data_p = raw_rom.prg.data;
+  const u8* prg_data_p = this->rom_file.rom.prg.data;
   for (uint i = 0; i < this->banks.prg.len; i++) {
     this->banks.prg.bank[i] = new ROM (0x4000, prg_data_p, "Mapper_001 PRG");
     prg_data_p += 0x4000;
   }
 
+  // Split up CHR Banks
+
   if (this->rom_file.rom.chr.len != 0) {
     // Split CHR ROM into 4K banks
-    this->banks.chr.len = raw_rom.chr.len / 0x1000;
-    this->banks.chr.bank = new ROM* [this->banks.chr.len];
+    this->banks.chr.len = this->rom_file.rom.chr.len / 0x1000;
+    this->banks.chr.bank = new Memory* [this->banks.chr.len];
 
     fprintf(stderr, "[Mapper_001] 4K  CHR ROM Banks: %d\n", this->banks.chr.len);
 
-    const u8* chr_data_p = raw_rom.chr.data;
+    const u8* chr_data_p = this->rom_file.rom.chr.data;
     for (uint i = 0; i < this->banks.chr.len; i++) {
       this->banks.chr.bank[i] = new ROM (0x1000, chr_data_p, "Mapper_001 CHR");
       chr_data_p += 0x1000;
@@ -39,8 +40,11 @@ Mapper_001::Mapper_001(const ROM_File& rom_file)
   } else {
     // use CHR RAM
     fprintf(stderr, "[Mapper_001] No CHR ROM detected. Using 8K CHR RAM\n");
-    this->chr_lo = new RAM (0x1000, "Mapper_001 CHR Lo");
-    this->chr_hi = new RAM (0x1000, "Mapper_001 CHR Hi");
+
+    this->banks.chr.len = 2;
+    this->banks.chr.bank = new Memory* [2];
+    this->banks.chr.bank[0] = new RAM (0x1000, "Mapper_001 CHR Lo");
+    this->banks.chr.bank[1] = new RAM (0x1000, "Mapper_001 CHR Hi");
   }
 
   // Clear all registers to initial state
@@ -76,14 +80,9 @@ Mapper_001::~Mapper_001() {
     delete this->banks.prg.bank[i];
   delete[] this->banks.prg.bank;
 
-  if (this->rom_file.rom.chr.len != 0) {
-    for (uint i = 0; i < this->banks.chr.len; i++)
-      delete this->banks.chr.bank[i];
-    delete[] this->banks.chr.bank;
-  } else {
-    delete this->chr_lo;
-    delete this->chr_hi;
-  }
+  for (uint i = 0; i < this->banks.chr.len; i++)
+    delete this->banks.chr.bank[i];
+  delete[] this->banks.chr.bank;
 }
 
 u8 Mapper_001::read(u16 addr) {
@@ -93,7 +92,7 @@ u8 Mapper_001::read(u16 addr) {
 
   // Wired to the CPU MMU
   if (in_range(addr, 0x4020, 0x5FFF)) return 0x00; // Nothing in "Expansion ROM"
-  if (in_range(addr, 0x6000, 0x7FFF)) return this->reg.prg.ram_enable
+  if (in_range(addr, 0x6000, 0x7FFF)) return this->reg.prg.ram_enable == 0
                                            ? this->prg_ram.read(addr - 0x6000)
                                            : 0x00; // should be open bus...
   if (in_range(addr, 0x8000, 0xBFFF)) return this->prg_lo->read(addr - 0x8000);
@@ -110,7 +109,7 @@ u8 Mapper_001::peek(u16 addr) const {
 
   // Wired to the CPU MMU
   if (in_range(addr, 0x4020, 0x5FFF)) return 0x00; // Nothing in "Expansion ROM"
-  if (in_range(addr, 0x6000, 0x7FFF)) return this->reg.prg.ram_enable
+  if (in_range(addr, 0x6000, 0x7FFF)) return this->reg.prg.ram_enable == 0
                                            ? this->prg_ram.peek(addr - 0x6000)
                                            : 0x00; // should be open bus...
   if (in_range(addr, 0x8000, 0xBFFF)) return this->prg_lo->peek(addr - 0x8000);
@@ -132,7 +131,8 @@ void Mapper_001::write(u16 addr, u8 val) {
   if (in_range(addr, 0x1000, 0x1FFF)) return this->chr_hi->write(addr - 0x1000, val);
   if (in_range(addr, 0x4020, 0x5FFF)) return; // do nothing to expansion ROM
   if (in_range(addr, 0x6000, 0x7FFF)) {
-    if (this->reg.prg.ram_enable) {
+    // 0 means RAM is _enabled_. because fuck you that's why.
+    if (this->reg.prg.ram_enable == 0) {
       this->prg_ram.write(addr - 0x6000, val);
     }
     return;
@@ -140,14 +140,14 @@ void Mapper_001::write(u16 addr, u8 val) {
 
   // Otherwise, handle writing to registers
 
-  // "Unlike almost all other mappers, the MMC1 is configured through a serial 
+  // "Unlike almost all other mappers, the MMC1 is configured through a serial
   //  port in order to reduce pin count." - Wiki
   // Yep, that's right! There is not direct writes to internal registers!
   // Instead, one carfeuly loads data into an internal shift register by writing
   // to the cartridge's address space 5 times, with the address of the final
   // write designating which internal register to load the shift register into!
   // WEEEEEE
-  // 
+  //
   // Anywhere from 0x8000 ... 0xFFFF
   // 7  bit  0
   // ---- ----
@@ -168,7 +168,7 @@ void Mapper_001::write(u16 addr, u8 val) {
     this->reg.sr >>= 1;
     this->reg.sr |= (val & 1) << 4;
     if (done) {
-      // Write the shift register to the appropriate internal register based on 
+      // Write the shift register to the appropriate internal register based on
       // what range this final write occured in.
       const u8 sr = this->reg.sr;
       if (in_range(addr, 0x8000, 0x9FFF)) { this->reg.control.val = sr; }
@@ -176,7 +176,7 @@ void Mapper_001::write(u16 addr, u8 val) {
       if (in_range(addr, 0xC000, 0xDFFF)) { this->reg.chr1.val    = sr; }
       if (in_range(addr, 0xE000, 0xFFFF)) { this->reg.prg.val     = sr; }
       this->reg.sr = 0x10; // and reset the shift-register
-      
+
       this->update_banks();
     }
   }
@@ -187,21 +187,17 @@ void Mapper_001::update_banks() {
   switch(u8(this->reg.control.prg_bank_mode)) {
   case 0: case 1: {
     // switch 32 KB at $8000, ignoring low bit of bank number
-    const u8 bank = (this->reg.prg.bank & 0xFE) % this->banks.prg.len;
-    assert((bank | 1) < this->banks.prg.len);
-    this->prg_lo = this->banks.prg.bank[bank + 0];
-    this->prg_hi = this->banks.prg.bank[bank | 1];
+    this->prg_lo = this->banks.prg.bank[this->reg.prg.bank & 0xFE];
+    this->prg_hi = this->banks.prg.bank[this->reg.prg.bank | 0x01];
   } break;
   case 2: {
-    const u8 bank = this->reg.prg.bank % this->banks.prg.len;
     // fix first bank at $8000 and switch 16 KB bank at $C000;
     this->prg_lo = this->banks.prg.bank[0];
-    this->prg_hi = this->banks.prg.bank[bank];
+    this->prg_hi = this->banks.prg.bank[this->reg.prg.bank];
   } break;
   case 3: {
-    const u8 bank = this->reg.prg.bank % this->banks.prg.len;
     // fix last bank at $C000 and switch 16 KB bank at $8000
-    this->prg_lo = this->banks.prg.bank[bank];
+    this->prg_lo = this->banks.prg.bank[this->reg.prg.bank];
     this->prg_hi = this->banks.prg.bank[this->banks.prg.len - 1];
   } break;
   default:
@@ -213,20 +209,16 @@ void Mapper_001::update_banks() {
   }
 
   // Update CHR Banks
-  const uint n_chr_banks = this->banks.chr.len;
-  if (this->rom_file.rom.chr.len != 0) {
-    if (this->reg.control.chr_bank_mode == 0) {
-      // switch 8 KB at a time (ignoring low bit)
-      const u8 bank = (this->reg.chr0.bank & 0xFE) % n_chr_banks;
-      this->chr_lo = this->banks.chr.bank[bank + 0];
-      this->chr_hi = this->banks.chr.bank[bank | 1];
-    } else {
-      // switch two separate 4 KB banks
-      this->chr_lo = this->banks.chr.bank[this->reg.chr0.bank % n_chr_banks];
-      this->chr_hi = this->banks.chr.bank[this->reg.chr1.bank % n_chr_banks];
-    }
+  const uint bank0 = this->reg.chr0.bank % this->banks.chr.len;
+  const uint bank1 = this->reg.chr1.bank % this->banks.chr.len;
+  if (this->reg.control.chr_bank_mode == 0) {
+    // switch 8 KB at a time (ignoring low bit)
+    this->chr_lo = this->banks.chr.bank[bank0 & 0xFE];
+    this->chr_hi = this->banks.chr.bank[bank0 | 0x01];
   } else {
-    // No need to do any switching with CHR RAM (?)
+    // switch two separate 4 KB banks
+    this->chr_lo = this->banks.chr.bank[bank0];
+    this->chr_hi = this->banks.chr.bank[bank1];
   }
 }
 

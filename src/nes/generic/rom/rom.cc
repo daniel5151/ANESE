@@ -3,7 +3,7 @@
 #include <cassert>
 #include <cstdio>
 
-ROM::ROM(u32 rom_size, const u8* rom, const char* label) {
+ROM::ROM(uint rom_size, const u8* rom, const char* label /* = "?" */) {
   this->label = label;
 
   // Don't allocate more memory than addressable by a u16
@@ -15,7 +15,7 @@ ROM::ROM(u32 rom_size, const u8* rom, const char* label) {
   this->rom = new u8 [rom_size];
 
   // Init ROM
-  for (u32 addr = 0; addr < this->size; addr++)
+  for (uint addr = 0; addr < this->size; addr++)
     this->rom[addr] = rom[addr];
 }
 

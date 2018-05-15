@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstdio>
+#include <cstring>
 
 PPU::~PPU() {
   delete this->framebuff;
@@ -57,9 +58,9 @@ void PPU::power_cycle() {
 
   this->reg.ppudata = 0x00; // ?
 
-  // Yeah, this is ugly, but ah well
-  this->bgr = { 0, 0, 0, 0, { {0}, {0}, {0} } };
-  this->spr = { { {{0}}, {0}, {0} }, 0};
+  // This is probably the cleanest way to do this tbh
+  memset(&this->bgr, 0, sizeof this->bgr);
+  memset(&this->spr, 0, sizeof this->spr);
 }
 
 void PPU::reset() {

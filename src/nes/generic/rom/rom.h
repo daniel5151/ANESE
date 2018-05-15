@@ -7,13 +7,13 @@
 // (max 64K of ROM)
 class ROM final : public Memory {
 private:
-  u8* rom;
-  u32 size;
+  u8*  rom;
+  uint size;
 
   const char* label;
 
 public:
-  ROM(u32 ram_size, const u8* content, const char* label = "?");
+  ROM(uint rom_size, const u8* content, const char* label = "?");
   ~ROM();
 
   // <Memory>

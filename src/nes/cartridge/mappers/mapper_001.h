@@ -15,8 +15,13 @@ private:
   struct {
     struct {
       uint  len;
-      ROM** bank;
-    } prg, chr;
+      ROM** bank; // Only ever ROM
+    } prg;
+
+    struct {
+      uint     len;
+      Memory** bank; // Might be RAM
+    } chr;
   } banks;
 
   // CPU Memory Space
@@ -55,7 +60,7 @@ private:
     // -----
     // CCCCC
     // |||||
-    // +++++- Select 4 KB or 8 KB CHR bank at PPU $0000
+    // +++++- Select 4 KB or 8 KB CHR bank at PPU $0000 / 4 KB CHR bank at $1000
     //        (low bit ignored in 8 KB mode)
     //
     // MMC1 can do CHR banking in 4KB chunks.

@@ -3,7 +3,7 @@
 #include <cassert>
 #include <cstdio>
 
-RAM::RAM(u32 ram_size, const char* label /* = "?" */) {
+RAM::RAM(uint ram_size, const char* label /* = "?" */) {
   this->label = label;
 
   // Don't allocate more memory than addressable by a u16
@@ -15,7 +15,7 @@ RAM::RAM(u32 ram_size, const char* label /* = "?" */) {
   this->ram = new u8 [ram_size];
 
   // Init RAM
-  for (u32 addr = 0; addr < this->size; addr++)
+  for (uint addr = 0; addr < this->size; addr++)
     this->ram[addr] = 0x00;
 }
 
@@ -52,6 +52,6 @@ void RAM::write(u16 addr, u8 val) {
 
 void RAM::clear() {
   // Reset RAM to default values
-  for (u32 addr = 0; addr < this->size; addr++)
+  for (uint addr = 0; addr < this->size; addr++)
     this->ram[addr] = 0x00;
 }
