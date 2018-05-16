@@ -8,9 +8,10 @@
 
 #include "common/debug.h"
 
-#include <string>
-#include <iostream>
+#include <cstring>
 #include <fstream>
+#include <iostream>
+#include <string>
 
 #include <args.hxx>
 #include <SDL.h>
@@ -64,8 +65,8 @@ int main(int argc, char* argv[]) {
     );
 
     if (!file) {
-      printf("Canceled File Select. Closing...\n");
-      return -1;
+      printf("[File Select] Canceled File Select. Closing...\n");
+      return 1;
     } else {
       rom_path = std::string(file);
     }
@@ -88,7 +89,7 @@ int main(int argc, char* argv[]) {
     std::ifstream rom_file (rom_path, std::ios::binary);
 
     if (!rom_file.is_open()) {
-      std::cerr << "could not open '" << rom_path << "'\n";
+      fprintf(stderr, "[Open][.nes] Could not open '%s'\n", rom_path.c_str());
       return 1;
     }
 
@@ -98,7 +99,7 @@ int main(int argc, char* argv[]) {
     rom_file.seekg(0, rom_file.beg);
 
     if (rom_file_size == -1) {
-      std::cerr << "could not read '" << rom_path << "'\n";
+      fprintf(stderr, "[Open][.nes] Could not read '%s'\n", rom_path.c_str());
       return 1;
     }
 
@@ -110,14 +111,14 @@ int main(int argc, char* argv[]) {
   // If given a zip, try to decompress it
   else if (rom_ext == ".zip") {
     mz_zip_archive zip_archive;
-    memset(&zip_archive, 0, sizeof(zip_archive));
+    memset(&zip_archive, 0, sizeof zip_archive);
     mz_bool status = mz_zip_reader_init_file(
       &zip_archive,
       rom_path.c_str(),
       0
     );
     if (!status) {
-      std::cerr << "could not read zip file'" << rom_path << "'\n";
+      fprintf(stderr, "[Open][.zip] Could not read '%s'\n", rom_path.c_str());
       return 1;
     }
 
@@ -130,7 +131,7 @@ int main(int argc, char* argv[]) {
       std::string file_ext = get_file_ext(file_name);
 
       if (file_ext == ".nes") {
-        printf("[UnZip] Found .nes file in archive: '%s'\n", file_stat.m_filename);
+        printf("[Open][.zip][UnZip] Found .nes file in archive: '%s'\n", file_stat.m_filename);
 
         size_t uncomp_size;
         void* p = mz_zip_reader_extract_file_to_heap(
@@ -141,7 +142,7 @@ int main(int argc, char* argv[]) {
         );
 
         if (!p) {
-          std::cerr << "Could not decompress zip file'" << rom_path << "'\n";
+          printf("[Open][.zip][UnZip] Could not decompress '%s'\n", rom_path.c_str());
           return 1;
         }
 
@@ -158,7 +159,7 @@ int main(int argc, char* argv[]) {
       }
     }
   } else {
-    fprintf(stderr, "Invalid file format.\n");
+    fprintf(stderr, "[Open] Invalid file extension.\n");
     return 1;
   }
 
@@ -171,29 +172,30 @@ int main(int argc, char* argv[]) {
   Cartridge::Error error = rom_cart.getError();
   switch (error) {
   case Cartridge::Error::NO_ERROR:
-    std::cerr << "ROM loaded successfully!\n";
+    fprintf(stderr, "[Cart] Cartridge created successfully!\n");
     break;
   case Cartridge::Error::BAD_MAPPER:
-    std::cerr << "Mapper " << rom_cart.getMapper() << " isn't implemented!\n";
+    fprintf(stderr, "[Cart] Mapper %u has not been implemented yet!\n",
+      rom_cart.getMapper());
     return 1;
   case Cartridge::Error::BAD_DATA:
-    std::cerr << "ROM file format could not be parsed as iNES!\n";
+    fprintf(stderr, "[Cart] ROM file could not be parsed!\n");
     return 1;
   }
 
   // Create a NES
   NES nes;
 
-  // Create some controllers
+  // Create some controllers...
   JOY_Standard joy_1 ("P1");
   JOY_Standard joy_2 ("P2");
 
-  // And plug them in too!
+  // ...and plug them in.
   nes.attach_joy(0, &joy_1);
   nes.attach_joy(1, &joy_2);
 
-  // Slap in a cartridge
-  // (don't forget to blow on it)
+  // Slap that cartridge in!
+  // (don't forget to blow on it a few times though)
   rom_cart.blowOnContacts();
   rom_cart.blowOnContacts();
   nes.loadCartridge(&rom_cart);
@@ -260,7 +262,8 @@ int main(int argc, char* argv[]) {
         break;
       }
       else {
-        fprintf(stderr, "Could not open gamecontroller %i: %s\n", i, SDL_GetError());
+        fprintf(stderr, "[SDL] Could not open gamecontroller %i: %s\n",
+          i, SDL_GetError());
       }
     }
   }
@@ -268,7 +271,7 @@ int main(int argc, char* argv[]) {
   Sound_Queue sound_queue;
   sound_queue.init(44100);
 
-  uint speedup = 1;
+  uint speedup = 100;
 
   // Main Loop
   bool quit = false;
@@ -277,18 +280,14 @@ int main(int argc, char* argv[]) {
     total_frames++;
 
     while (SDL_PollEvent(&event) != 0) {
-      if (event.type == SDL_QUIT) {
+      if (event.type == SDL_QUIT)
         quit = true;
-        continue;
-      }
 
-      // for now
       if (event.type == SDL_WINDOWEVENT &&
-          event.window.event == SDL_WINDOWEVENT_CLOSE) {
+          event.window.event == SDL_WINDOWEVENT_CLOSE)
         quit = true;
-        continue;
-      }
 
+      // ------ Joypad controls ------ //
       if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
         bool new_state = (event.type == SDL_CONTROLLERBUTTONDOWN) ? true : false;
         switch (event.cbutton.button) {
@@ -304,8 +303,7 @@ int main(int argc, char* argv[]) {
       }
 
       if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
-        // ------ Joypad controls ------ //
-
+        // ------ Keyboard controls ------ //
         bool new_state = (event.type == SDL_KEYDOWN) ? true : false;
         switch (event.key.keysym.sym) {
         case SDLK_z:      joy_1.set_button("A",      new_state); break;
@@ -318,11 +316,12 @@ int main(int argc, char* argv[]) {
         case SDLK_RIGHT:  joy_1.set_button("Right",  new_state); break;
         }
 
-        bool did_hit_ctrl = false;
-        if (std::string(SDL_GetPlatform()) == "Mac OS X") {
-          did_hit_ctrl = event.key.keysym.mod & (KMOD_LGUI | KMOD_RGUI);
+        // Use CMD on macOS, and CTRL on windows / linux
+        bool did_hit_meta = false;
+        if (strcmp(SDL_GetPlatform(), "Mac OS X") == 0) {
+          did_hit_meta = event.key.keysym.mod & (KMOD_LGUI | KMOD_RGUI);
         } else {
-          did_hit_ctrl = event.key.keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
+          did_hit_meta = event.key.keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
         }
 
         // ------ Misc controls ------ //
@@ -332,47 +331,26 @@ int main(int argc, char* argv[]) {
           quit = true;
         }
 
+        // 2x speed
         if (event.key.keysym.sym == SDLK_SPACE) {
-          if (event.type == SDL_KEYDOWN) {
-            if (speedup != 2)
-              fprintf(stderr, "Fast Forward: ON\n");
-
-            nes.set_speed(speedup = 2);
-          } else {
-            fprintf(stderr, "Fast Forward: OFF\n");
-            nes.set_speed(speedup = 1);
-          }
+          speedup = (event.type == SDL_KEYDOWN) ? 200 : 100;
+          nes.set_speed(speedup);
         }
 
-        if (event.type == SDL_KEYDOWN && did_hit_ctrl) {
-          if (event.key.keysym.sym == SDLK_r) {
-            fprintf(stderr, "NES Reset!\n");
-            nes.reset();
-          }
-
-          if (event.key.keysym.sym == SDLK_p) {
-            fprintf(stderr, "NES Power Cycled!\n");
-            nes.power_cycle();
-          }
-
-          if (event.key.keysym.sym == SDLK_c) {
+        // Meta Modified keys
+        if (event.type == SDL_KEYDOWN && did_hit_meta) {
+          switch (event.key.keysym.sym) {
+          case SDLK_r:      nes.reset();                  break;
+          case SDLK_p:      nes.power_cycle();            break;
+          case SDLK_EQUALS: nes.set_speed(speedup += 25); break;
+          case SDLK_MINUS:  nes.set_speed(speedup -= 25); break;
+          case SDLK_c: {
             bool log = DEBUG_VARS::Get()->print_nestest ^= 1;
             fprintf(stderr, "NESTEST CPU logging: %s\n", log ? "ON" : "OFF");
+          } break;
+          default: break;
           }
-
-          if (event.key.keysym.sym == SDLK_EQUALS) {
-            nes.set_speed(++speedup);
-            fprintf(stderr, "Speed: %ux\n", speedup);
-          }
-
-          if (event.key.keysym.sym == SDLK_MINUS) {
-            nes.set_speed(--speedup);
-            if (speedup == 0) speedup = 1;
-            fprintf(stderr, "Speed: %ux\n", speedup);
-          }
-
         }
-        continue;
       }
     }
 
@@ -438,7 +416,7 @@ int main(int argc, char* argv[]) {
       avg_fps += past_fps[i];
     avg_fps /= 20;
 
-    sprintf(window_title, "anese - %d fups", int(avg_fps));
+    sprintf(window_title, "anese - %d fups - %d%% speed", int(avg_fps), speedup);
     SDL_SetWindowTitle(window, window_title);
   }
 
@@ -448,6 +426,8 @@ int main(int argc, char* argv[]) {
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
+
+  printf("\nANESE closed successfully\n");
 
   return 0;
 }

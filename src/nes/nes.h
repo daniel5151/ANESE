@@ -59,7 +59,8 @@ private:
   =            Emulator Vars            =
   =====================================*/
 
-  uint speed;
+  uint speed;         // Emulation speed, default 100% (100)
+  int  speed_counter; // Used to track how many frames to emulate per-step
 
   bool is_running;
 
@@ -91,8 +92,8 @@ public:
 
   bool isRunning() const;
 
-  /*-----------  "Fun" Options  ------------*/
-  // i.e: functions that do things the original hardware doesn't
+  /*-----------  "Fun" Functions  ------------*/
+  // i.e: toggles things the original hardware doesn't actually support / do
 
   void set_speed(uint speed);
 };

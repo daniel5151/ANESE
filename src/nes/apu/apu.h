@@ -45,5 +45,5 @@ public:
 
   void getAudiobuff(short*& samples, uint& len);
 
-  void set_speed(uint speed);
+  void set_speed(double speed);
 };

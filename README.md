@@ -34,9 +34,10 @@ referenced when implementing some particularly tricky parts of the PPU)
 
 ANESE uses **CMake**, so make sure it is installed.
 
-ANESE's core doesn't have any hard dependencies, but there are a couple used by
-the UI. Most of these dependencies are either bundled with ANESE
-(see: /thirdparty), although some do require additional installation:
+ANESE's emualtion core doesn't have any major dependencies (aside from clib),
+but there are a couple used for the UI.
+Most of these dependencies are bundled with ANESE (see: /thirdparty), although
+some require additional installation:
 
 - **SDL2** (video/audio/controls)
   - _Linux_: `apt-get install libsdl2-dev` (on Ubuntu)
@@ -46,20 +47,18 @@ the UI. Most of these dependencies are either bundled with ANESE
     - Modfiy the `SDL2_MORE_INCLUDE_DIR` variable in `CMakeLists.txt` to point
       to the SDL2 dev libs (or just plop them down into `C:\sdl2\`)
 
-
 ```bash
 # in ANESE root
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake ..
 make
 ```
 
 Building on Windows has been tested with VS 2017 using MSVC.
 
-**NOTE: make sure to build ANESE in _release_ configuration!**
-Without some (aggressive) compiler optimizations, ANESE is bloody slow.
-The code looks good (imo), but only at the expense of performance.
+If you're interested in looking under the hood of the PPU, you can pass the
+`-DDEBUG_PPU` flag to cmake and get an `anese` build with some neat debug info.
 
 ## Running
 

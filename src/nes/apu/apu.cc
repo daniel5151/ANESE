@@ -106,6 +106,6 @@ void APU::getAudiobuff(short*& samples, uint& len) {
   }
 }
 
-void APU::set_speed(uint speed) {
+void APU::set_speed(double speed) {
   this->blargg_buf.clock_rate(1789773 * speed);
 }

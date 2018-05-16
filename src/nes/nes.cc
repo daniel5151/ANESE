@@ -1,6 +1,6 @@
 #include "nes.h"
 
-#include "common/debug.h"
+#include <cstdio>
 
 // The constructor creates the individual NES components, and "wires them up"
 // to one antother
@@ -79,7 +79,8 @@ NES::NES() {
 
   /*----------  Emulator Vars  ----------*/
 
-  this->speed = 1;
+  this->speed = 100;
+  this->speed_counter = 0;
 
   this->is_running = false;
 }
@@ -145,6 +146,8 @@ void NES::power_cycle() {
 
   this->interrupts.clear();
   this->interrupts.request(Interrupts::RESET);
+
+  fprintf(stderr, "[NES] Power Cycled\n");
 }
 
 void NES::reset() {
@@ -159,6 +162,8 @@ void NES::reset() {
 
   this->interrupts.clear();
   this->interrupts.request(Interrupts::RESET);
+
+  fprintf(stderr, "[NES] Reset\n");
 }
 
 void NES::cycle() {
@@ -182,7 +187,15 @@ void NES::cycle() {
 void NES::step_frame() {
   if (this->is_running == false) return;
 
-  for (uint i = 0; i < this->speed; i++) {
+  uint num_frames = 0;
+
+  this->speed_counter += this->speed;
+  while (this->speed_counter > 0) {
+    this->speed_counter-= 100;
+    num_frames++;
+  }
+
+  for (uint i = 0; i < num_frames; i++) {
     const uint curr_frame = this->ppu->getFrames();
     while (this->is_running && this->ppu->getFrames() == curr_frame) {
       this->cycle();
@@ -202,7 +215,9 @@ bool NES::isRunning() const { return this->is_running; }
 
 void NES::set_speed(uint speed) {
   if (speed == 0) return;
+  // fprintf(stderr, "[NES] Speed: %u%%\n", speed);
   this->speed = speed;
-  // Also tell Blaarg's APU of this development
-  this->apu->set_speed(speed);
+  this->speed_counter = 0;
+  // Also notify the APU of the speed change
+  this->apu->set_speed(speed / 100.0);
 }

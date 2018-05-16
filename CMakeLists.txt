@@ -1,40 +1,12 @@
-# I have no idea how cmake works
-# But I want to use it for those sweet-sweet cross-platform builds
+# I have no idea how cmake works, this is pretty much me copying and pasting
+# stuff from around the web until things "work"
+# I mean, that's how you learn, right?
 
 project(anese)
 cmake_minimum_required(VERSION 2.8.3)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${anese_SOURCE_DIR}/cmake")
 set(BIN_DIR ${anese_SOURCE_DIR}/bin)
-
-# Bump up warning levels appropriately for clang, gcc & msvc and build in debug mode
-if (NOT WIN32 AND (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -std=c++11")
-  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -g -fsanitize=undefined")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3")
-elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /O2 /fp:fast")
-  # suppress some MSVC warnings
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS) # unsafe funcs (fprintf and such)
-  # 4458 - declaration of 'x' hides class member
-  #   * non issue, since I tend to refer to class members through this->
-  # 4310 - cast truncates constant value
-  # 4068 - unknown pragma
-  # 4244 - type conversion may lead to loss of data
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4458 /wd4310 /wd4068 /wd4244")
-  # and hey, let's add an icon too, for that extra bit of class
-
-endif()
-
-option(NESTEST "test CPU against NESTEST golden log" OFF)
-if (NESTEST)
-  add_definitions(-DNESTEST)
-endif()
-
-option(DEBUG_PPU "Display PPU debug windows" OFF)
-if (DEBUG_PPU)
-  add_definitions(-DDEBUG_PPU)
-endif()
 
 # anese source
 include_directories(src)
@@ -45,13 +17,45 @@ file(GLOB_RECURSE SRC_FILES
   src/*.hpp
 )
 
-# some platform Dependant icon stuff
-if (WIN32)
+# ANESE executable
+add_executable(anese ${SRC_FILES})
+
+# Set a default build type if none was specified
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+      "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif(NOT CMAKE_BUILD_TYPE)
+
+# Setup compiler flags for different platforms
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -std=c++11")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -g -fsanitize=undefined")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3 -g")
+elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /O2 /fp:fast")
+  # suppress some MSVC warnings
+  # Will add -DBAR_ENABLE_FEATURE or equivalent
+  target_compile_definitions(-D_CRT_SECURE_NO_WARNINGS) # unsafe funcs (fprintf and such)
+  # 4458 - declaration of 'x' hides class member
+  #   * non issue, since I always refer to class members through `this`
+  # 4310 - cast truncates constant value
+  # 4068 - unknown pragma
+  # 4244 - type conversion may lead to loss of data
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4458 /wd4310 /wd4068 /wd4244")
+  # add icon manifest to windows builds
   set(SRC_FILES ${SRC_FILES} resources/icons/anese.rc)
 endif()
 
-# ANESE executable
-add_executable(anese ${SRC_FILES})
+# handle various debug options
+option(NESTEST "test CPU against NESTEST golden log" OFF)
+if (NESTEST)
+  target_compile_definitions(anese PRIVATE NESTEST)
+endif()
+
+option(DEBUG_PPU "Display PPU debug windows" OFF)
+if (DEBUG_PPU)
+  target_compile_definitions(anese PRIVATE DEBUG_PPU)
+endif()
 
 # And now, for some shit-tier dependency management
 
@@ -82,16 +86,18 @@ file(GLOB_RECURSE NES_SND_EMU_FILES
   thirdparty/nes_snd_emu/*.h)
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   set_source_files_properties(${NES_SND_EMU_FILES} PROPERTIES
-    COMPILE_FLAGS "-O3 -Wno-everything") # it was written in 2005!
+    COMPILE_FLAGS "-Wno-everything") # it was written in 2005!
 endif()
 add_library(nes_snd_emu STATIC ${NES_SND_EMU_FILES})
 target_include_directories(nes_snd_emu PUBLIC thirdparty/nes_snd_emu)
 
 # Finally, link up!
-target_link_libraries(anese ${SDL2_LIBRARY})
-target_link_libraries(anese miniz)
-target_link_libraries(anese args)
-target_link_libraries(anese tinyfiledialogs)
-target_link_libraries(anese nes_snd_emu)
+target_link_libraries(anese
+  ${SDL2_LIBRARY}
+  args
+  miniz
+  nes_snd_emu
+  tinyfiledialogs
+)
 
 install(TARGETS anese RUNTIME DESTINATION ${BIN_DIR})
