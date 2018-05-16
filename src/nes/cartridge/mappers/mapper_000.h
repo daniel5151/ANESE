@@ -11,11 +11,13 @@ private:
   // const ROM_File& rom_file; // inherited from Mapper
 
   // CPU Memory Space
-  ROM* lo_rom;     // 0x8000 ... 0xBFFF
-  ROM* hi_rom;     // 0xC000 ... 0xFFFF
+  ROM* prg_lo;     // 0x8000 ... 0xBFFF
+  ROM* prg_hi;     // 0xC000 ... 0xFFFF
 
   // PPU Memory Space
   Memory* chr_mem; // 0x0000 ... 0x1FFF
+
+  Mirroring::Type mirror_mode;
 
 public:
   Mapper_000(const ROM_File& rom_file);
@@ -27,7 +29,7 @@ public:
   void write(u16 addr, u8 val) override;
   // <Memory/>
 
-  Mirroring::Type mirroring() const override;
+  Mirroring::Type mirroring() const override { return this->mirror_mode; };
 
   void cycle() override {}; // not an active mapper
 };

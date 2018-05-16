@@ -5,21 +5,21 @@
 **ANESE** (**A**nother **NES** **E**mulator) is a Nintendo Entertainment System
 Emulator being written for fun and learning.
 
-Accuracy is a long-term goal, but the primary goal is simply getting ANESE to 
+Accuracy is a long-term goal, but the primary goal is simply getting ANESE to
 play some of the more popular titles :smile:
 
 I'm aiming for clean and _interesting_ C++11 code, with a emphasis on keeping
-the source readable and maintainable. Performance is important, but it's not a 
+the source readable and maintainable. Performance is important, but it's not a
 primary focus.
 
-**NOTE:** The APU is _not my code_. I wanted to get ANESE partially up and 
-running before new-years 2018, so I've used Blargg's venerable `nes_snd_emu` 
-library to handle sound (for now). Once I polish up some of the other aspects 
+**NOTE:** The APU is _not my code_. I wanted to get ANESE partially up and
+running before new-years 2018, so I've used Blargg's venerable `nes_snd_emu`
+library to handle sound (for now). Once I polish up some of the other aspects
 of the emulator, I will revisit my own APU implementation (which is currently
 stubbed)
 
 ANESE is built with _cross-platform_ in mind, and builds are regularly tested on
-macOS, Linux (Ubuntu), and Windows regularly. The C++ doesn't rely on 
+macOS, Linux (Ubuntu), and Windows regularly. The C++ doesn't rely on
 vendor-specific extentions, and is compiled with strict compiler flags. The code
 is linted regularly.
 
@@ -115,7 +115,7 @@ Fast-Forward       | Space
       - [x] Fetch - Decode - Execute
     - [x] Official Opcodes Implemented
     - [x] Handle Interrupts
-  - [ ] PPU
+  - [ ] PPU - ***glitchy gfx in some games (eg: Contra, Zelda)***
     - [x] Set Up Basic Rendering Context (SDL)
     - [x] Implement Registers + Memory Map them
     - [x] Implement DMA
@@ -158,9 +158,9 @@ Fast-Forward       | Space
   - Accuracy & Compatibility improvements
     - More Mappers
       - [x] 000
-      - [x] 001 - Not really... very buggy.
-      - [ ] 002
-      - [ ] 003
+      - [x] 001
+      - [x] 002
+      - [x] 003
       - [ ] 004
       - [ ] 005
       - [ ] 006

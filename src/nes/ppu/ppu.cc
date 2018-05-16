@@ -215,10 +215,10 @@ u8 PPU::peek(u16 addr) const {
                     retval = 0x00;
                   } break;
   default:        { retval = this->cpu_data_bus;
-                    fprintf(stderr,
-                      "[PPU] Peeking from Write-Only register: 0x%04X\n",
-                      addr
-                    );
+                    // fprintf(stderr,
+                    //   "[PPU] Peeking from Write-Only register: 0x%04X\n",
+                    //   addr
+                    // );
                   } break;
   }
 

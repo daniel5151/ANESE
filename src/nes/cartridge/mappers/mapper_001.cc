@@ -2,37 +2,55 @@
 
 #include <cassert>
 #include <cstdio>
+#include <cstring>
 
 Mapper_001::Mapper_001(const ROM_File& rom_file)
 : Mapper(rom_file)
 , prg_ram(0x2000)
 {
-  // Parse the raw memory from the rom file into some ROM banks
+  // Clear registers
+  memset(&this->reg, 0, sizeof this->reg);
+  this->reg.sr = 0x10;
 
-  // Set up PRG Banks
+  // This isn't documented anywhere, but seems to be needed...
+  this->reg.control.prg_bank_mode = 3;
+
+  // Check iNES header for initial mirroring mode
+  switch(rom_file.meta.mirror_mode) {
+  case Mirroring::SingleScreenLo: this->reg.control.mirroring = 0; break;
+  case Mirroring::SingleScreenHi: this->reg.control.mirroring = 1; break;
+  case Mirroring::Vertical:       this->reg.control.mirroring = 2; break;
+  case Mirroring::Horizontal:     this->reg.control.mirroring = 3; break;
+  default:
+    fprintf(stderr, "[Mapper_001] Invalid initial mirroring mode!\n");
+    assert(false);
+    break;
+  }
+
+  // ---- PRG ROM ---- //
 
   // Split PRG ROM into 16K banks
-  this->banks.prg.len = this->rom_file.rom.prg.len / 0x4000;
+  this->banks.prg.len = rom_file.rom.prg.len / 0x4000;
   this->banks.prg.bank = new ROM* [this->banks.prg.len];
 
   fprintf(stderr, "[Mapper_001] 16K PRG ROM Banks: %d\n", this->banks.prg.len);
 
-  const u8* prg_data_p = this->rom_file.rom.prg.data;
+  const u8* prg_data_p = rom_file.rom.prg.data;
   for (uint i = 0; i < this->banks.prg.len; i++) {
     this->banks.prg.bank[i] = new ROM (0x4000, prg_data_p, "Mapper_001 PRG");
     prg_data_p += 0x4000;
   }
 
-  // Split up CHR Banks
+  // ---- CHR ROM ---- //
 
-  if (this->rom_file.rom.chr.len != 0) {
+  if (rom_file.rom.chr.len != 0) {
     // Split CHR ROM into 4K banks
-    this->banks.chr.len = this->rom_file.rom.chr.len / 0x1000;
+    this->banks.chr.len = rom_file.rom.chr.len / 0x1000;
     this->banks.chr.bank = new Memory* [this->banks.chr.len];
 
     fprintf(stderr, "[Mapper_001] 4K  CHR ROM Banks: %d\n", this->banks.chr.len);
 
-    const u8* chr_data_p = this->rom_file.rom.chr.data;
+    const u8* chr_data_p = rom_file.rom.chr.data;
     for (uint i = 0; i < this->banks.chr.len; i++) {
       this->banks.chr.bank[i] = new ROM (0x1000, chr_data_p, "Mapper_001 CHR");
       chr_data_p += 0x1000;
@@ -43,30 +61,8 @@ Mapper_001::Mapper_001(const ROM_File& rom_file)
 
     this->banks.chr.len = 2;
     this->banks.chr.bank = new Memory* [2];
-    this->banks.chr.bank[0] = new RAM (0x1000, "Mapper_001 CHR Lo");
-    this->banks.chr.bank[1] = new RAM (0x1000, "Mapper_001 CHR Hi");
-  }
-
-  // Clear all registers to initial state
-  this->reg.sr          = 0x10;
-  this->reg.control.val = 0x00;
-  this->reg.chr0.val    = 0x00;
-  this->reg.chr1.val    = 0x00;
-  this->reg.prg.val     = 0x00;
-
-  // this isn't documented anywhere, but seems to be needed
-  this->reg.control.prg_bank_mode = 3;
-
-  // And check iNES header for initial mirroring mode
-  switch(this->rom_file.meta.mirror_mode) {
-  case Mirroring::SingleScreenLo: this->reg.control.mirroring = 0; break;
-  case Mirroring::SingleScreenHi: this->reg.control.mirroring = 1; break;
-  case Mirroring::Vertical:       this->reg.control.mirroring = 2; break;
-  case Mirroring::Horizontal:     this->reg.control.mirroring = 3; break;
-  default:
-    fprintf(stderr, "[Mapper_001] Invalid initial mirroring mode!\n");
-    assert(false);
-    break;
+    this->banks.chr.bank[0] = new RAM (0x1000, "Mapper_001 CHR RAM Lo");
+    this->banks.chr.bank[1] = new RAM (0x1000, "Mapper_001 CHR RAM Hi");
   }
 
   this->update_banks();
