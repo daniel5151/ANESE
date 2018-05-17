@@ -3,22 +3,24 @@
 #include "common/util.h"
 #include "nes/interfaces/memory.h"
 
-// Thin class that gives PPU access to CPU WRAM for Direct Memory Access (DMA)
+// Thin bridge class that facilitates CPU -> PPU OAMDMA, without giving the PPU
+// direct access to the CPU MMU
 class DMA final {
 private:
   Memory& cpu_mmu;
 
-  bool in_dma;
-
-  u16  addr; // What CPU addr to base read from
-  uint step; // How many transfers have occured (from 0x00 to 0xFF)
+  u16 addr = 0x0000; // CPU addr to read from
 
 public:
-  ~DMA() = default;
-  DMA(Memory& cpu_mmu);
+  DMA(Memory& cpu_mmu) : cpu_mmu(cpu_mmu) {}
 
-  void start(u8 page);
-  u8   transfer();
+  // Set start-page for DMA
+  void start(u8 page) {
+  	this->addr = u16(page) << 8;
+  }
 
-  bool isActive() const;
+  // Return a byte from CPU, and increment read-address for subsequent calls
+  u8 transfer() {
+  	return this->cpu_mmu[this->addr++];
+  }
 };

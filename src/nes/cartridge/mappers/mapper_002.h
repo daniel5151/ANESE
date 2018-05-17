@@ -59,12 +59,9 @@ public:
   ~Mapper_002();
 
   // <Memory>
-  u8 read(u16 addr)       override;
   u8 peek(u16 addr) const override;
   void write(u16 addr, u8 val) override;
   // <Memory/>
 
   Mirroring::Type mirroring() const override { return this->mirror_mode; };
-
-  void cycle() override {}; // not an active mapper
 };

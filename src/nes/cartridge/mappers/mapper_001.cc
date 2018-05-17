@@ -81,23 +81,7 @@ Mapper_001::~Mapper_001() {
   delete[] this->banks.chr.bank;
 }
 
-u8 Mapper_001::read(u16 addr) {
-  // Wired to the PPU MMU
-  if (in_range(addr, 0x0000, 0x0FFF)) return this->chr_lo->read(addr - 0x0000);
-  if (in_range(addr, 0x1000, 0x1FFF)) return this->chr_hi->read(addr - 0x1000);
-
-  // Wired to the CPU MMU
-  if (in_range(addr, 0x4020, 0x5FFF)) return 0x00; // Nothing in "Expansion ROM"
-  if (in_range(addr, 0x6000, 0x7FFF)) return this->reg.prg.ram_enable == 0
-                                           ? this->prg_ram.read(addr - 0x6000)
-                                           : 0x00; // should be open bus...
-  if (in_range(addr, 0x8000, 0xBFFF)) return this->prg_lo->read(addr - 0x8000);
-  if (in_range(addr, 0xC000, 0xFFFF)) return this->prg_hi->read(addr - 0xC000);
-
-  assert(false);
-  return 0x00;
-}
-
+// reading has no side-effects
 u8 Mapper_001::peek(u16 addr) const {
   // Wired to the PPU MMU
   if (in_range(addr, 0x0000, 0x0FFF)) return this->chr_lo->peek(addr - 0x0000);

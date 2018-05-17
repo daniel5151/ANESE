@@ -136,6 +136,7 @@ u8 PPU::read(u16 addr) {
                   } break;
   case OAMDATA:   { // Extra logic for handling reads during sprite evaluation
                     // https://wiki.nesdev.com/w/index.php/PPU_sprite_evaluation
+                    // THIS BREAKS cpu_dummy_writes_oam.nes
                     bool on_visible_line = this->scan.line < 240;
                     bool is_clearing_oam2 = in_range(this->scan.cycle, 1, 64);
                     if (on_visible_line && is_clearing_oam2) {
@@ -211,7 +212,7 @@ u8 PPU::peek(u16 addr) const {
   case OAMDMA:    { // This is not a valid operation...
                     // And it's not like this would return the cpu_data_bus val
                     // So, uh, screw it, just return 0 I guess?
-                    fprintf(stderr, "[DMA] Peeking DMA is undefined!\n");
+                    // fprintf(stderr, "[DMA] Peeking DMA is undefined!\n");
                     retval = 0x00;
                   } break;
   default:        { retval = this->cpu_data_bus;
@@ -301,20 +302,25 @@ void PPU::write(u16 addr, u8 val) {
                     if (this->reg.ppuctrl.I == 0) this->reg.v.val += 1;
                     if (this->reg.ppuctrl.I == 1) this->reg.v.val += 32;
                   } return;
-  case OAMDMA:    { // The CPU is paused during DMA, but the PPU is not!
+  case OAMDMA:    { // The CPU stalls during DMA, but the PPU keeps running!
                     // DMA takes 513 / 514 CPU cycles:
+                    #define CPU_CYCLE() \
+                      do {this->cycle();this->cycle();this->cycle();} while(0);
+
                     // 1 dummy cycle
-                    this->cycle();
+                    CPU_CYCLE();
+
                     // +1 cycle if starting on odd CPU cycle
                     if ((this->cycles / 3) % 2)
-                      this->cycle();
+                      CPU_CYCLE();
+
                     // 512 cycles of reading & writing
                     this->dma.start(val);
-                    while (this->dma.isActive()) {
-                      this->oam[this->reg.oamaddr++] = this->dma.transfer();
-                      this->cycle();
-                      this->cycle();
+                    for (uint i = 0; i < 256; i++) {
+                      u8 cpu_val = this->dma.transfer();        CPU_CYCLE();
+                      this->oam[this->reg.oamaddr++] = cpu_val; CPU_CYCLE();
                     }
+                    #undef CPU_CYCLE
                   } return;
   // default:        { fprintf(stderr,
   //                     "[PPU] Writing to Read-Only register: 0x%04X\n <- 0x%02X",
@@ -333,14 +339,11 @@ void PPU::spr_fetch() {
   if (this->scan.cycle != 0)
     return;
 
-  this->spr.spr_zero_on_line = false;
-
-  // (This will break games that switch sprite_height mid-scanline)
-  const uint sprite_height = this->reg.ppuctrl.H ? 16 : 8;
-
   // Fill OAM2 memory with 0xFF
   for (uint addr = 0; addr < 32; addr++)
     this->oam2[addr] = 0xFF;
+
+  this->spr.spr_zero_on_line = false;
 
   // Pointer into OAM2 RAM
   uint oam2_addr = 0; // from 0 - 32
@@ -350,7 +353,7 @@ void PPU::spr_fetch() {
     u8 y_pos = this->oam[sprite * 4 + 0];
     bool on_this_line = in_range(
       int(y_pos),
-      int(this->scan.line) - int(sprite_height),
+      int(this->scan.line) - int(this->reg.ppuctrl.H ? 16 : 8),
       int(this->scan.line) - 1
     );
 
@@ -369,7 +372,10 @@ void PPU::spr_fetch() {
       this->oam2[oam2_addr++] = this->oam[sprite * 4 + 2];
       this->oam2[oam2_addr++] = this->oam[sprite * 4 + 3];
     } else {
-      this->reg.ppustatus.O = true; // Sprite Overflow
+      if (this->reg.ppumask.is_rendering) {
+        this->reg.ppustatus.O = true; // Sprite Overflow
+      }
+      if (y_pos == 239) this->reg.ppustatus.O = false;
     }
   }
 }
@@ -551,9 +557,6 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
     return Pixel();
   }
 
-  // (this breaks when games switch sprite size mid-scanline)
-  const uint sprite_height = this->reg.ppuctrl.H ? 16 : 8;
-
   // Scan through OAM2 to see if there is a sprite to draw at this scan.cycle
   for (uint sprite = 0; sprite < 8; sprite++) {
     // Read sprite data
@@ -588,6 +591,7 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
       uint spr_row = this->scan.line - y_pos - 1;
       uint spr_col = 7 - (x - x_pos);
 
+      const uint sprite_height = this->reg.ppuctrl.H ? 16 : 8;
       if (attributes.flip_vertical)   spr_row = sprite_height - 1 - spr_row;
       if (attributes.flip_horizontal) spr_col =             8 - 1 - spr_col;
 
@@ -604,11 +608,10 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
       // The rules for Sprite0 hit are fairly obtuse...
       // You can only get a sprite 0 hit when:
       if (
-        sprite == 0 &&                    // This is Sprite 0
+        this->spr.spr_zero_on_line &&     // Sprite 0 is on the line
         this->reg.ppumask.is_rendering && // And rendering is enabled
         this->reg.ppustatus.S == 0 &&     // And there has not been a spr hit
-        this->spr.spr_zero_on_line &&     // And there is a sprite on the line
-        (x_pos != 0xFF && x != 0xFF) &&   // And not when dot/spr is at 255
+        (x_pos != 0xFF && x < 0xFF) &&   // And not when dot/spr is at 255
         bgr_pixel.is_on                   // And the bgr pixel is on
       ) this->reg.ppustatus.S = 1; // Only then does sprite hit occur
 
@@ -641,6 +644,14 @@ void PPU::cycle() {
 
     // Priority Multiplexer decision table
     // https://wiki.nesdev.com/w/index.php/PPU_rendering#Preface
+    // BG pixel | Sprite pixel | Priority | Output
+    // --------------------------------------------
+    // 0        | 0            | X        | BG ($3F00)
+    // 0        | 1-3          | X        | Sprite
+    // 1-3      | 0            | X        | BG
+    // 1-3      | 1-3          | 0        | Sprite
+    // 1-3      | 1-3          | 1        | BG
+
     const bool bgr_on = bgr_pixel.is_on;
     const bool spr_on = spr_pixel.is_on;
 
@@ -688,8 +699,8 @@ void PPU::cycle() {
   // Odd-Frame skip cycle
   if (
     this->frames % 2 == 1 &&
-    this->scan.cycle == 0 &&
-    this->scan.line == 0 &&
+    this->scan.cycle == 340 &&
+    this->scan.line == 261 &&
     this->reg.ppumask.is_rendering
   ) {
     this->cycles += 1;

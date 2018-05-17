@@ -15,7 +15,8 @@ public:
   virtual ~Mapper() {};
 
   // <Memory>
-  virtual u8 read(u16 addr)            = 0;
+  // reading doesn't tend to have side-effects, except in some rare cases
+  virtual u8 read(u16 addr) { return this->peek(addr); }
   virtual u8 peek(u16 addr) const      = 0;
   virtual void write(u16 addr, u8 val) = 0;
   // <Memory/>
@@ -23,7 +24,7 @@ public:
   // Get mirroring mode
   virtual Mirroring::Type mirroring() const = 0;
 
-  virtual void cycle() = 0;
+  virtual void cycle() {} // most mappers are benign
 
   // creates correct mapper given an ROM_File object
   static Mapper* Factory(const ROM_File& rom_file);

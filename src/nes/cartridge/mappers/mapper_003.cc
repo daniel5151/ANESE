@@ -54,13 +54,10 @@ Mapper_003::Mapper_003(const ROM_File& rom_file)
 Mapper_003::~Mapper_003() {
   delete this->prg_lo;
   delete this->prg_hi;
-  delete this->chr_mem;
-}
 
-
-u8 Mapper_003::read(u16 addr) {
-  // reading has no side-effects
-  return this->peek(addr);
+  for (uint i = 0; i < this->banks.chr.len; i++)
+    delete this->banks.chr.bank[i];
+  delete[] this->banks.chr.bank;
 }
 
 u8 Mapper_003::peek(u16 addr) const {

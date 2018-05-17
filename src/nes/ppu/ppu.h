@@ -153,6 +153,7 @@ private:
   //
   // DMA is handled by an external unit (this->dma), an object that has
   // references to both CPU WRAM and PPU OAM.
+  //
   // To make the emulator code simpler, the PPU object handles the 0x4014 call,
   // but all that actually happens is that it calls this->dma.transfer(), pushes
   // that data to OAMDATA, and cycles itself for the requisite number of cycles

@@ -24,6 +24,7 @@ CPU_MMU::CPU_MMU(
 // 0x4015           : APU register
 // 0x4016           : Joy1 Data (Read) and Joystick Strobe (Write)
 // 0x4017           : Joy2 Data (Read) and APU thing       (Write)
+// 0x4018 ... 0x401F: APU and I/O functionality that is normally disabled
 // 0x4018 ... 0xFFFF: Cartridge ROM (may not be plugged in)
 
 #include "common/overload_macro.h"
@@ -38,8 +39,9 @@ u8 CPU_MMU::read(u16 addr) {
   ADDR(0x4014        ) return this->ppu.read(addr);
   ADDR(0x4015        ) return this->apu.read(addr);
   ADDR(0x4016        ) return this->joy.read(addr);
-  ADDR(0x4017        ) return this->joy.read(addr);
-  ADDR(0x4018, 0xFFFF) return this->cart ? this->cart->read(addr) : 0x00;
+  ADDR(0x4017        ) return this->joy.read(addr); // not APU
+  ADDR(0x4018, 0x401F) return 0x00; // ?
+  ADDR(0x4020, 0xFFFF) return this->cart ? this->cart->read(addr) : 0x00;
 
   fprintf(stderr, "[CPU] unhandled address: 0x%04X\n", addr);
   assert(false);
@@ -55,7 +57,8 @@ u8 CPU_MMU::peek(u16 addr) const {
   ADDR(0x4015        ) return this->apu.peek(addr);
   ADDR(0x4016        ) return this->joy.peek(addr);
   ADDR(0x4017        ) return this->joy.peek(addr); // not APU
-  ADDR(0x4018, 0xFFFF) return this->cart ? this->cart->peek(addr) : 0x00;
+  ADDR(0x4018, 0x401F) return 0x00; // ?
+  ADDR(0x4020, 0xFFFF) return this->cart ? this->cart->peek(addr) : 0x00;
 
   fprintf(stderr, "[CPU] unhandled address: 0x%04X\n", addr);
   assert(false);
@@ -87,7 +90,8 @@ void CPU_MMU::write(u16 addr, u8 val) {
   ADDR(0x4015        ) return this->apu.write(addr, val);
   ADDR(0x4016        ) return this->joy.write(addr, val);
   ADDR(0x4017        ) return this->apu.write(addr, val); // not JOY
-  ADDR(0x4018, 0xFFFF) return this->cart ? this->cart->write(addr, val) : void();
+  ADDR(0x4018, 0x401F) return; // ?
+  ADDR(0x4020, 0xFFFF) return this->cart ? this->cart->write(addr, val) : void();
 
   fprintf(stderr, "[CPU] unhandled address: 0x%04X\n", addr);
   assert(false);

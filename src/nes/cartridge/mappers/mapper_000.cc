@@ -37,11 +37,8 @@ Mapper_000::~Mapper_000() {
   delete this->chr_mem;
 }
 
-u8 Mapper_000::read(u16 addr) {
-  // reading has no side-effects
-  return this->peek(addr);
-}
-
+// reading has no side-effects
+u8 Mapper_000::read(u16 addr) { return this->peek(addr); }
 u8 Mapper_000::peek(u16 addr) const {
   // Wired to the PPU MMU
   if (in_range(addr, 0x0000, 0x1FFF)) return this->chr_mem->peek(addr);

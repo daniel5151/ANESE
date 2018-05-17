@@ -336,6 +336,7 @@ uint CPU::step() {
                   set_zn(this->reg.a);
                 } else {
                   u8 val = this->mem[addr];
+                  this->mem[addr] = val; // dummy-write
                   this->reg.p.c = nth_bit(val, 0);
                   val >>= 1;
                   set_zn(val);
@@ -348,6 +349,7 @@ uint CPU::step() {
                   set_zn(this->reg.a);
                 } else {
                   u8 val = this->mem[addr];
+                  this->mem[addr] = val; // dummy-write
                   this->reg.p.c = nth_bit(val, 7);
                   val <<= 1;
                   set_zn(val);
@@ -361,6 +363,7 @@ uint CPU::step() {
                   set_zn(this->reg.a);
                 } else {
                   u8 val = this->mem[addr];
+                  this->mem[addr] = val; // dummy-write
                   bool old_bit_0 = nth_bit(val, 0);
                   val = (val >> 1) | (this->reg.p.c << 7);
                   this->reg.p.c = old_bit_0;
@@ -375,6 +378,7 @@ uint CPU::step() {
                   set_zn(this->reg.a);
                 } else {
                   u8 val = this->mem[addr];
+                  this->mem[addr] = val; // dummy-write
                   bool old_bit_0 = nth_bit(val, 7);
                   val = (val << 1) | this->reg.p.c;
                   this->reg.p.c = old_bit_0;
@@ -383,11 +387,13 @@ uint CPU::step() {
                 }
               } break;
     case INC: { u8 val = this->mem[addr];
+                this->mem[addr] = val; // dummy-write
                 val++;
                 set_zn(val);
                 this->mem[addr] = val;
               } break;
     case DEC: { u8 val = this->mem[addr];
+                this->mem[addr] = val; // dummy-write
                 val--;
                 set_zn(val);
                 this->mem[addr] = val;
