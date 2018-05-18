@@ -82,7 +82,7 @@ void PPU::update_debug_windows() {
         u8 hi_bp = this->mem.peek(tile_addr + y + 8);
 
         for (uint x = 0; x < 8; x++) {
-          u2 pixel_type = nth_bit(lo_bp, x) + 2 * nth_bit(hi_bp, x);
+          uint pixel_type = nth_bit(lo_bp, x) + (nth_bit(hi_bp, x) << 1);
 
           Color color = this->palette[
             this->mem.peek(0x3F00 + palette * 4 + pixel_type)

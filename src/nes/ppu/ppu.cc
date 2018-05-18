@@ -257,10 +257,10 @@ void PPU::write(u16 addr, u8 val) {
 
   switch(addr) {
   case PPUCTRL:   { // There is a chance an NMI will fire here
-                    bool old_ppuctrl_v = this->reg.ppuctrl.V;
+                    decltype(this->reg.ppuctrl) old_ppuctrl = this->reg.ppuctrl;
                     this->reg.ppuctrl.raw = val;
-                    bool toggled_v = !old_ppuctrl_v && this->reg.ppuctrl.V;
-                    if (toggled_v && this->reg.ppustatus.V)
+                    bool toggled_V_on = !old_ppuctrl.V && this->reg.ppuctrl.V;
+                    if (toggled_V_on && this->reg.ppustatus.V)
                       this->interrupts.request(Interrupts::Type::NMI);
                     // t: ....BA.. ........ = d: ......BA
                     this->reg.t.nametable = val & 0x03;
@@ -353,7 +353,7 @@ void PPU::spr_fetch() {
     u8 y_pos = this->oam[sprite * 4 + 0];
     bool on_this_line = in_range(
       int(y_pos),
-      int(this->scan.line) - int(this->reg.ppuctrl.H ? 16 : 8),
+      int(this->scan.line) - (this->reg.ppuctrl.H ? 16 : 8),
       int(this->scan.line) - 1
     );
 
@@ -375,7 +375,6 @@ void PPU::spr_fetch() {
       if (this->reg.ppumask.is_rendering) {
         this->reg.ppustatus.O = true; // Sprite Overflow
       }
-      if (y_pos == 239) this->reg.ppustatus.O = false;
     }
   }
 }
@@ -596,10 +595,29 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
       if (attributes.flip_horizontal) spr_col =             8 - 1 - spr_col;
 
       // Time to get the pixel type yo!
-      u16 tile_addr = (0x1000 * this->reg.ppuctrl.S) + (tile_index * 16);
-      u8 lo_bp = this->mem[tile_addr + spr_row + 0];
-      u8 hi_bp = this->mem[tile_addr + spr_row + 8];
-      u2 pixel_type = nth_bit(lo_bp, spr_col) + 2 * nth_bit(hi_bp, spr_col);
+
+      // NOTE: I completely overlooked handling 8x16 sprites for a very long
+      //       time. I did manage to figure it out though!
+
+      // When in 8x16 sprite mode, the sprite_table to use is solely dependant
+      // on odd/eveness of the tile_index
+      bool sprite_table = !this->reg.ppuctrl.H
+        ? this->reg.ppuctrl.S
+        : tile_index & 1;
+
+      if (this->reg.ppuctrl.H) {
+        tile_index &= 0xFE;
+        // And if we have finished the top half, read from adjacent tile
+        if (spr_row > 7) {
+          tile_index++;
+          spr_row -= 8;
+        }
+      }
+
+      u16 tile_addr = (0x1000 * sprite_table) + (tile_index * 16) + spr_row;
+      u8 lo_bp = this->mem[tile_addr + 0];
+      u8 hi_bp = this->mem[tile_addr + 8];
+      u8 pixel_type = nth_bit(lo_bp, spr_col) + (nth_bit(hi_bp, spr_col) << 1);
 
       // If the pixel is transparent, continue looking for a valid sprite...
       if (pixel_type == 0)

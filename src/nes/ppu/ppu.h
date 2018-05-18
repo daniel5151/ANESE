@@ -87,7 +87,7 @@ private:
       BitField<6> P; // PPU master/slave
       BitField<5> H; // sprite height
       BitField<4> B; // background tile select
-      BitField<3> S; // sprite tile select
+      BitField<3> S; // sprite tile select (ignored in 8x16 sprite mode)
       BitField<2> I; // increment mode
       BitField<0, 2> N; // nametable select
     } ppuctrl;
@@ -144,7 +144,10 @@ private:
     // v is the true vram address
     // t is the temp vram address
 
-    u3 x; // fine x-scroll register
+    union {
+      u8 _x_val;
+      BitField<0, 3> x; // fine x-scroll register
+    };
   } reg;
 
   // What about OAMDMA - 0x4014 - PPU DMA register?
