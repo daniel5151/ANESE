@@ -6,6 +6,7 @@
 
 #include "color.h"
 #include "dma.h"
+#include "nes/generic/ram/ram.h"
 #include "nes/wiring/interrupt_lines.h"
 
 namespace PPURegisters {
@@ -44,8 +45,8 @@ private:
 
   // ---- Sprite Hardware ---- //
 
-  Memory& oam;  // Primary OAM - 256 bytes (Object Attribute Memory)
-  Memory& oam2; // Secondary OAM - 32 bytes (8 sprites to render on scanline)
+  RAM& oam;  // Primary OAM - 256 bytes (Object Attribute Memory)
+  RAM& oam2; // Secondary OAM - 32 bytes (8 sprites to render on scanline)
 
   struct {
     struct {
@@ -72,12 +73,15 @@ private:
     } shift;
   } bgr;
 
-  // ---- Memory Mapped Registers ---- //
+  // ---- Misc Hardware ---- //
 
   u8 cpu_data_bus; // PPU <-> CPU data bus (filled on any register write)
 
+  bool odd_frame_latch;
   bool latch; // Controls which byte to write to in PPUADDR and PPUSCROLL
               // 0 = write to hi, 1 = write to lo
+
+  // ---- Memory Mapped Registers ---- //
 
   struct { // Registers
     // PPUCTRL - 0x2000 - PPU control register
@@ -136,9 +140,6 @@ private:
       BitField<5,  5> coarse_y;
       BitField<10, 2> nametable;
       BitField<12, 3> fine_y;
-
-      // quality-of-life method (so i don't have to use v.val _all_ the time)
-      operator u16() const { return this->val; }
     } v, t;
 
     // v is the true vram address
@@ -201,8 +202,8 @@ public:
   ~PPU();
   PPU(
     Memory& mem,
-    Memory& oam,
-    Memory& oam2,
+    RAM& oam,
+    RAM& oam2,
     DMA& dma,
     InterruptLines& interrupts
   );

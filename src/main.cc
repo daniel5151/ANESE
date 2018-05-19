@@ -166,8 +166,8 @@ int main(int argc, char* argv[]) {
   // -------------------------- NES Initialization -------------------------- //
 
   // Generate cartridge from data
-  // Note: cartridge now owns data
   Cartridge rom_cart (data, data_len);
+  delete data;
 
   Cartridge::Error error = rom_cart.getError();
   switch (error) {
@@ -343,7 +343,8 @@ int main(int argc, char* argv[]) {
           case SDLK_r:      nes.reset();                  break;
           case SDLK_p:      nes.power_cycle();            break;
           case SDLK_EQUALS: nes.set_speed(speedup += 25); break;
-          case SDLK_MINUS:  nes.set_speed(speedup -= 25); break;
+          case SDLK_MINUS:  if (speedup - 25)
+                              nes.set_speed(speedup -= 25); break;
           case SDLK_c: {
             bool log = DEBUG_VARS::Get()->print_nestest ^= 1;
             fprintf(stderr, "NESTEST CPU logging: %s\n", log ? "ON" : "OFF");

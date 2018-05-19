@@ -10,8 +10,8 @@ PPU::~PPU() {
 
 PPU::PPU(
   Memory& mem,
-  Memory& oam,
-  Memory& oam2,
+  RAM& oam,
+  RAM& oam2,
   DMA& dma,
   InterruptLines& interrupts
 ) :
@@ -39,28 +39,16 @@ void PPU::power_cycle() {
 
   this->cpu_data_bus = 0x00;
 
+  this->odd_frame_latch = 0; // ?
   this->latch = 0;
 
-  // http://wiki.nesdev.com/w/index.php/PPU_power_up_state
-  this->reg.ppuctrl.raw = 0x00;
-  this->reg.ppumask.raw = 0x00;
-
-  this->reg.ppustatus.V = 1; // "often" set
-  this->reg.ppustatus.S = 0;
-  this->reg.ppustatus.O = 1; // "often" set
-
-  this->reg.oamaddr = 0x00;
-  this->reg.oamdata = 0x00; // ?
-
-  this->reg.v.val = 0x0000;
-  this->reg.t.val = 0x0000;
-  this->reg.x = 0;
-
-  this->reg.ppudata = 0x00; // ?
-
-  // This is probably the cleanest way to do this tbh
   memset(&this->bgr, 0, sizeof this->bgr);
   memset(&this->spr, 0, sizeof this->spr);
+
+  // http://wiki.nesdev.com/w/index.php/PPU_power_up_state
+  memset(&this->reg, 0, sizeof this->reg);
+  this->reg.ppustatus.V = 1; // "often" set
+  this->reg.ppustatus.O = 1; // "often" set
 }
 
 void PPU::reset() {
@@ -81,6 +69,7 @@ void PPU::reset() {
   // this->reg.oamaddr   is unchanged
   // this->reg.oamdata   is unchanged?
 
+  this->odd_frame_latch = 0; // ?
   this->latch = 0;
   // this->reg.v is unchanged
   // this->reg.t is unchanged?
@@ -126,14 +115,15 @@ u8 PPU::read(u16 addr) {
 
   u8 retval;
 
-  switch(addr) {
+  switch (addr) {
+  /*   0x2000    */
   case PPUSTATUS: { // Bottom 5 bits are the values happen to be present
                     // on the cpu data line
                     retval = (this->reg.ppustatus.raw & 0xE0)
                            | (this->cpu_data_bus      & 0x1F);
                     this->reg.ppustatus.V = false;
                     this->latch = false;
-                  } break;
+  /*   0x2004  */ } break;
   case OAMDATA:   { // Extra logic for handling reads during sprite evaluation
                     // https://wiki.nesdev.com/w/index.php/PPU_sprite_evaluation
                     // THIS BREAKS cpu_dummy_writes_oam.nes
@@ -144,18 +134,18 @@ u8 PPU::read(u16 addr) {
                     } else {
                       retval = this->oam[this->reg.oamaddr];
                     }
-                  } break;
+  /*   0x2007  */ } break;
   case PPUDATA:   { // PPUDATA read buffer (post-fetch) logic
-                    if (this->reg.v <= 0x3EFF) {
+                    if (this->reg.v.val <= 0x3EFF) {
                       // Reading Nametables
                       // retval = from internal buffer
                       retval = this->reg.ppudata;
                       // Fill read buffer with acutal data
-                      this->reg.ppudata = this->mem[this->reg.v];
+                      this->reg.ppudata = this->mem[this->reg.v.val];
                     } else {
                       // Reading Pallete
                       // retval = directly from memory
-                      retval = this->mem[this->reg.v];
+                      retval = this->mem[this->reg.v.val];
                       // Fill read buffer with the mirrored nametable data
                       this->reg.ppudata = retval;
                     }
@@ -163,7 +153,7 @@ u8 PPU::read(u16 addr) {
                     // (0: add 1, going across; 1: add 32, going down)
                     if (this->reg.ppuctrl.I == 0) this->reg.v.val += 1;
                     if (this->reg.ppuctrl.I == 1) this->reg.v.val += 32;
-                  } break;
+  /*   0x4014  */ } break;
   case OAMDMA:    { // This is not a valid operation...
                     // And it's not like this would return the cpu_data_bus val
                     // So, uh, screw it, just return 0 I guess?
@@ -171,10 +161,10 @@ u8 PPU::read(u16 addr) {
                     retval = 0x00;
                   } break;
   default:        { retval = this->cpu_data_bus;
-                    // fprintf(stderr,
-                    //   "[PPU] Reading from Write-Only register: 0x%04X\n",
-                    //   addr
-                    // );
+                    fprintf(stderr,
+                      "[PPU] Reading from Write-Only register: 0x%04X\n",
+                      addr
+                    );
                   } break;
   }
 
@@ -190,9 +180,10 @@ u8 PPU::peek(u16 addr) const {
   u8 retval;
 
   switch(addr) {
+  /*   0x2000    */
   case PPUSTATUS: { retval = (this->reg.ppustatus.raw & 0xE0)
                            | (this->cpu_data_bus      & 0x1F);
-                  } break;
+  /*   0x2004  */ } break;
   case OAMDATA:   { // Extra logic for handling reads during sprite evaluation
                     // https://wiki.nesdev.com/w/index.php/PPU_sprite_evaluation
                     bool on_visible_line = this->scan.line < 240;
@@ -202,13 +193,13 @@ u8 PPU::peek(u16 addr) const {
                     } else {
                       retval = this->oam.peek(this->reg.oamaddr);
                     }
-                  } break;
-  case PPUDATA:   { if (this->reg.v <= 0x3EFF) {
+  /*   0x2007  */ } break;
+  case PPUDATA:   { if (this->reg.v.val <= 0x3EFF) {
                       retval = this->reg.ppudata;
                     } else {
-                      retval = this->mem.peek(this->reg.v);
+                      retval = this->mem.peek(this->reg.v.val);
                     }
-                  } break;
+  /*   0x4014  */ } break;
   case OAMDMA:    { // This is not a valid operation...
                     // And it's not like this would return the cpu_data_bus val
                     // So, uh, screw it, just return 0 I guess?
@@ -256,21 +247,24 @@ void PPU::write(u16 addr, u8 val) {
   // }
 
   switch(addr) {
+  /*   0x2000    */
   case PPUCTRL:   { // There is a chance an NMI will fire here
-                    decltype(this->reg.ppuctrl) old_ppuctrl = this->reg.ppuctrl;
+                    auto old_ppuctrl = this->reg.ppuctrl;
                     this->reg.ppuctrl.raw = val;
                     bool toggled_V_on = !old_ppuctrl.V && this->reg.ppuctrl.V;
                     if (toggled_V_on && this->reg.ppustatus.V)
                       this->interrupts.request(Interrupts::Type::NMI);
                     // t: ....BA.. ........ = d: ......BA
                     this->reg.t.nametable = val & 0x03;
-                  } return;
+  /*   0x2001  */ } return;
   case PPUMASK:   { this->reg.ppumask.raw = val;
+  /*   0x2003  */ } return;
+  case PPUSTATUS: { fprintf(stderr, "[PPU] Write to PPUSTATUS is undefined!\n");
                   } return;
   case OAMADDR:   { this->reg.oamaddr = val;
-                  } return;
+  /*   0x2004  */ } return;
   case OAMDATA:   { this->oam[this->reg.oamaddr++] = val;
-                  } return;
+  /*   0x2005  */ } return;
   case PPUSCROLL: { if (this->latch == 0) {
                       // t: ........ ...HGFED = d: HGFED...
                       this->reg.t.coarse_x = val >> 3;
@@ -283,7 +277,7 @@ void PPU::write(u16 addr, u8 val) {
                       this->reg.t.fine_y   = val & 0x07;
                     }
                     this->latch = !this->latch;
-                  } return;
+  /*   0x2006  */ } return;
   case PPUADDR:   { if (this->latch == 0) {
                       // t: ..FEDCBA ........ = d: ..FEDCBA
                       // t: .X...... ........ = 0
@@ -296,12 +290,12 @@ void PPU::write(u16 addr, u8 val) {
                       this->reg.v.val = this->reg.t.val;
                     }
                     this->latch = !this->latch;
-                  } return;
-  case PPUDATA:   { this->mem[this->reg.v] = val;
+  /*   0x2007  */ } return;
+  case PPUDATA:   { this->mem[this->reg.v.val] = val;
                     // (0: add 1, going across; 1: add 32, going down)
                     if (this->reg.ppuctrl.I == 0) this->reg.v.val += 1;
                     if (this->reg.ppuctrl.I == 1) this->reg.v.val += 32;
-                  } return;
+  /*   0x4014  */ } return;
   case OAMDMA:    { // The CPU stalls during DMA, but the PPU keeps running!
                     // DMA takes 513 / 514 CPU cycles:
                     #define CPU_CYCLE() \
@@ -322,12 +316,12 @@ void PPU::write(u16 addr, u8 val) {
                     }
                     #undef CPU_CYCLE
                   } return;
-  // default:        { fprintf(stderr,
-  //                     "[PPU] Writing to Read-Only register: 0x%04X\n <- 0x%02X",
-  //                     addr,
-  //                     val
-  //                   );
-  //                 } return;
+  default:        { fprintf(stderr,
+                      "[PPU] Unhandled Write to addr: 0x%04X\n <- 0x%02X",
+                      addr,
+                      val
+                    );
+                  } return;
   }
 }
 
@@ -403,7 +397,7 @@ void PPU::bgr_fetch() {
     // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Tile_and_attribute_fetching
     case 2: {
       u16 nt_addr = 0x2000
-                  | (this->reg.v & 0x0FFF);
+                  | (this->reg.v.val & 0x0FFF);
       this->bgr.nt_byte = this->mem[nt_addr];
     } break;
 
@@ -411,9 +405,9 @@ void PPU::bgr_fetch() {
     // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Tile_and_attribute_fetching
     case 4: {
       u16 at_addr = 0x23C0
-                  | ((this->reg.v >> 0) & 0x0C00)
-                  | ((this->reg.v >> 4) & 0x38)
-                  | ((this->reg.v >> 2) & 0x07);
+                  | ((this->reg.v.val >> 0) & 0x0C00)
+                  | ((this->reg.v.val >> 4) & 0x38)
+                  | ((this->reg.v.val >> 2) & 0x07);
       this->bgr.at_byte = this->mem[at_addr];
 
       if (this->reg.v.coarse_y & 2) this->bgr.at_byte >>= 4;
@@ -458,7 +452,7 @@ void PPU::bgr_fetch() {
     // Both of the bytes fetched here are the same nametable byte that will be
     // fetched at the beginning of the next scanline (tile 3, in other words).
     if (this->scan.cycle % 2 == 0) {
-      this->bgr.nt_byte = this->mem[this->reg.v];
+      this->bgr.nt_byte = this->mem[this->reg.v.val];
     }
     // This is used for timing by some mappers.
   }
@@ -506,7 +500,7 @@ PPU::Pixel PPU::get_bgr_pixel() {
   assert(this->scan.line < 240 || this->scan.line == 261);
 
   uint pixel_type = (nth_bit(this->bgr.shift.tile[1], 15 - this->reg.x) << 1)
-                | (nth_bit(this->bgr.shift.tile[0], 15 - this->reg.x) << 0);
+                  | (nth_bit(this->bgr.shift.tile[0], 15 - this->reg.x) << 0);
 
   uint palette = (nth_bit(this->bgr.shift.at[1], 7 - this->reg.x) << 1)
                | (nth_bit(this->bgr.shift.at[0], 7 - this->reg.x) << 0);
@@ -524,9 +518,6 @@ PPU::Pixel PPU::get_bgr_pixel() {
     this->bgr.shift.at[1] |= this->bgr.shift.at_latch[1];
   }
 
-  // Perform data fetches
-  this->bgr_fetch();
-
   // Check for background mask disable
   if (!this->reg.ppumask.m && (this->scan.cycle - 2) < 8)
     return Pixel();
@@ -539,22 +530,14 @@ PPU::Pixel PPU::get_bgr_pixel() {
 }
 
 // TODO: make this more "hardware" accurate.
-//       this should make all the dumb -2 go away
 // https://wiki.nesdev.com/w/index.php/PPU_rendering
 PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
-  const uint x = this->scan.cycle - 2;
+  const int x = this->scan.cycle - 2;
 
-  // Fetch data
-  this->spr_fetch();
-
-  // Check to see if sprite rendering is even enabled
-  if (this->reg.ppumask.s == false)
-    return Pixel();
-
-  // Check for sprite mask disable
-  if (!this->reg.ppumask.M && x < 8) {
-    return Pixel();
-  }
+  if (
+    this->reg.ppumask.s == false || // Is sprite rendering is disabled
+    (!this->reg.ppumask.M && x < 8) // Is sprite mask enabled + in range of it?
+  ) return Pixel();
 
   // Scan through OAM2 to see if there is a sprite to draw at this scan.cycle
   for (uint sprite = 0; sprite < 8; sprite++) {
@@ -571,75 +554,77 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
     } attributes  { this->oam2[sprite * 4 + 2] };
     u8 x_pos      = this->oam2[sprite * 4 + 3];
 
-    // If the sprite is invalid (i.e: all 0xFF), early return, since there won't
-    // be any more sprites after this
+    // If the sprite is invalid (i.e: all 0xFF), stop scanning, since we are out
+    // of sprites
     if (
       0xFF == y_pos &&
       0xFF == x_pos &&
       0xFF == tile_index &&
       0xFF == attributes.val
-    ) return Pixel();
+    ) break;
 
     // Does this sprite have a pixel at the current x addr?
     bool x_in_range = in_range(int(x_pos), int(x) - 7, int(x));
-    if (x_in_range) {
-      // Cool! There is a sprite here!
+    if (!x_in_range)
+      continue;
 
-      // Now we just need to get the actual pixel data for this sprite...
-      // First, which pixel of the sprite are we rendering?
-      uint spr_row = this->scan.line - y_pos - 1;
-      uint spr_col = 7 - (x - x_pos);
+    // Cool! There is a sprite here!
 
-      const uint sprite_height = this->reg.ppuctrl.H ? 16 : 8;
-      if (attributes.flip_vertical)   spr_row = sprite_height - 1 - spr_row;
-      if (attributes.flip_horizontal) spr_col =             8 - 1 - spr_col;
+    // Now we just need to get the actual pixel data for this sprite...
+    // First, which pixel of the sprite are we rendering?
+    uint spr_row = this->scan.line - y_pos - 1;
+    uint spr_col = 7 - (x - x_pos);
 
-      // Time to get the pixel type yo!
+    const uint sprite_height = this->reg.ppuctrl.H ? 16 : 8;
+    if (attributes.flip_vertical)   spr_row = sprite_height - 1 - spr_row;
+    if (attributes.flip_horizontal) spr_col =             8 - 1 - spr_col;
 
-      // NOTE: I completely overlooked handling 8x16 sprites for a very long
-      //       time. I did manage to figure it out though!
+    // Time to get the pixel type yo!
 
-      // When in 8x16 sprite mode, the sprite_table to use is solely dependant
-      // on odd/eveness of the tile_index
-      bool sprite_table = !this->reg.ppuctrl.H
-        ? this->reg.ppuctrl.S
-        : tile_index & 1;
+    // NOTE: I completely overlooked handling 8x16 sprites for a very long
+    //       time. I did manage to figure it out though!
 
-      if (this->reg.ppuctrl.H) {
-        tile_index &= 0xFE;
-        // And if we have finished the top half, read from adjacent tile
-        if (spr_row > 7) {
-          tile_index++;
-          spr_row -= 8;
-        }
+    // When in 8x16 sprite mode, the sprite_table to use is solely dependant
+    // on odd/eveness of the tile_index
+    bool sprite_table = !this->reg.ppuctrl.H
+      ? this->reg.ppuctrl.S
+      : tile_index & 1;
+
+    if (this->reg.ppuctrl.H) {
+      tile_index &= 0xFE;
+      // And if we have finished the top half, read from adjacent tile
+      if (spr_row > 7) {
+        tile_index++;
+        spr_row -= 8;
       }
-
-      u16 tile_addr = (0x1000 * sprite_table) + (tile_index * 16) + spr_row;
-      u8 lo_bp = this->mem[tile_addr + 0];
-      u8 hi_bp = this->mem[tile_addr + 8];
-      u8 pixel_type = nth_bit(lo_bp, spr_col) + (nth_bit(hi_bp, spr_col) << 1);
-
-      // If the pixel is transparent, continue looking for a valid sprite...
-      if (pixel_type == 0)
-        continue;
-
-      // The rules for Sprite0 hit are fairly obtuse...
-      // You can only get a sprite 0 hit when:
-      if (
-        this->spr.spr_zero_on_line &&     // Sprite 0 is on the line
-        this->reg.ppumask.is_rendering && // And rendering is enabled
-        this->reg.ppustatus.S == 0 &&     // And there has not been a spr hit
-        (x_pos != 0xFF && x < 0xFF) &&   // And not when dot/spr is at 255
-        bgr_pixel.is_on                   // And the bgr pixel is on
-      ) this->reg.ppustatus.S = 1; // Only then does sprite hit occur
-
-      // Otherwise, fetch which pallete color to use, and return the pixel!
-      u8 palette = this->mem[0x3F10 + attributes.palette * 4 + pixel_type];
-      return Pixel { true, palette, bool(attributes.priority) };
     }
 
-    // Otherwise, keep looking
-    continue;
+    u16 tile_addr = (0x1000 * sprite_table) + (tile_index * 16) + spr_row;
+    u8 lo_bp = this->mem[tile_addr + 0];
+    u8 hi_bp = this->mem[tile_addr + 8];
+    u8 pixel_type = nth_bit(lo_bp, spr_col) + (nth_bit(hi_bp, spr_col) << 1);
+
+    // If the pixel is transparent, continue looking for a sprite to render...
+    if (pixel_type == 0)
+      continue;
+
+    // The rules for Sprite0 hit are fairly involved...
+    // You can only get a sprite 0 hit when:
+    if (
+      sprite == 0 &&                    // This is sprite-slot 0
+      this->spr.spr_zero_on_line &&     // And Sprite 0 is on the line
+      this->reg.ppumask.is_rendering && // And rendering is enabled
+      this->reg.ppustatus.S == 0 &&     // And there has not been a spr hit
+      (x_pos != 0xFF && x < 0xFF) &&    // And not when dot/spr is at 255
+      bgr_pixel.is_on                   // And the bgr pixel is on
+    ) this->reg.ppustatus.S = 1; // Only then does sprite hit occur
+
+    // Otherwise, fetch which pallete color to use, and return the pixel!
+    return Pixel {
+      /* is_on    */ true,
+      /* palette  */ this->mem[0x3F10 + attributes.palette * 4 + pixel_type],
+      /* priority */ bool(attributes.priority)
+    };
   }
 
   // if nothing was found, return a empty pixel
@@ -656,9 +641,13 @@ void PPU::cycle() {
   // ---- Core Loop ---- //
 
   if (this->scan.line < 240 || this->scan.line == 261) {
-    // Fetch Pixels
+    // Calculate Pixels
     PPU::Pixel bgr_pixel = this->get_bgr_pixel();
     PPU::Pixel spr_pixel = this->get_spr_pixel(bgr_pixel);
+
+    // Perform data fetches
+    this->bgr_fetch();
+    this->spr_fetch();
 
     // Priority Multiplexer decision table
     // https://wiki.nesdev.com/w/index.php/PPU_rendering#Preface
@@ -681,7 +670,7 @@ void PPU::cycle() {
                                               ? bgr_pixel.palette
                                               : spr_pixel.palette;
 
-    uint x = (this->scan.cycle - 2);
+    const uint x = (this->scan.cycle - 2);
     if (x < 256 && this->scan.line != 261) {
       this->draw_dot(this->palette[palette], x, this->scan.line);
     }
@@ -716,24 +705,23 @@ void PPU::cycle() {
 
   // Odd-Frame skip cycle
   if (
-    this->frames % 2 == 1 &&
+    this->odd_frame_latch &&
     this->scan.cycle == 340 &&
     this->scan.line == 261 &&
     this->reg.ppumask.is_rendering
-  ) {
-    this->cycles += 1;
-    this->scan.cycle += 1;
-  }
+  ) this->scan.cycle += 1; // skip this cycle
 
   // Check to see if the cycle has finished
-  if (this->scan.cycle == 341) {
+  if (this->scan.cycle > 340) {
     // update scanline tracking vars
     this->scan.cycle = 0;
     this->scan.line += 1;
     // check for rollover
-    if (this->scan.line == 262) {
+    if (this->scan.line > 261) {
       this->scan.line = 0;
-      this->frames += 1;
+      this->odd_frame_latch ^= 1;
+
+      this->frames++;
     }
   }
 }

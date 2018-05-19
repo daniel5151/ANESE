@@ -214,7 +214,6 @@ void NES::getAudiobuff(short*& samples, uint& len) {
 bool NES::isRunning() const { return this->is_running; }
 
 void NES::set_speed(uint speed) {
-  if (speed == 0) return;
   // fprintf(stderr, "[NES] Speed: %u%%\n", speed);
   this->speed = speed;
   this->speed_counter = 0;

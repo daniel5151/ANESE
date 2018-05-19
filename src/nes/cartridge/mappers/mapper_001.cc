@@ -148,6 +148,8 @@ void Mapper_001::write(u16 addr, u8 val) {
     this->reg.sr >>= 1;
     this->reg.sr |= (val & 1) << 4;
     if (done) {
+      if (in_range(addr, 0x8000, 0x9FFF))
+        fprintf(stderr, "%02X\n", this->reg.sr);
       // Write the shift register to the appropriate internal register based on
       // what range this final write occured in.
       const u8 sr = this->reg.sr;
@@ -164,20 +166,21 @@ void Mapper_001::write(u16 addr, u8 val) {
 
 void Mapper_001::update_banks() {
   // Update PRG Banks
+  const uint prgbank = this->reg.prg.bank % this->banks.prg.len;
   switch(u8(this->reg.control.prg_bank_mode)) {
   case 0: case 1: {
     // switch 32 KB at $8000, ignoring low bit of bank number
-    this->prg_lo = this->banks.prg.bank[this->reg.prg.bank & 0xFE];
-    this->prg_hi = this->banks.prg.bank[this->reg.prg.bank | 0x01];
+    this->prg_lo = this->banks.prg.bank[prgbank & 0xFE];
+    this->prg_hi = this->banks.prg.bank[prgbank | 0x01];
   } break;
   case 2: {
     // fix first bank at $8000 and switch 16 KB bank at $C000;
     this->prg_lo = this->banks.prg.bank[0];
-    this->prg_hi = this->banks.prg.bank[this->reg.prg.bank];
+    this->prg_hi = this->banks.prg.bank[prgbank];
   } break;
   case 3: {
     // fix last bank at $C000 and switch 16 KB bank at $8000
-    this->prg_lo = this->banks.prg.bank[this->reg.prg.bank];
+    this->prg_lo = this->banks.prg.bank[prgbank];
     this->prg_hi = this->banks.prg.bank[this->banks.prg.len - 1];
   } break;
   default:
