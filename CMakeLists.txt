@@ -34,14 +34,17 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /O2 /fp:fast")
   # suppress some MSVC warnings
-  # Will add -DBAR_ENABLE_FEATURE or equivalent
-  target_compile_definitions(-D_CRT_SECURE_NO_WARNINGS) # unsafe funcs (fprintf and such)
+
+  # suppress warnings about "unsafe" funcs (fprintf and such)
+  target_compile_definitions(anese PRIVATE _CRT_SECURE_NO_WARNINGS) 
+
   # 4458 - declaration of 'x' hides class member
   #   * non issue, since I always refer to class members through `this`
   # 4310 - cast truncates constant value
   # 4068 - unknown pragma
   # 4244 - type conversion may lead to loss of data
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4458 /wd4310 /wd4068 /wd4244")
+  
   # add icon manifest to windows builds
   set(SRC_FILES ${SRC_FILES} resources/icons/anese.rc)
 endif()
