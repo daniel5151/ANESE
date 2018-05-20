@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include "common/debug.h"
+
 Mapper_007::Mapper_007(const ROM_File& rom_file)
 : Mapper(rom_file)
 {

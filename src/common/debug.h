@@ -25,6 +25,7 @@ public:
 public:
 
   bool print_nestest = false;
+  bool step_cpu = false;
 
 };
 

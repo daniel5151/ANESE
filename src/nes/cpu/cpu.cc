@@ -156,6 +156,39 @@ uint CPU::step() {
   this->nestest(opcode); // print NESTEST debug info
 #endif
 
+  // Ghetto step through
+  if (DEBUG_VARS::Get()->step_cpu) {
+    for (;;) {
+      fprintf(stderr, "> ");
+      const char cmd = getc(stdin);
+
+      if (cmd == 'r') {
+        DEBUG_VARS::Get()->print_nestest = false;
+        DEBUG_VARS::Get()->step_cpu = false;
+        break;
+      };
+
+      if (cmd == 'd') {
+        const char area = getc(stdin) - '0';
+        getc(stdin); // swallow newline
+        const u16 start = this->reg.pc - area - 1;
+        const u16 end   = this->reg.pc + area;
+        fprintf(stderr, "dump from 0x%04X - 0x%04X\n", start, end);
+        for (u16 addr = start; addr < end; addr++) {
+          Instructions::Opcode o = Instructions::Opcodes[this->mem.peek(addr)];
+          fprintf(stderr, "0x%04X : %02X | %s %s\n", 
+            addr,
+            o.raw,
+            o.instr_name, 
+            o.addrm_type
+          );
+        } 
+      }
+
+      if (cmd == '\n') break;
+    }
+  }
+
   // Depending on what addrm this instruction uses, this will either be a u8
   // or a u16. Thus, we use a u16 to get the value from the fn, and let
   // individual instructions cast it to u8 when they need to.

@@ -43,11 +43,9 @@ inline u16 pram_mirror(u16 addr) {
 #define ADDR(lo, hi) if (in_range(addr, lo, hi))
 
 u8 PPU_MMU::read(u16 addr) {
-  ADDR(0x0000, 0x1FFF) {
-    u8 val = this->cart ? this->cart->read(addr) : 0x00;
-    this->set_mirroring();
-    return val;
-  }
+  this->set_mirroring();
+  
+  ADDR(0x0000, 0x1FFF) return this->cart ? this->cart->read(addr) : 0x00;
   ADDR(0x2000, 0x23FF) return this->vram->read(addr - this->nt_0);
   ADDR(0x2400, 0x27FF) return this->vram->read(addr - this->nt_1);
   ADDR(0x2800, 0x2BFF) return this->vram->read(addr - this->nt_2);
@@ -77,13 +75,9 @@ u8 PPU_MMU::peek(u16 addr) const {
 }
 
 void PPU_MMU::write(u16 addr, u8 val) {
-  ADDR(0x0000, 0x1FFF) {
-    if (this->cart) {
-      this->cart->write(addr, val);
-      this->set_mirroring();
-    }
-    return;
-  }
+  this->set_mirroring();
+  
+  ADDR(0x0000, 0x1FFF) return this->cart ? this->cart->write(addr, val) : void();
   ADDR(0x2000, 0x23FF) return this->vram->write(addr - this->nt_0, val);
   ADDR(0x2400, 0x27FF) return this->vram->write(addr - this->nt_1, val);
   ADDR(0x2800, 0x2BFF) return this->vram->write(addr - this->nt_2, val);

@@ -148,8 +148,6 @@ void Mapper_001::write(u16 addr, u8 val) {
     this->reg.sr >>= 1;
     this->reg.sr |= (val & 1) << 4;
     if (done) {
-      if (in_range(addr, 0x8000, 0x9FFF))
-        fprintf(stderr, "%02X\n", this->reg.sr);
       // Write the shift register to the appropriate internal register based on
       // what range this final write occured in.
       const u8 sr = this->reg.sr;
