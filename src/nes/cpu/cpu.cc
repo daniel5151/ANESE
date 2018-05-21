@@ -176,13 +176,13 @@ uint CPU::step() {
         fprintf(stderr, "dump from 0x%04X - 0x%04X\n", start, end);
         for (u16 addr = start; addr < end; addr++) {
           Instructions::Opcode o = Instructions::Opcodes[this->mem.peek(addr)];
-          fprintf(stderr, "0x%04X : %02X | %s %s\n", 
+          fprintf(stderr, "0x%04X : %02X | %s %s\n",
             addr,
             o.raw,
-            o.instr_name, 
+            o.instr_name,
             o.addrm_type
           );
-        } 
+        }
       }
 
       if (cmd == '\n') break;

@@ -14,27 +14,32 @@ Mapper_007::Mapper_007(const ROM_File& rom_file)
 
   // ---- PRG ROM ---- //
 
-  // Split PRG ROM into 32K banks
-  this->banks.prg.len = rom_file.rom.prg.len / 0x8000;
-
-  if (this->rom_file.rom.prg.len == 0x4000) {
+  if (rom_file.rom.prg.len == 0x4000) {
     // There was only 1 16K bank.
-    // In this special case, we simply mirror it twice.
-    this->banks.prg.len = 2;
-  }
+    // In this special case, we need to mirror it twice.
+    this->banks.prg.len = 1;
+    this->banks.prg.bank = new ROM* [1];
 
-  this->banks.prg.bank = new ROM* [this->banks.prg.len];
+    fprintf(stderr, "[Mapper_007] Special case: mirroring single 16K ROM Bank");
 
-  fprintf(stderr, "[Mapper_007] 32K PRG ROM Banks: %d\n", this->banks.prg.len);
+    // this is a bit jank, but it will have to do for now...
+    u8* tmp = new u8 [0x8000];
+    memcpy(tmp + 0x0000, rom_file.rom.prg.data, 0x4000);
+    memcpy(tmp + 0x4000, rom_file.rom.prg.data, 0x4000);
+    this->banks.prg.bank[0] = new ROM (0x8000, tmp, "Mapper_007 PRG");
+    delete[] tmp;
+  } else {
+    // Split PRG ROM into 32K banks
+    this->banks.prg.len = rom_file.rom.prg.len / 0x8000;
+    this->banks.prg.bank = new ROM* [this->banks.prg.len];
 
-  const u8* prg_data_p = rom_file.rom.prg.data;
-  for (uint i = 0; i < this->banks.prg.len; i++) {
-    this->banks.prg.bank[i] = new ROM (0x8000, prg_data_p, "Mapper_007 PRG");
-    prg_data_p += 0x8000;
+    fprintf(stderr, "[Mapper_007] 32K PRG ROM Banks: %d\n", this->banks.prg.len);
 
-    // handle single-bank case
-    if (this->rom_file.rom.prg.len == 0x4000)
-      prg_data_p -= 0x8000;
+    const u8* prg_data_p = rom_file.rom.prg.data;
+    for (uint i = 0; i < this->banks.prg.len; i++) {
+      this->banks.prg.bank[i] = new ROM (0x8000, prg_data_p, "Mapper_007 PRG");
+      prg_data_p += 0x8000;
+    }
   }
 
   // Set default banks
@@ -66,8 +71,7 @@ u8 Mapper_007::peek(u16 addr) const {
   // Wired to the CPU MMU
   if (in_range(addr, 0x4020, 0x5FFF)) return 0x00; // Nothing in "Expansion ROM"
   if (in_range(addr, 0x6000, 0x7FFF)) return 0x00; // Nothing in SRAM
-  if (in_range(addr, 0x8000, 0xBFFF)) return this->prg_rom->peek(addr - 0x8000);
-  if (in_range(addr, 0xC000, 0xFFFF)) return this->prg_rom->peek(addr - 0xC000);
+  if (in_range(addr, 0x8000, 0xFFFF)) return this->prg_rom->peek(addr - 0x8000);
 
   assert(false);
   return 0;
