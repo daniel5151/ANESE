@@ -8,14 +8,12 @@
 // http://wiki.nesdev.com/w/index.php/NROM
 class Mapper_000 final : public Mapper {
 private:
-  // const ROM_File& rom_file; // inherited from Mapper
-
   // CPU Memory Space
-  ROM* prg_lo;     // 0x8000 ... 0xBFFF
-  ROM* prg_hi;     // 0xC000 ... 0xFFFF
+  ROM* prg_lo;     // 0x8000 ... 0xBFFF - Fixed
+  ROM* prg_hi;     // 0xC000 ... 0xFFFF - Fixed
 
   // PPU Memory Space
-  Memory* chr_mem; // 0x0000 ... 0x1FFF
+  Memory* chr_mem; // 0x0000 ... 0x1FFF - Fixed
 
   Mirroring::Type mirror_mode;
 
@@ -30,6 +28,4 @@ public:
   // <Memory/>
 
   Mirroring::Type mirroring() const override { return this->mirror_mode; };
-
-  void cycle() override {}; // not an active mapper
 };

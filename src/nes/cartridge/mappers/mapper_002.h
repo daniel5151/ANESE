@@ -6,11 +6,9 @@
 #include "common/util.h"
 #include "mapper.h"
 
-// https://wiki.nesdev.com/w/index.php/MMC1
+// https://wiki.nesdev.com/w/index.php/UxROM
 class Mapper_002 final : public Mapper {
 private:
-  // const INES& rom_file; // inherited from Mapper
-
   // Banked ROMs
   struct {
     struct {
@@ -20,11 +18,11 @@ private:
   } banks;
 
   // CPU Memory Space
-  ROM* prg_lo;     // 0x8000 ... 0xBFFF
-  ROM* prg_hi;     // 0xC000 ... 0xFFFF
+  ROM* prg_lo;     // 0x8000 ... 0xBFFF - Switchable
+  ROM* prg_hi;     // 0xC000 ... 0xFFFF - Fixed
 
   // PPU Memory Space
-  Memory* chr_mem; // 0x0000 ... 0x1FFF - 8 KB switchable CHR ROM bank
+  Memory* chr_mem; // 0x0000 ... 0x1FFF - Switchable
 
   struct { // Registers
     // Bank select - 0x8000 ... 0xFFFF

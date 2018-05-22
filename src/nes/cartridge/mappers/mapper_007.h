@@ -6,7 +6,7 @@
 #include "common/util.h"
 #include "mapper.h"
 
-// https://wiki.nesdev.com/w/index.php/MMC1
+// https://wiki.nesdev.com/w/index.php/AxROM
 class Mapper_007 final : public Mapper {
 private:
   // const INES& rom_file; // inherited from Mapper

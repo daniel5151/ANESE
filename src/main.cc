@@ -236,7 +236,7 @@ int main(int argc, char* argv[]) {
     break;
   case Cartridge::Error::BAD_MAPPER:
     fprintf(stderr, "[Cart] Mapper %u has not been implemented yet!\n",
-      rom_cart.getMapper());
+      rom_cart.getROM_File().meta.mapper);
     return 1;
   case Cartridge::Error::BAD_DATA:
     fprintf(stderr, "[Cart] ROM file could not be parsed!\n");

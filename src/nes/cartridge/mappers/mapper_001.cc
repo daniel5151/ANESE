@@ -5,7 +5,7 @@
 #include <cstring>
 
 Mapper_001::Mapper_001(const ROM_File& rom_file)
-: Mapper(rom_file)
+: Mapper(1, "MMC1")
 , prg_ram(0x2000)
 {
   // Clear registers

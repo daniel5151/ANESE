@@ -5,7 +5,8 @@
 #include "mappers/mapper.h"
 #include "nes/interfaces/memory.h"
 
-// Converts raw ROM data into a proper, ready to use Cartridge
+// Container that facilitates conversion from raw ROM data into a ready-to-go
+// cartridge (i.e: data + mapper)
 class Cartridge final : public Memory {
 public:
   enum class Error {
@@ -15,8 +16,8 @@ public:
   };
 
 private:
-  const ROM_File rom_file; // Structured container for raw ROM data
-  Mapper* mapper;          // iNES mapper hardware, varies game-per-game
+  const ROM_File rom_file; // Structured container for ROM data
+  Mapper* const  mapper;   // iNES mapper hardware, varies game-per-game
 
 public:
   ~Cartridge();
@@ -28,13 +29,17 @@ public:
   void write(u16 addr, u8 val) override;
   // </Memory>
 
-  Error getError() const;
-  uint  getMapper() const;
+  // Mapper interface
+  const char* mapper_name()   const { return this->mapper->mapper_name();   };
+        uint  mapper_number() const { return this->mapper->mapper_number(); };
 
-  Mirroring::Type mirroring() const;
+  Mirroring::Type mirroring() const { return this->mapper->mirroring(); }
 
-  void cycle();
+  void cycle() { this->mapper->cycle(); }
 
-  // Critical importance
-  void blowOnContacts() const;
+  // Cartridge specific functions
+  Error getError() const; // Returns error code from construction
+  void  blowOnContacts(); // Critical importance
+
+  const ROM_File& getROM_File() const;
 };

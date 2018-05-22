@@ -5,7 +5,7 @@
 #include <cstring>
 
 Mapper_003::Mapper_003(const ROM_File& rom_file)
-: Mapper(rom_file)
+: Mapper(3, "CNROM")
 {
   // Clear registers
   memset(&this->reg, 0, sizeof this->reg);

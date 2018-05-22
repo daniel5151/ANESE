@@ -7,7 +7,7 @@
 #include "common/debug.h"
 
 Mapper_007::Mapper_007(const ROM_File& rom_file)
-: Mapper(rom_file)
+: Mapper(7, "AxROM")
 {
   // Clear registers
   memset(&this->reg, 0, sizeof this->reg);

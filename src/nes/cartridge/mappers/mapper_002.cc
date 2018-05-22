@@ -5,7 +5,7 @@
 #include <cstring>
 
 Mapper_002::Mapper_002(const ROM_File& rom_file)
-: Mapper(rom_file)
+: Mapper(2, "UxROM")
 {
   // Clear registers
   memset(&this->reg, 0, sizeof this->reg);

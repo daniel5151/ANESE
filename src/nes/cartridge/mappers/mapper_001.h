@@ -9,8 +9,6 @@
 // https://wiki.nesdev.com/w/index.php/MMC1
 class Mapper_001 final : public Mapper {
 private:
-  // const INES& rom_file; // inherited from Mapper
-
   // Banked ROMs
   struct {
     struct {
@@ -25,13 +23,13 @@ private:
   } banks;
 
   // CPU Memory Space
-  RAM  prg_ram; // 0x6000 ... 0x7FFF
-  ROM* prg_lo;  // 0x8000 ... 0xBFFF
-  ROM* prg_hi;  // 0xC000 ... 0xFFFF
+  RAM  prg_ram; // 0x6000 ... 0x7FFF - Fixed RAM (can be disabled though)
+  ROM* prg_lo;  // 0x8000 ... 0xBFFF - Switchable
+  ROM* prg_hi;  // 0xC000 ... 0xFFFF - Switchable
 
   // PPU Memory Space
-  Memory* chr_lo;  // 0x0000 ... 0x0FFF
-  Memory* chr_hi;  // 0x1000 ... 0x1FFF
+  Memory* chr_lo;  // 0x0000 ... 0x0FFF - Switchable
+  Memory* chr_hi;  // 0x1000 ... 0x1FFF - Switchable
 
   struct { // Registers
     // Control - 0x8000 ... 0x9FFF

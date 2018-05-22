@@ -3,9 +3,7 @@
 #include <cassert>
 #include <cstdio>
 
-Mapper_000::Mapper_000(const ROM_File& rom_file)
-: Mapper(rom_file)
-{
+Mapper_000::Mapper_000(const ROM_File& rom_file) : Mapper(0, "NROM") {
   this->mirror_mode = rom_file.meta.mirror_mode;
 
   // ---- PRG ROM ---- //

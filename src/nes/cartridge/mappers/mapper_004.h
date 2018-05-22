@@ -6,11 +6,9 @@
 #include "common/util.h"
 #include "mapper.h"
 
-// https://wiki.nesdev.com/w/index.php/MMC1
+// https://wiki.nesdev.com/w/index.php/MMC3
 class Mapper_004 final : public Mapper {
 private:
-  // const INES& rom_file; // inherited from Mapper
-
   // Banked ROMs
   struct {
     struct {
@@ -141,6 +139,8 @@ private:
   } reg;
 
   // ---- Emulation Vars and Heplers ---- //
+
+  bool fourscreen_mirroring = false;
 
   void update_banks();
 

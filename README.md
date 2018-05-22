@@ -12,23 +12,18 @@ I'm aiming for clean and _interesting_ C++11 code, with a emphasis on keeping
 the source readable and maintainable. Performance is important, but it's not a
 primary focus.
 
-**NOTE:** The APU is _not my code_. I wanted to get ANESE partially up and
-running before new-years 2018, so I've used Blargg's venerable `nes_snd_emu`
-library to handle sound (for now). Once I polish up some of the other aspects
-of the emulator, I will revisit my own APU implementation (which is currently
-stubbed)
+ANESE is built with _cross-platform_ in mind, and building should work on macOS,
+Linux (Ubuntu), and Windows. The C++ doesn't rely on any vendor-specific
+extentions, and is compiled with relatively strict compiler flags. The code is
+linted regularly.
 
-ANESE is built with _cross-platform_ in mind, and builds are regularly tested on
-macOS, Linux (Ubuntu), and Windows regularly. The C++ doesn't rely on
-vendor-specific extentions, and is compiled with strict compiler flags. The code
-is linted regularly.
+Lastly, I actively avoided looking at the source codes of other NES emulators
+while writing initial implementations of the CPU and PPU, since I thought it
+would be fun to figure things out myself :D
 
-Lastly, I am trying to avoid looking at the source codes of other NES emulators,
-since IMO, half the fun of writing a emulator is figuring things out yourself :D
-
-(That said, big shout-out to [LaiNES](https://github.com/AndreaOrru/LaiNES) and
-[fogleman/nes](https://github.com/fogleman/nes), two solid projects who's code I
-referenced when implementing some particularly tricky parts of the PPU)
+That said, a big shout-out to [LaiNES](https://github.com/AndreaOrru/LaiNES) and
+[fogleman/nes](https://github.com/fogleman/nes), two solid NES emulators that I
+referenced while implementing some particularly tricky parts of the PPU)
 
 ## Building
 
@@ -100,6 +95,21 @@ Speed++            | Ctrl - =
 Speed--            | Ctrl - -
 Fast-Forward       | Space
 
+## DISCLAIMERS
+
+I wrote my CPU emulator to be _instruction-length cycle_ accurate, but not
+_sub-instruction cycle_ accurate. This doesn't affect most games, but there are
+a couple that rely on sub-instruction level timings (eg: Solomon's Key)
+
+I could put a nasty timing hack in my PPU to circumvent these issues in some
+games, but as of now, I'm just going to leave it be.
+
+**NOTE:** The APU is _not my code_. I wanted to get ANESE partially up and
+running before new-years 2018, so I've used Blargg's venerable `nes_snd_emu`
+library to handle sound (for now). Once I polish up some of the other aspects
+of the emulator, I will revisit my own APU implementation (which is currently
+stubbed)
+
 ## TODO
 
 - Key Milestones
@@ -114,7 +124,7 @@ Fast-Forward       | Space
       - [x] Fetch - Decode - Execute
     - [x] Official Opcodes Implemented
     - [x] Handle Interrupts
-  - [ ] PPU - ***glitchy gfx in some games (eg: Contra, Zelda)***
+  - [x] PPU
     - [x] Set Up Basic Rendering Context (SDL)
     - [x] Implement Registers + Memory Map them
     - [x] Implement DMA
@@ -139,7 +149,7 @@ Fast-Forward       | Space
   - [ ] Joypads
     - [x] Basic Controller
     - [ ] Zapper
-    - [ ] Multitap
+    - [ ] NES Four Score
 
 - Ongoing Tasks
   - Better Usability
@@ -154,6 +164,8 @@ Fast-Forward       | Space
     - Saving
       - [ ] Battery Backed RAM
       - [ ] Save-states
+    - Full-fledged in application GUI
+      - [ ] imgui maybe?
   - Accuracy & Compatibility improvements
     - More Mappers
       - [x] 000
@@ -162,13 +174,14 @@ Fast-Forward       | Space
       - [x] 003
       - [ ] 004
       - [ ] 005
-      - [ ] 006
+      - [x] 007
       - ...
     - [ ] Proper PAL handling
     - CPU
       - [ ] Implement Unofficial Opcodes
       - [ ] Pass More Tests yo
-      - [ ] _\(Stretch\)_ Switch to cycle-based emulation (vs instruction level)
+      - [ ] _\(Stretch\)_ Switch to sub-instruction level cycle-based emulation
+            (vs instruction level)
     - PPU
       - [ ] Make value in PPU <-> CPU bus decay
       - [ ] Pass More Tests yo
@@ -195,11 +208,17 @@ Fast-Forward       | Space
     - [ ] CPU
       - [ ] Serialize state
       - [x] Step through instructions - _super jank, no external flags_
-    - [ ] PPU
-      - [ ] Proper NTSC artifacting
+    - [ ] PPU Views
+      - [x] Static Palette
+      - [x] Palette Memory
+      - [x] Pattern Tables
+      - [x] Nametables
+      - [ ] OAM memory
+  - [ ] PPU
+    - [ ] Proper NTSC artifacting
   - [ ] Write a NES rom to simulate TV static, and run it if no ROM inserted
   - Multiple Frontends
-    - [x] SDL (current default)
+    - [x] SDL Standalone
     - [ ] LibRetro
     - ...
   - [ ] Add support for more ROM formats (not just iNES)
