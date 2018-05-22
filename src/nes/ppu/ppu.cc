@@ -672,7 +672,7 @@ void PPU::cycle() {
 
     const uint x = (this->scan.cycle - 2);
     if (x < 256 && this->scan.line != 261) {
-      this->draw_dot(this->palette[palette], x, this->scan.line);
+      this->draw_dot(this->palette[palette % 64], x, this->scan.line);
     }
   }
 

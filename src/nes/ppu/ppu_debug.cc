@@ -85,7 +85,7 @@ void PPU::update_debug_windows() {
           uint pixel_type = nth_bit(lo_bp, x) + (nth_bit(hi_bp, x) << 1);
 
           Color color = this->palette[
-            this->mem.peek(0x3F00 + palette * 4 + pixel_type)
+            this->mem.peek(0x3F00 + palette * 4 + pixel_type) % 64
           ];
 
           // Render to main window too?
@@ -197,7 +197,7 @@ void PPU::update_debug_windows() {
 
     // nes palette
     for (uint i = 0; i < 64; i++) {
-      nes_palette->set_pixel(i % 16, i / 16, this->palette[i]);
+      nes_palette->set_pixel(i % 16, i / 16, this->palette[i % 64]);
     }
 
     nes_palette->render();
@@ -206,7 +206,7 @@ void PPU::update_debug_windows() {
     // Background palette - from 0x3F00 to 0x3F0F
     // Sprite palette     - from 0x3F10 to 0x3F1F
     for (u16 addr = 0x3F00; addr < 0x3F20; addr++) {
-      Color color = this->palette[this->mem.peek(addr)];
+      Color color = this->palette[this->mem.peek(addr) % 64];
       // printf("0x%04X\n", this->mem.peek(addr));
       palette_t->set_pixel(
         (addr % 4) + ((addr >= 0x3F10) ? 5 : 0),
