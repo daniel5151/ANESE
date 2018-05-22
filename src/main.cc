@@ -255,7 +255,7 @@ int main(int argc, char* argv[]) {
     // very incomplete fm2 header...
     fprintf(movie, "port0 1\n");
     fprintf(movie, "port1 1\n");
-    fprintf(movie, "port2 1\n");
+    fprintf(movie, "port2 0\n");
   }
 
   // Check if there is a fm2 to playback
