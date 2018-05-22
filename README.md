@@ -174,11 +174,15 @@ Fast-Forward       | Space
       - [ ] Pass More Tests yo
   - Cleanup Code
     - [ ] OH GOD DON'T LOOK AT `main.cc` I'M SORRY IN ADVANCE
-      - [ ] Modularize UI code (i.e: get it out of main.cc)
-    - [ ] Unify naming conventions (either camelCase or snake_case)
+      - [ ] Modularize EVERYTHING and get it out of main!
+    - Movies
+      - [ ] Confrom to the `.fm2` movie format better (in parsing and recording)
+      - [ ] Make movie recording a seperate class (and not a bunch of ad-hoc f
+            printfs scattered around the codebase)
     - Better error handling and logging
       - [ ] Remove fatal asserts (?)
       - [ ] Switch to a better logging system (\*cough\* not fprintf \*cough\*)
+    - [ ] Unify naming conventions (either camelCase or snake_case)
     - Better cmake config
 
 - Fun Bonuses
@@ -186,10 +190,11 @@ Fast-Forward       | Space
     - [x] Zipped ROM support
     - [ ] Rewind
     - [ ] Game Genie
+    - [x] Movie recording and playback
   - [ ] Debugger!
     - [ ] CPU
       - [ ] Serialize state
-      - [ ] Step through instructions
+      - [x] Step through instructions - _super jank, no external flags_
     - [ ] PPU
       - [ ] Proper NTSC artifacting
   - [ ] Write a NES rom to simulate TV static, and run it if no ROM inserted

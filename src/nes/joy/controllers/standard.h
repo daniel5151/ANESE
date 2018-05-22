@@ -3,6 +3,19 @@
 #include "common/util.h"
 #include "nes/interfaces/memory.h"
 
+namespace JOY_Standard_Button {
+  enum Type : unsigned {
+    A = 0,
+    B,
+    Select,
+    Start,
+    Up,
+    Down,
+    Left,
+    Right,
+  };
+}
+
 class JOY_Standard final : public Memory {
 private:
   bool strobe = false;
@@ -24,6 +37,8 @@ private:
 
   const char* label;
 
+  char movie_buf [9];
+
 public:
   JOY_Standard(const char* label = "?");
 
@@ -33,5 +48,7 @@ public:
   void write(u16 addr, u8 val) override;
   // </Memory>
 
-  void set_button(const char* btn, bool state);
+  void set_button(JOY_Standard_Button::Type btn, bool state);
+
+  const char* get_movie_frame();
 };

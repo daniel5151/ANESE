@@ -19,6 +19,7 @@
 #include <miniz_zip.h>
 
 #include "ui/sdl/Sound_Queue.h"
+#include "ui/movies/playback/fm2.h"
 
 #include <algorithm>
 static inline std::string get_file_ext(std::string filename) {
@@ -33,7 +34,11 @@ int main(int argc, char* argv[]) {
   // use `args` to parse arguments
   args::ArgumentParser parser("ANESE - A Nintendo Entertainment System Emulator", "");
   args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
-  args::Flag log_cpu(parser, "log_cpu", "Output CPU execution over STDOUT", {"log-cpu"});
+
+  args::Flag log_cpu(parser, "log-cpu", "Output CPU execution over STDOUT", {"log-cpu"});
+  args::ValueFlag<std::string> arg_log_movie(parser, "log-movie", "log input in fm2 format", {"log-movie"});
+  args::ValueFlag<std::string> arg_fm2(parser, "fm2", "path to fm2 movie", {"fm2"});
+
   args::Positional<std::string> rom(parser, "rom", "Valid iNES rom");
 
   try {
@@ -74,6 +79,21 @@ int main(int argc, char* argv[]) {
     rom_path = args::get(rom);
   }
 
+  // Some pretty low-tier movie support
+  // TODO: make a FM2_Recording_Controller...
+  bool load_fm2 = false;
+  std::string fm2_path = "";
+  if (arg_fm2) {
+    load_fm2 = true;
+    fm2_path = args::get(arg_fm2);
+  }
+
+  FILE* movie = nullptr;
+  if (arg_log_movie) {
+    std::string movie_path = args::get(arg_log_movie);
+    movie = fopen(movie_path.c_str(), "w");
+  }
+
   if (log_cpu) { DEBUG_VARS::Get()->print_nestest = 1; }
 
   // ----------------------------- Read ROM File ---------------------------- //
@@ -103,10 +123,13 @@ int main(int argc, char* argv[]) {
       return 1;
     }
 
-    data_len = static_cast<uint>(rom_file_size);
+    data_len = rom_file_size;
     data = new u8 [data_len];
 
     rom_file.read((char*) data, data_len);
+
+    fprintf(stderr, "[Open][.nes] Successfully read '%s'\n", rom_path.c_str());
+
   }
   // If given a zip, try to decompress it
   else if (rom_ext == ".zip") {
@@ -151,6 +174,8 @@ int main(int argc, char* argv[]) {
         data = new u8 [data_len];
         memcpy(data, p, data_len);
 
+        fprintf(stderr, "[Open][.zip] Successfully read '%s'\n", rom_path.c_str());
+
         // Free the redundant decompressed file mem
         mz_free(p);
 
@@ -163,11 +188,46 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  // ---------------------------- Read fm2 file ----------------------------- //
+
+  FM2_Playback_Controller* fm2_playback_controller = nullptr;
+
+  if (load_fm2) {
+    std::ifstream fm2_file (fm2_path, std::ios::binary);
+
+    if (!fm2_file.is_open()) {
+      fprintf(stderr, "[Open][.fm2] Could not open '%s'\n", fm2_path.c_str());
+      return 1;
+    }
+
+    // get length of file
+    fm2_file.seekg(0, fm2_file.end);
+    std::streamoff fm2_file_size = fm2_file.tellg();
+    fm2_file.seekg(0, fm2_file.beg);
+
+    if (fm2_file_size == -1) {
+      fprintf(stderr, "[Open][.fm2] Could not read '%s'\n", fm2_path.c_str());
+      return 1;
+    }
+
+    // Nice, we got fm2 data!
+    const char* fm2 = new char [fm2_file_size];
+    fm2_file.read((char*) fm2, fm2_file_size);
+
+    fprintf(stderr, "[Open][.fm2] Successfully read '%s'\n", fm2_path.c_str());
+
+    // create a fm2 controller
+    fm2_playback_controller = new FM2_Playback_Controller(fm2, fm2_file_size);
+
+    // cleanup
+    delete[] fm2;
+  }
+
   // -------------------------- NES Initialization -------------------------- //
 
   // Generate cartridge from data
   Cartridge rom_cart (data, data_len);
-  delete data;
+  delete[] data;
 
   Cartridge::Error error = rom_cart.getError();
   switch (error) {
@@ -190,9 +250,24 @@ int main(int argc, char* argv[]) {
   JOY_Standard joy_1 ("P1");
   JOY_Standard joy_2 ("P2");
 
-  // ...and plug them in.
-  nes.attach_joy(0, &joy_1);
-  nes.attach_joy(1, &joy_2);
+  // Update movie header (if needed)
+  if (movie) {
+    // very incomplete fm2 header...
+    fprintf(movie, "port0 1\n");
+    fprintf(movie, "port1 1\n");
+    fprintf(movie, "port2 1\n");
+  }
+
+  // Check if there is a fm2 to playback
+  if (fm2_playback_controller) {
+    // plug in fm2 controllers
+    nes.attach_joy(0, fm2_playback_controller->get_joy(0));
+    nes.attach_joy(1, fm2_playback_controller->get_joy(1));
+  } else {
+    // plug in physical nes controllers
+    nes.attach_joy(0, &joy_1);
+    nes.attach_joy(1, &joy_2);
+  }
 
   // Slap that cartridge in!
   // (don't forget to blow on it a few times though)
@@ -272,6 +347,7 @@ int main(int argc, char* argv[]) {
   sound_queue.init(44100);
 
   uint speedup = 100;
+  int  speed_counter = 0;
 
   // Main Loop
   bool quit = false;
@@ -290,30 +366,32 @@ int main(int argc, char* argv[]) {
       // ------ Joypad controls ------ //
       if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
         bool new_state = (event.type == SDL_CONTROLLERBUTTONDOWN) ? true : false;
+        using namespace JOY_Standard_Button;
         switch (event.cbutton.button) {
-        case SDL_CONTROLLER_BUTTON_A:          joy_1.set_button("A",      new_state); break;
-        case SDL_CONTROLLER_BUTTON_X:          joy_1.set_button("B",      new_state); break;
-        case SDL_CONTROLLER_BUTTON_START:      joy_1.set_button("Start",  new_state); break;
-        case SDL_CONTROLLER_BUTTON_BACK:       joy_1.set_button("Select", new_state); break;
-        case SDL_CONTROLLER_BUTTON_DPAD_UP:    joy_1.set_button("Up",     new_state); break;
-        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:  joy_1.set_button("Down",   new_state); break;
-        case SDL_CONTROLLER_BUTTON_DPAD_LEFT:  joy_1.set_button("Left",   new_state); break;
-        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: joy_1.set_button("Right",  new_state); break;
+        case SDL_CONTROLLER_BUTTON_A:          joy_1.set_button(A,      new_state); break;
+        case SDL_CONTROLLER_BUTTON_X:          joy_1.set_button(B,      new_state); break;
+        case SDL_CONTROLLER_BUTTON_START:      joy_1.set_button(Start,  new_state); break;
+        case SDL_CONTROLLER_BUTTON_BACK:       joy_1.set_button(Select, new_state); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_UP:    joy_1.set_button(Up,     new_state); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:  joy_1.set_button(Down,   new_state); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_LEFT:  joy_1.set_button(Left,   new_state); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: joy_1.set_button(Right,  new_state); break;
         }
       }
 
       if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
         // ------ Keyboard controls ------ //
         bool new_state = (event.type == SDL_KEYDOWN) ? true : false;
+        using namespace JOY_Standard_Button;
         switch (event.key.keysym.sym) {
-        case SDLK_z:      joy_1.set_button("A",      new_state); break;
-        case SDLK_x:      joy_1.set_button("B",      new_state); break;
-        case SDLK_RETURN: joy_1.set_button("Start",  new_state); break;
-        case SDLK_RSHIFT: joy_1.set_button("Select", new_state); break;
-        case SDLK_UP:     joy_1.set_button("Up",     new_state); break;
-        case SDLK_DOWN:   joy_1.set_button("Down",   new_state); break;
-        case SDLK_LEFT:   joy_1.set_button("Left",   new_state); break;
-        case SDLK_RIGHT:  joy_1.set_button("Right",  new_state); break;
+        case SDLK_z:      joy_1.set_button(A,      new_state); break;
+        case SDLK_x:      joy_1.set_button(B,      new_state); break;
+        case SDLK_RETURN: joy_1.set_button(Start,  new_state); break;
+        case SDLK_RSHIFT: joy_1.set_button(Select, new_state); break;
+        case SDLK_UP:     joy_1.set_button(Up,     new_state); break;
+        case SDLK_DOWN:   joy_1.set_button(Down,   new_state); break;
+        case SDLK_LEFT:   joy_1.set_button(Left,   new_state); break;
+        case SDLK_RIGHT:  joy_1.set_button(Right,  new_state); break;
         }
 
         // Use CMD on macOS, and CTRL on windows / linux
@@ -334,6 +412,7 @@ int main(int argc, char* argv[]) {
         // 2x speed
         if (event.key.keysym.sym == SDLK_SPACE) {
           speedup = (event.type == SDL_KEYDOWN) ? 200 : 100;
+          speed_counter = 0;
           nes.set_speed(speedup);
         }
 
@@ -342,9 +421,16 @@ int main(int argc, char* argv[]) {
           switch (event.key.keysym.sym) {
           case SDLK_r:      nes.reset();                  break;
           case SDLK_p:      nes.power_cycle();            break;
-          case SDLK_EQUALS: nes.set_speed(speedup += 25); break;
-          case SDLK_MINUS:  if (speedup - 25)
-                              nes.set_speed(speedup -= 25); break;
+          case SDLK_EQUALS: {
+            nes.set_speed(speedup += 25);
+            speed_counter = 0;
+          } break;
+          case SDLK_MINUS: {
+            if (speedup - 25) {
+              nes.set_speed(speedup -= 25);
+              speed_counter = 0;
+            }
+          } break;
           case SDLK_c: {
             bool log = DEBUG_VARS::Get()->print_nestest ^= 1;
             fprintf(stderr, "NESTEST CPU logging: %s\n", log ? "ON" : "OFF");
@@ -355,8 +441,33 @@ int main(int argc, char* argv[]) {
       }
     }
 
-    // run the NES
-    nes.step_frame();
+    // Calculate the number of frames to render, as speedup values that are not
+    // multiples of 100 cannot be represented by rendering a consistent number
+    // of nes frames / actual frame.
+    uint numframes = 0;
+    speed_counter += speedup;
+    while (speed_counter > 0) {
+      speed_counter -= 100;
+      numframes++;
+    }
+
+    for (uint i = 0; i < numframes; i++) {
+      // log to movie file
+      if (movie) {
+        fprintf(movie, "|0|%s|%s||\n",
+          joy_1.get_movie_frame(),
+          joy_2.get_movie_frame()
+        );
+      }
+
+      // update fm2 inputs
+      if (fm2_playback_controller) {
+        fm2_playback_controller->step_frame();
+      }
+
+      // run the NES for a frame
+      nes.step_frame();
+    }
 
     if (nes.isRunning() == false) {
       // quit = true;
@@ -427,6 +538,8 @@ int main(int argc, char* argv[]) {
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
+
+  delete fm2_playback_controller;
 
   printf("\nANESE closed successfully\n");
 

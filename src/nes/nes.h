@@ -59,9 +59,6 @@ private:
   =            Emulator Vars            =
   =====================================*/
 
-  uint speed;         // Emulation speed, default 100% (100)
-  int  speed_counter; // Used to track how many frames to emulate per-step
-
   bool is_running;
 
 public:
