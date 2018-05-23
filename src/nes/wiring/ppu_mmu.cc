@@ -44,7 +44,7 @@ inline u16 pram_mirror(u16 addr) {
 
 u8 PPU_MMU::read(u16 addr) {
   this->set_mirroring();
-  
+
   ADDR(0x0000, 0x1FFF) return this->cart ? this->cart->read(addr) : 0x00;
   ADDR(0x2000, 0x23FF) return this->vram->read(addr - this->nt_0);
   ADDR(0x2400, 0x27FF) return this->vram->read(addr - this->nt_1);
@@ -76,7 +76,7 @@ u8 PPU_MMU::peek(u16 addr) const {
 
 void PPU_MMU::write(u16 addr, u8 val) {
   this->set_mirroring();
-  
+
   ADDR(0x0000, 0x1FFF) return this->cart ? this->cart->write(addr, val) : void();
   ADDR(0x2000, 0x23FF) return this->vram->write(addr - this->nt_0, val);
   ADDR(0x2400, 0x27FF) return this->vram->write(addr - this->nt_1, val);
@@ -165,7 +165,7 @@ void PPU_MMU::set_mirroring() {
   }
 }
 
-void PPU_MMU::loadCartridge(Cartridge* cart) {
+void PPU_MMU::loadCartridge(Mapper* cart) {
   this->cart = cart;
   this->set_mirroring();
 }

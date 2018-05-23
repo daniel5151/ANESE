@@ -2,7 +2,7 @@
 
 #include "common/util.h"
 
-#include "cartridge/cartridge.h"
+#include "cartridge/mapper.h"
 #include "nes/generic/ram/ram.h"
 #include "joy/joy.h"
 #include "apu/apu.h"
@@ -25,7 +25,7 @@ private:
   /*----------  Borrowed Resources  -----------*/
   // Not owned by NES
 
-  Cartridge* cart;
+  Mapper* cart; // Game Cartridge
 
   /*----------  Volatile Resources  -----------*/
   // Fixed components, but have state
@@ -71,7 +71,7 @@ public:
 
   /*-----------  Key Operation Functions  ------------*/
 
-  bool loadCartridge(Cartridge* cart);
+  bool loadCartridge(Mapper* cart);
   void removeCartridge();
 
   void attach_joy(uint port, Memory* joy);

@@ -4,7 +4,7 @@
 #include "nes/generic/rom/rom.h"
 #include "common/bitfield.h"
 #include "common/util.h"
-#include "mapper.h"
+#include "../mapper.h"
 
 // https://wiki.nesdev.com/w/index.php/UxROM
 class Mapper_002 final : public Mapper {

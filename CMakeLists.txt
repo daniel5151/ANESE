@@ -36,7 +36,7 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   # suppress some MSVC warnings
 
   # suppress warnings about "unsafe" funcs (fprintf and such)
-  target_compile_definitions(anese PRIVATE _CRT_SECURE_NO_WARNINGS) 
+  target_compile_definitions(anese PRIVATE _CRT_SECURE_NO_WARNINGS)
 
   # 4458 - declaration of 'x' hides class member
   #   * non issue, since I always refer to class members through `this`
@@ -44,7 +44,7 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   # 4068 - unknown pragma
   # 4244 - type conversion may lead to loss of data
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4458 /wd4310 /wd4068 /wd4244")
-  
+
   # add icon manifest to windows builds
   set(SRC_FILES ${SRC_FILES} resources/icons/anese.rc)
 endif()

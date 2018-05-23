@@ -4,7 +4,7 @@
 #include "nes/generic/rom/rom.h"
 #include "common/bitfield.h"
 #include "common/util.h"
-#include "mapper.h"
+#include "../mapper.h"
 
 // https://wiki.nesdev.com/w/index.php/MMC3
 class Mapper_004 final : public Mapper {

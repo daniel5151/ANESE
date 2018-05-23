@@ -97,5 +97,5 @@ void CPU_MMU::write(u16 addr, u8 val) {
   assert(false);
 }
 
-void CPU_MMU::loadCartridge(Cartridge* cart) { this->cart = cart;    }
-void CPU_MMU::removeCartridge()              { this->cart = nullptr; }
+void CPU_MMU::loadCartridge(Mapper* cart) { this->cart = cart;    }
+void CPU_MMU::removeCartridge()           { this->cart = nullptr; }

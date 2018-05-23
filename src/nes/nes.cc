@@ -107,7 +107,7 @@ NES::~NES() {
   delete this->ppu_oam2;
 }
 
-bool NES::loadCartridge(Cartridge* cart) {
+bool NES::loadCartridge(Mapper* cart) {
   if (cart == nullptr)
     return false;
 

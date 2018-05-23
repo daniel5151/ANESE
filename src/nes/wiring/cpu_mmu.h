@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/util.h"
-#include "nes/cartridge/cartridge.h"
+#include "nes/cartridge/mapper.h"
 #include "nes/interfaces/memory.h"
 
 // CPU Memory Map (MMU)
@@ -17,7 +17,7 @@ private:
   Memory& joy;
 
   // Changing References
-  Cartridge* cart;
+  Mapper* cart;
 public:
   ~CPU_MMU() = default; // no owned resources
   CPU_MMU(
@@ -33,6 +33,6 @@ public:
   void write(u16 addr, u8 val) override;
   // <Memory/>
 
-  void loadCartridge(Cartridge* cart);
+  void loadCartridge(Mapper* cart);
   void removeCartridge();
 };

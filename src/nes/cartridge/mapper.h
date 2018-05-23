@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../file_formats/rom_file.h"
+#include "rom_file.h"
 #include "common/util.h"
 #include "nes/interfaces/memory.h"
 #include "nes/interfaces/mirroring.h"

@@ -2,13 +2,13 @@
 // I'll clean it up (eventually)
 
 #include "common/util.h"
-#include "nes/cartridge/cartridge.h"
+#include "nes/cartridge/mapper.h"
+#include "nes/cartridge/rom_file.h"
 #include "nes/joy/controllers/standard.h"
 #include "nes/nes.h"
 
 #include "common/debug.h"
 
-#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -16,17 +16,10 @@
 #include <args.hxx>
 #include <SDL.h>
 #include <tinyfiledialogs.h>
-#include <miniz_zip.h>
 
 #include "ui/sdl/Sound_Queue.h"
 #include "ui/movies/playback/fm2.h"
-
-#include <algorithm>
-static inline std::string get_file_ext(std::string filename) {
-  std::string ext = filename.substr(filename.find_last_of("."));
-  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-  return ext;
-}
+#include "ui/fs/load_rom.h"
 
 int main(int argc, char* argv[]) {
   // --------------------------- Argument Parsing --------------------------- //
@@ -98,93 +91,9 @@ int main(int argc, char* argv[]) {
 
   // ----------------------------- Read ROM File ---------------------------- //
 
-  // We need to fill up this pointer with some data:
-  u8* data = nullptr;
-  uint data_len = 0;
-
-  std::string rom_ext = get_file_ext(rom_path);
-
-  // Read data in .nes file directly
-  if (rom_ext == ".nes") {
-    std::ifstream rom_file (rom_path, std::ios::binary);
-
-    if (!rom_file.is_open()) {
-      fprintf(stderr, "[Open][.nes] Could not open '%s'\n", rom_path.c_str());
-      return 1;
-    }
-
-    // get length of file
-    rom_file.seekg(0, rom_file.end);
-    std::streamoff rom_file_size = rom_file.tellg();
-    rom_file.seekg(0, rom_file.beg);
-
-    if (rom_file_size == -1) {
-      fprintf(stderr, "[Open][.nes] Could not read '%s'\n", rom_path.c_str());
-      return 1;
-    }
-
-    data_len = rom_file_size;
-    data = new u8 [data_len];
-
-    rom_file.read((char*) data, data_len);
-
-    fprintf(stderr, "[Open][.nes] Successfully read '%s'\n", rom_path.c_str());
-
-  }
-  // If given a zip, try to decompress it
-  else if (rom_ext == ".zip") {
-    mz_zip_archive zip_archive;
-    memset(&zip_archive, 0, sizeof zip_archive);
-    mz_bool status = mz_zip_reader_init_file(
-      &zip_archive,
-      rom_path.c_str(),
-      0
-    );
-    if (!status) {
-      fprintf(stderr, "[Open][.zip] Could not read '%s'\n", rom_path.c_str());
-      return 1;
-    }
-
-    // Try to find a .nes file in the archive
-    for (uint i = 0; i < mz_zip_reader_get_num_files(&zip_archive); i++) {
-      mz_zip_archive_file_stat file_stat;
-      mz_zip_reader_file_stat(&zip_archive, i, &file_stat);
-
-      std::string file_name = std::string(file_stat.m_filename);
-      std::string file_ext = get_file_ext(file_name);
-
-      if (file_ext == ".nes") {
-        printf("[Open][.zip][UnZip] Found .nes file in archive: '%s'\n", file_stat.m_filename);
-
-        size_t uncomp_size;
-        void* p = mz_zip_reader_extract_file_to_heap(
-          &zip_archive,
-          file_stat.m_filename,
-          &uncomp_size,
-          0
-        );
-
-        if (!p) {
-          printf("[Open][.zip][UnZip] Could not decompress '%s'\n", rom_path.c_str());
-          return 1;
-        }
-
-        // Nice! We got data!
-        data_len = uncomp_size;
-        data = new u8 [data_len];
-        memcpy(data, p, data_len);
-
-        fprintf(stderr, "[Open][.zip] Successfully read '%s'\n", rom_path.c_str());
-
-        // Free the redundant decompressed file mem
-        mz_free(p);
-
-        // Close the archive, freeing any resources it was using
-        mz_zip_reader_end(&zip_archive);
-      }
-    }
-  } else {
-    fprintf(stderr, "[Open] Invalid file extension.\n");
+  ROM_File* rom_data = load_rom_file(rom_path.c_str());
+  if (!rom_data) {
+    fprintf(stderr, "[Cart] ROM file could not be parsed!\n");
     return 1;
   }
 
@@ -193,53 +102,23 @@ int main(int argc, char* argv[]) {
   FM2_Playback_Controller* fm2_playback_controller = nullptr;
 
   if (load_fm2) {
-    std::ifstream fm2_file (fm2_path, std::ios::binary);
-
-    if (!fm2_file.is_open()) {
-      fprintf(stderr, "[Open][.fm2] Could not open '%s'\n", fm2_path.c_str());
-      return 1;
-    }
-
-    // get length of file
-    fm2_file.seekg(0, fm2_file.end);
-    std::streamoff fm2_file_size = fm2_file.tellg();
-    fm2_file.seekg(0, fm2_file.beg);
-
-    if (fm2_file_size == -1) {
-      fprintf(stderr, "[Open][.fm2] Could not read '%s'\n", fm2_path.c_str());
-      return 1;
-    }
-
-    // Nice, we got fm2 data!
-    const char* fm2 = new char [fm2_file_size];
-    fm2_file.read((char*) fm2, fm2_file_size);
-
-    fprintf(stderr, "[Open][.fm2] Successfully read '%s'\n", fm2_path.c_str());
+    u8*  fm2 = nullptr;
+    uint fm2_len = 0;
+    load_file_data(fm2_path.c_str(), fm2, fm2_len);
 
     // create a fm2 controller
-    fm2_playback_controller = new FM2_Playback_Controller(fm2, fm2_file_size);
+    fm2_playback_controller = new FM2_Playback_Controller((const char*)fm2, fm2_len);
 
-    // cleanup
-    delete[] fm2;
+    fprintf(stderr, "[fm2] Movie successfully loaded\n");
   }
 
   // -------------------------- NES Initialization -------------------------- //
 
-  // Generate cartridge from data
-  Cartridge rom_cart (data, data_len);
-  delete[] data;
-
-  Cartridge::Error error = rom_cart.getError();
-  switch (error) {
-  case Cartridge::Error::NO_ERROR:
-    fprintf(stderr, "[Cart] Cartridge created successfully!\n");
-    break;
-  case Cartridge::Error::BAD_MAPPER:
+  // Construct appropriate Mapper for the rom_cart
+  Mapper* cart = Mapper::Factory(*rom_data);
+  if (!cart) {
     fprintf(stderr, "[Cart] Mapper %u has not been implemented yet!\n",
-      rom_cart.getROM_File().meta.mapper);
-    return 1;
-  case Cartridge::Error::BAD_DATA:
-    fprintf(stderr, "[Cart] ROM file could not be parsed!\n");
+      rom_data->meta.mapper);
     return 1;
   }
 
@@ -270,10 +149,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Slap that cartridge in!
-  // (don't forget to blow on it a few times though)
-  rom_cart.blowOnContacts();
-  rom_cart.blowOnContacts();
-  nes.loadCartridge(&rom_cart);
+  nes.loadCartridge(cart);
 
   // Power up the NES
   nes.power_cycle();
@@ -539,6 +415,7 @@ int main(int argc, char* argv[]) {
   SDL_DestroyWindow(window);
   SDL_Quit();
 
+  delete rom_data;
   delete fm2_playback_controller;
 
   printf("\nANESE closed successfully\n");

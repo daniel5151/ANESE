@@ -1,8 +1,7 @@
 #pragma once
 
 #include "common/util.h"
-#include "nes/cartridge/cartridge.h"
-#include "nes/cartridge/mappers/mapper.h"
+#include "nes/cartridge/mapper.h"
 #include "nes/interfaces/memory.h"
 
 // PPU Memory Map (MMU)
@@ -15,8 +14,8 @@ private:
   Memory& pram;  // Palette RAM
 
   // Changing References
-  Cartridge* cart;  // Plugged in cartridge
-  Memory* vram;     // VRAM can be ciram or cart (depending on mirroring)
+  Mapper* cart; // Plugged in cartridge
+  Memory* vram; // VRAM can be ciram or cart (depending on mirroring)
 
   // Nametable offsets + Mirror mode
   Mirroring::Type mirroring;
@@ -40,6 +39,6 @@ public:
   void write(u16 addr, u8 val) override;
   // <Memory/>
 
-  void loadCartridge(Cartridge* cart);
+  void loadCartridge(Mapper* cart);
   void removeCartridge();
 };

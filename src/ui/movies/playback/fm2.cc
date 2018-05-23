@@ -14,16 +14,14 @@ FM2_Playback_Controller::~FM2_Playback_Controller() {
 FM2_Playback_Controller::FM2_Playback_Controller(const char* fm2, uint fm2_len) {
   memset(&this->joy, 0, sizeof this->joy);
 
-  // make a copy of the text
   this->fm2_len = fm2_len;
-  this->fm2 = new char [fm2_len];
-  memcpy(this->fm2, fm2, fm2_len);
+  this->fm2 = fm2;
 
   this->parse_fm2_header();
 }
 
 void FM2_Playback_Controller::parse_fm2_header() {
-  char* s = this->fm2;
+  const char* s = this->fm2;
   while (*s && *s != '|') {
     // parse what to put in each port
     if (!memcmp("port", s, 4)) {
@@ -36,8 +34,8 @@ void FM2_Playback_Controller::parse_fm2_header() {
       this->joy[port].type = FM2_Playback_Controller::Type(*s - '0');
       switch (this->joy[port].type) {
         case SI_NONE: break;
-        case SI_GAMEPAD: this->joy[port].standard = new JOY_Standard("fm2_0"); break;
-      //case SI_ZAPPER:  this->joy[port].zapper   = new JOY_Zapper  ("fm2_0"); break;
+        case SI_GAMEPAD: this->joy[port].standard = new JOY_Standard("fm2"); break;
+      //case SI_ZAPPER:  this->joy[port].zapper   = new JOY_Zapper  ("fm2"); break;
       }
     }
 
@@ -69,7 +67,7 @@ void FM2_Playback_Controller::step_frame() {
 
   // parse port0, port1, and port2
   for (uint i = 0; i < 3; i++) {
-    assert(*this->current_p = '|');
+    assert(*this->current_p == '|');
 
     if (this->joy[i].type == SI_NONE) {
       this->current_p++;

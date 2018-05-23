@@ -4,17 +4,12 @@
 #include "nes/generic/rom/rom.h"
 #include "nes/interfaces/mirroring.h"
 
-// NES ROM file ADT
+// NES ROM file container
+// Owns the raw ROM file data, and has helpful data about it / pointers into it
 struct ROM_File {
-private:
-  // Raw file data (copied from source)
+  // Raw file data
   u8*  data;
   uint data_len;
-
-  bool parse_iNES();
-
-public:
-  bool is_valid;
 
   struct { // ROM metadata
     Mirroring::Type mirror_mode;
@@ -40,6 +35,5 @@ public:
     } misc;
   } rom;
 
-  ~ROM_File();
-  ROM_File(const u8* data, uint data_len);
+  ~ROM_File() { delete this->data; }
 };

@@ -3,7 +3,7 @@
 #include "nes/generic/ram/ram.h"
 #include "nes/generic/rom/rom.h"
 #include "common/util.h"
-#include "mapper.h"
+#include "../mapper.h"
 
 // http://wiki.nesdev.com/w/index.php/NROM
 class Mapper_000 final : public Mapper {

@@ -192,6 +192,8 @@ stubbed)
       - [ ] Confrom to the `.fm2` movie format better (in parsing and recording)
       - [ ] Make movie recording a seperate class (and not a bunch of ad-hoc f
             printfs scattered around the codebase)
+    - Better file parsing
+      - [ ] Actually bounds-check stuff
     - Better error handling and logging
       - [ ] Remove fatal asserts (?)
       - [ ] Switch to a better logging system (\*cough\* not fprintf \*cough\*)

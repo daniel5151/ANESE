@@ -24,10 +24,12 @@ private:
     };
   } joy [3];
 
-  char* fm2;
-  uint  fm2_len;
+  // original fm2 file
+  const char* fm2;
+  uint        fm2_len;
 
-  char* current_p;
+  // current location in fm2 file
+  const char* current_p;
 
   void parse_fm2_header();
 
