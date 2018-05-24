@@ -33,7 +33,7 @@ Mapper_001::Mapper_001(const ROM_File& rom_file)
   this->banks.prg.len = rom_file.rom.prg.len / 0x4000;
   this->banks.prg.bank = new ROM* [this->banks.prg.len];
 
-  fprintf(stderr, "[Mapper_001] 16K PRG ROM Banks: %d\n", this->banks.prg.len);
+  fprintf(stderr, "[Mapper_001] 16K PRG ROM Banks: %u\n", this->banks.prg.len);
 
   const u8* prg_data_p = rom_file.rom.prg.data;
   for (uint i = 0; i < this->banks.prg.len; i++) {
@@ -48,7 +48,7 @@ Mapper_001::Mapper_001(const ROM_File& rom_file)
     this->banks.chr.len = rom_file.rom.chr.len / 0x1000;
     this->banks.chr.bank = new Memory* [this->banks.chr.len];
 
-    fprintf(stderr, "[Mapper_001] 4K  CHR ROM Banks: %d\n", this->banks.chr.len);
+    fprintf(stderr, "[Mapper_001] 4K  CHR ROM Banks: %u\n", this->banks.chr.len);
 
     const u8* chr_data_p = rom_file.rom.chr.data;
     for (uint i = 0; i < this->banks.chr.len; i++) {
@@ -183,7 +183,7 @@ void Mapper_001::update_banks() {
   } break;
   default:
     // This should never happen. 2 bits == 4 possible states.
-    fprintf(stderr, "[Mapper_001] Unhandled bank mode case %d. Dying...\n",
+    fprintf(stderr, "[Mapper_001] Unhandled bank mode case %u. Dying...\n",
       u8(this->reg.control.prg_bank_mode));
     assert(false);
     break;
@@ -211,7 +211,7 @@ Mirroring::Type Mapper_001::mirroring() const {
   case 3: return Mirroring::Horizontal;
   default:
     // This should never happen. 2 bits == 4 possible states.
-    fprintf(stderr, "[Mapper_001] Unhandled mirroring case %d. Dying...\n",
+    fprintf(stderr, "[Mapper_001] Unhandled mirroring case %u. Dying...\n",
       u8(this->reg.control.mirroring));
     assert(false);
     break;

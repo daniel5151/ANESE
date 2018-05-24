@@ -18,7 +18,7 @@ Mapper_002::Mapper_002(const ROM_File& rom_file)
   this->banks.prg.len = rom_file.rom.prg.len / 0x4000;
   this->banks.prg.bank = new ROM* [this->banks.prg.len];
 
-  fprintf(stderr, "[Mapper_002] 16K PRG ROM Banks: %d\n", this->banks.prg.len);
+  fprintf(stderr, "[Mapper_002] 16K PRG ROM Banks: %u\n", this->banks.prg.len);
 
   const u8* prg_data_p = rom_file.rom.prg.data;
   for (uint i = 0; i < this->banks.prg.len; i++) {

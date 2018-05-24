@@ -37,8 +37,6 @@ private:
 
   const char* label;
 
-  char movie_buf [9];
-
 public:
   JOY_Standard(const char* label = "?");
 
@@ -49,6 +47,5 @@ public:
   // </Memory>
 
   void set_button(JOY_Standard_Button::Type btn, bool state);
-
-  const char* get_movie_frame();
+  bool get_button(JOY_Standard_Button::Type btn) const;
 };

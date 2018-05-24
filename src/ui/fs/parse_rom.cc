@@ -55,6 +55,8 @@ ROM_File* parse_iNES(const u8* data, uint data_len) {
   // Cool, this seems to be a valid iNES rom.
   // Let's allocate the rom_file, and get to work!
   ROM_File* rom_file = new ROM_File();
+  rom_file->data     = data;
+  rom_file->data_len = data_len;
 
   // 7       0
   // ---------

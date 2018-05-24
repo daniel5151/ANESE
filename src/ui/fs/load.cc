@@ -1,4 +1,4 @@
-#include "load_rom.h"
+#include "load.h"
 
 #include "nes/cartridge/rom_file.h"
 
@@ -23,7 +23,12 @@ static inline std::string get_file_ext(const char* filename) {
 /*----------  File Data Loaders  ----------*/
 
 // Loads file directly into memory
-void load_file_data(const char* filepath, u8*& data, uint& data_len) {
+void load_file(const char* filepath, u8*& data, uint& data_len) {
+  if (!filepath) {
+    fprintf(stderr, "[Load] filepath == nullptr in load_file!\n");
+    assert(false);
+  }
+
   std::ifstream rom_file (std::string(filepath), std::ios::binary);
 
   if (!rom_file.is_open()) {
@@ -50,6 +55,11 @@ void load_file_data(const char* filepath, u8*& data, uint& data_len) {
 
 // Searches for valid roms inside .zip files, and loads them into memory
 static void load_zip_file_data(const char* filepath, u8*& data, uint& data_len) {
+  if (!filepath) {
+    fprintf(stderr, "[Load] filepath == nullptr in load_zip_file_data!\n");
+    assert(false);
+  }
+
   mz_zip_archive zip_archive;
   memset(&zip_archive, 0, sizeof zip_archive);
   mz_bool status = mz_zip_reader_init_file(
@@ -109,12 +119,17 @@ static void load_zip_file_data(const char* filepath, u8*& data, uint& data_len) 
 // Given a filepath, tries to open and parse it as a NES ROM.
 // Returns a valid ROM_File, or a nullptr if something went wrong
 ROM_File* load_rom_file(const char* filepath) {
+  if (!filepath) {
+    fprintf(stderr, "[Load] filepath == nullptr in load_rom_file!\n");
+    assert(false);
+  }
+
   // Be lazy, and just load the entire file into memory
   u8*  data = nullptr;
   uint data_len = 0;
 
   std::string rom_ext = get_file_ext(filepath);
-  /**/ if (rom_ext == ".nes") load_file_data(filepath, data, data_len);
+  /**/ if (rom_ext == ".nes") load_file(filepath, data, data_len);
   else if (rom_ext == ".zip") load_zip_file_data(filepath, data, data_len);
   else {
     fprintf(stderr, "[Load] Invalid file extension.\n");

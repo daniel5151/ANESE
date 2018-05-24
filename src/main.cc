@@ -2,14 +2,12 @@
 // I'll clean it up (eventually)
 
 #include "common/util.h"
-#include "nes/cartridge/mapper.h"
-#include "nes/cartridge/rom_file.h"
+#include "nes/cartridge/cartridge.h"
 #include "nes/joy/controllers/standard.h"
 #include "nes/nes.h"
 
 #include "common/debug.h"
 
-#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -18,8 +16,10 @@
 #include <tinyfiledialogs.h>
 
 #include "ui/sdl/Sound_Queue.h"
-#include "ui/movies/playback/fm2.h"
-#include "ui/fs/load_rom.h"
+#include "ui/movies/fm2/common.h"
+#include "ui/movies/fm2/replay.h"
+#include "ui/movies/fm2/record.h"
+#include "ui/fs/load.h"
 
 int main(int argc, char* argv[]) {
   // --------------------------- Argument Parsing --------------------------- //
@@ -49,6 +49,8 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  if (log_cpu) { DEBUG_VARS::Get()->print_nestest = 1; }
+
   std::string rom_path;
 
   if (!rom) {
@@ -72,55 +74,48 @@ int main(int argc, char* argv[]) {
     rom_path = args::get(rom);
   }
 
-  // Some pretty low-tier movie support
-  // TODO: make a FM2_Recording_Controller...
-  bool load_fm2 = false;
-  std::string fm2_path = "";
+  fprintf(stderr, "[Load] Loading '%s'\n", rom_path.c_str());
+
+  // ---------------------------- Movie Support ----------------------------- //
+
+  FM2_Replay fm2_replay;
   if (arg_fm2) {
-    load_fm2 = true;
-    fm2_path = args::get(arg_fm2);
+    bool did_load = fm2_replay.init(args::get(arg_fm2).c_str());
+    if (!did_load) {
+      fprintf(stderr, "[Replay][fm2] Movie loading failed!\n");
+      return 1;
+    }
+    fprintf(stderr, "[Replay][fm2] Movie successfully loaded!\n");
   }
 
-  FILE* movie = nullptr;
+  FM2_Record fm2_record;
   if (arg_log_movie) {
-    std::string movie_path = args::get(arg_log_movie);
-    movie = fopen(movie_path.c_str(), "w");
+    bool did_load = fm2_record.init(args::get(arg_log_movie).c_str());
+    if (!did_load) {
+      fprintf(stderr, "[Record][fm2] Failed to setup Movie recording!\n");
+      return 1;
+    }
+    fprintf(stderr, "[Record][fm2] Movie recording is setup!\n");
+
   }
 
-  if (log_cpu) { DEBUG_VARS::Get()->print_nestest = 1; }
+  // -------------------------- Construct Cartridge ------------------------- //
 
-  // ----------------------------- Read ROM File ---------------------------- //
-
-  ROM_File* rom_data = load_rom_file(rom_path.c_str());
-  if (!rom_data) {
+  Cartridge cart (load_rom_file(rom_path.c_str()));
+  switch (cart.status()) {
+  case Cartridge::Status::BAD_DATA:
     fprintf(stderr, "[Cart] ROM file could not be parsed!\n");
     return 1;
-  }
-
-  // ---------------------------- Read fm2 file ----------------------------- //
-
-  FM2_Playback_Controller* fm2_playback_controller = nullptr;
-
-  if (load_fm2) {
-    u8*  fm2 = nullptr;
-    uint fm2_len = 0;
-    load_file_data(fm2_path.c_str(), fm2, fm2_len);
-
-    // create a fm2 controller
-    fm2_playback_controller = new FM2_Playback_Controller((const char*)fm2, fm2_len);
-
-    fprintf(stderr, "[fm2] Movie successfully loaded\n");
+  case Cartridge::Status::BAD_MAPPER:
+    fprintf(stderr, "[Cart] Mapper %u has not been implemented yet!\n",
+      cart.get_rom_file()->meta.mapper);
+    return 1;
+  case Cartridge::Status::NO_ERROR:
+    fprintf(stderr, "[Cart] ROM file loaded successfully!\n");
+    break;
   }
 
   // -------------------------- NES Initialization -------------------------- //
-
-  // Construct appropriate Mapper for the rom_cart
-  Mapper* cart = Mapper::Factory(*rom_data);
-  if (!cart) {
-    fprintf(stderr, "[Cart] Mapper %u has not been implemented yet!\n",
-      rom_data->meta.mapper);
-    return 1;
-  }
 
   // Create a NES
   NES nes;
@@ -129,27 +124,26 @@ int main(int argc, char* argv[]) {
   JOY_Standard joy_1 ("P1");
   JOY_Standard joy_2 ("P2");
 
-  // Update movie header (if needed)
-  if (movie) {
-    // very incomplete fm2 header...
-    fprintf(movie, "port0 1\n");
-    fprintf(movie, "port1 1\n");
-    fprintf(movie, "port2 0\n");
+  // pass controllers to fm2_record if needed
+  if (fm2_record.is_enabled()) {
+    fm2_record.set_joy(0, FM2_Controller::SI_GAMEPAD, &joy_1);
+    fm2_record.set_joy(1, FM2_Controller::SI_GAMEPAD, &joy_2);
   }
 
-  // Check if there is a fm2 to playback
-  if (fm2_playback_controller) {
+  // Check if there is fm2 to replay
+  if (fm2_replay.is_enabled()) {
     // plug in fm2 controllers
-    nes.attach_joy(0, fm2_playback_controller->get_joy(0));
-    nes.attach_joy(1, fm2_playback_controller->get_joy(1));
+    nes.attach_joy(0, fm2_replay.get_joy(0));
+    nes.attach_joy(1, fm2_replay.get_joy(1));
   } else {
     // plug in physical nes controllers
     nes.attach_joy(0, &joy_1);
     nes.attach_joy(1, &joy_2);
+
   }
 
   // Slap that cartridge in!
-  nes.loadCartridge(cart);
+  nes.loadCartridge(cart.get_mapper());
 
   // Power up the NES
   nes.power_cycle();
@@ -329,16 +323,13 @@ int main(int argc, char* argv[]) {
 
     for (uint i = 0; i < numframes; i++) {
       // log to movie file
-      if (movie) {
-        fprintf(movie, "|0|%s|%s||\n",
-          joy_1.get_movie_frame(),
-          joy_2.get_movie_frame()
-        );
+      if (fm2_record.is_enabled()) {
+        fm2_record.step_frame();
       }
 
       // update fm2 inputs
-      if (fm2_playback_controller) {
-        fm2_playback_controller->step_frame();
+      if (fm2_replay.is_enabled()) {
+        fm2_replay.step_frame();
       }
 
       // run the NES for a frame
@@ -404,7 +395,7 @@ int main(int argc, char* argv[]) {
       avg_fps += past_fps[i];
     avg_fps /= 20;
 
-    sprintf(window_title, "anese - %d fups - %d%% speed", int(avg_fps), speedup);
+    sprintf(window_title, "anese - %u fups - %u%% speed", uint(avg_fps), speedup);
     SDL_SetWindowTitle(window, window_title);
   }
 
@@ -414,9 +405,6 @@ int main(int argc, char* argv[]) {
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
-
-  delete rom_data;
-  delete fm2_playback_controller;
 
   printf("\nANESE closed successfully\n");
 

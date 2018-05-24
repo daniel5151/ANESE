@@ -5,16 +5,16 @@
 
 // Dead simple 16 bit ROM ADT
 // (max 64K of ROM)
+// Provides bounds-checked view into existing memory (zero heap allocation)
 class ROM final : public Memory {
 private:
-  u8*  rom;
-  uint size;
+  const u8* rom;
+  uint      size;
 
   const char* label;
 
 public:
   ROM(uint rom_size, const u8* content, const char* label = "?");
-  ~ROM();
 
   // <Memory>
   u8 read(u16 addr)       override;

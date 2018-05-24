@@ -7,9 +7,7 @@
 JOY_Standard::JOY_Standard(const char* label /* = "?" */)
 : buttons {{0}}
 , label(label)
-{
-  this->movie_buf[8] = '\0';
-}
+{}
 
 u8 JOY_Standard::read(u16 addr) {
   (void) addr;
@@ -37,12 +35,10 @@ void JOY_Standard::write(u16 addr, u8 val) {
 }
 
 void JOY_Standard::set_button(JOY_Standard_Button::Type btn, bool state) {
-  using namespace JOY_Standard_Button;
-
   if (unsigned(btn) >= 8) {
     fprintf(stderr, "[JOY_Standard][%s] Setting invalid button '%d'!\n",
       this->label,
-      btn
+      int(btn)
     );
     assert(false);
   }
@@ -50,18 +46,14 @@ void JOY_Standard::set_button(JOY_Standard_Button::Type btn, bool state) {
   this->buttons.step[btn] = state;
 }
 
-const char* JOY_Standard::get_movie_frame() {
-  #define OUTPUT(button, c, i) \
-    this->movie_buf[i] = this->buttons.btn.button ? c : '.';
-  OUTPUT(Right,  'R', 0);
-  OUTPUT(Left,   'L', 1);
-  OUTPUT(Down,   'D', 2);
-  OUTPUT(Up,     'U', 3);
-  OUTPUT(Start,  'T', 4);
-  OUTPUT(Select, 'S', 5);
-  OUTPUT(B,      'B', 6);
-  OUTPUT(A,      'A', 7);
-  #undef OUTPUT
+bool JOY_Standard::get_button(JOY_Standard_Button::Type btn) const {
+  if (unsigned(btn) >= 8) {
+    fprintf(stderr, "[JOY_Standard][%s] Gettin invalid button '%d'!\n",
+      this->label,
+      int(btn)
+    );
+    assert(false);
+  }
 
-  return this->movie_buf;
+  return this->buttons.step[btn];
 }

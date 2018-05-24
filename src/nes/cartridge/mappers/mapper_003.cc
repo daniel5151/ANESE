@@ -31,7 +31,7 @@ Mapper_003::Mapper_003(const ROM_File& rom_file)
     this->banks.chr.len = rom_file.rom.chr.len / 0x2000;
     this->banks.chr.bank = new Memory* [this->banks.chr.len];
 
-    fprintf(stderr, "[Mapper_003] 8K CHR ROM Banks: %d\n", this->banks.chr.len);
+    fprintf(stderr, "[Mapper_003] 8K CHR ROM Banks: %u\n", this->banks.chr.len);
 
     const u8* chr_data_p = rom_file.rom.chr.data;
     for (uint i = 0; i < this->banks.chr.len; i++) {

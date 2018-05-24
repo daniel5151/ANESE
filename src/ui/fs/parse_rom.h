@@ -2,7 +2,7 @@
 
 #include "nes/cartridge/rom_file.h"
 
-#include "load_rom.h" // for FileFormat enums
+#include "load.h" // for FileFormat enums
 
 // Tries to guess file-format of given data
 FileFormat::Type rom_type(const u8* data, uint data_len);

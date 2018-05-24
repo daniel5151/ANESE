@@ -19,7 +19,7 @@ Mapper_004::Mapper_004(const ROM_File& rom_file)
   this->banks.prg.len = rom_file.rom.prg.len / 0x2000;
   this->banks.prg.bank = new ROM* [this->banks.prg.len];
 
-  fprintf(stderr, "[Mapper_004] 8K PRG ROM Banks: %d\n", this->banks.prg.len);
+  fprintf(stderr, "[Mapper_004] 8K PRG ROM Banks: %u\n", this->banks.prg.len);
 
   const u8* prg_data_p = rom_file.rom.prg.data;
   for (uint i = 0; i < this->banks.prg.len; i++) {
@@ -34,7 +34,7 @@ Mapper_004::Mapper_004(const ROM_File& rom_file)
     this->banks.chr.len = rom_file.rom.chr.len / 0x400;
     this->banks.chr.bank = new Memory* [this->banks.chr.len];
 
-    fprintf(stderr, "[Mapper_004] 1K CHR ROM Banks: %d\n", this->banks.chr.len);
+    fprintf(stderr, "[Mapper_004] 1K CHR ROM Banks: %u\n", this->banks.chr.len);
 
     const u8* chr_data_p = rom_file.rom.chr.data;
     for (uint i = 0; i < this->banks.chr.len; i++) {

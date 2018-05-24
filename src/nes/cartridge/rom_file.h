@@ -8,8 +8,8 @@
 // Owns the raw ROM file data, and has helpful data about it / pointers into it
 struct ROM_File {
   // Raw file data
-  u8*  data;
-  uint data_len;
+  const u8* data;
+  uint      data_len;
 
   struct { // ROM metadata
     Mirroring::Type mirror_mode;

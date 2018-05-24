@@ -36,5 +36,5 @@ public:
 
   // ---- Utilities ---- //
   // creates correct mapper given an ROM_File object
-  static Mapper* Factory(const ROM_File& rom_file);
+  static Mapper* Factory(const ROM_File* rom_file);
 };

@@ -10,6 +10,6 @@ namespace FileFormat {
   };
 }
 
-void load_file_data(const char* filepath, u8*& data, uint& data_len);
+void load_file(const char* filepath, u8*& data, uint& data_len);
 
 ROM_File* load_rom_file(const char* filename);

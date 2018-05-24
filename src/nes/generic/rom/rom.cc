@@ -6,21 +6,15 @@
 ROM::ROM(uint rom_size, const u8* rom, const char* label /* = "?" */) {
   this->label = label;
 
-  // Don't allocate more memory than addressable by a u16
   if (rom_size > 0xFFFF + 1) {
-    rom_size = 0xFFFF + 1;
+    fprintf(stderr, "[ROM][%s] WARNING: ROM of size 0x%X is not 16 bit addressable!\n",
+      label,
+      rom_size
+    );
   }
 
+  this->rom  = rom;
   this->size = rom_size;
-  this->rom = new u8 [rom_size];
-
-  // Init ROM
-  for (uint addr = 0; addr < this->size; addr++)
-    this->rom[addr] = rom[addr];
-}
-
-ROM::~ROM() {
-  delete[] this->rom;
 }
 
 // ROM read has no side-effects
