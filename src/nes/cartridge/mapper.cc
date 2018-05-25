@@ -16,7 +16,7 @@ Mapper* Mapper::Factory(const ROM_File* rom_file) {
   case 1: return new Mapper_001(*rom_file);
   case 2: return new Mapper_002(*rom_file);
   case 3: return new Mapper_003(*rom_file);
-//case 4: return new Mapper_004(*rom_file);
+  case 4: return new Mapper_004(*rom_file);
   case 7: return new Mapper_007(*rom_file);
   }
 

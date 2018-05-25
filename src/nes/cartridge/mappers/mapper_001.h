@@ -90,7 +90,7 @@ private:
     u8 sr;
   } reg;
 
-  // ---- Emulation Vars and Heplers ---- //
+  // ---- Emulation Vars and Helpers ---- //
 
   uint write_just_happened;
 
@@ -107,5 +107,5 @@ public:
 
   Mirroring::Type mirroring() const override;
 
-  void cycle() override;
+  void cycle(uint scancycle, uint scanline, bool isRendering) override;
 };

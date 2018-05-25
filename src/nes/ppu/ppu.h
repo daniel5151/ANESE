@@ -220,7 +220,11 @@ public:
   void cycle();
 
   const u8* getFramebuff() const;
-  uint getFrames() const;
+  uint      getFrames() const;
+
+  bool isRendering()  const { return this->reg.ppumask.is_rendering; }
+  uint getScanCycle() const { return this->scan.cycle; };
+  uint getScanLine()  const { return this->scan.line;  };
 
   // NES color palette (static, for the time being)
   static const Color palette [64];

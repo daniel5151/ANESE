@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <cassert>
 
+#include "common/debug.h"
+
 /*-----------------------------  Public Methods  -----------------------------*/
 
 CPU::~CPU() {}
@@ -132,8 +134,6 @@ u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
   return addr;
 }
 
-#include "common/debug.h"
-
 uint CPU::step() {
   uint old_cycles = this->cycles;
 
@@ -163,7 +163,6 @@ uint CPU::step() {
       const char cmd = getc(stdin);
 
       if (cmd == 'r') {
-        DEBUG_VARS::Get()->print_nestest = false;
         DEBUG_VARS::Get()->step_cpu = false;
         break;
       };

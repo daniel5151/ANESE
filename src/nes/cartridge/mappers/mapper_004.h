@@ -27,9 +27,9 @@ private:
   // 0x6000 ... 0x7FFF: 8 KB PRG RAM bank
   RAM  prg_ram;
   // 0x8000 ... 0x9FFF (or $C000-$DFFF): 8 KB switchable PRG ROM bank
-  // 0xA000 ... 0xBFFF: 8 KB switchable PRG ROM bank
+  // 0xA000 ... 0xBFFF:                  8 KB switchable PRG ROM bank
   // 0xC000 ... 0xDFFF (or $8000-$9FFF): 8 KB PRG ROM bank, fixed to the second-last bank
-  // 0xE000 ... 0xFFFF: 8 KB PRG ROM bank, fixed to the last bank
+  // 0xE000 ... 0xFFFF:                  8 KB PRG ROM bank, fixed to the last bank
   ROM* prg_bank [4];
 
   // PPU Memory Space
@@ -83,7 +83,7 @@ private:
     // |||| ||||
     // ++++-++++- New bank value, based on last value written to
     //             Bank select register (mentioned above)
-    u8 bank_data;
+    u8 bank_values [8]; // not really hardware registers, but it makes impl easy
 
     // Mirroring - 0xA000 ... 0xBFFE, even
     // 7  bit  0
@@ -107,9 +107,11 @@ private:
     union {
       u8 val;
       BitField<7>    enable_ram;
-      BitField<6>    disable_write;
+      BitField<6>    write_enable;
     //BitField<4, 2> unused in MMC3;
     } ram_protect;
+
+    u8 irq_counter;
 
     // IRQ latch - 0xC000 ... 0xDFFE, even
     // 7  bit  0
@@ -130,15 +132,15 @@ private:
     // current scanline.
 
     // IRQ Disable - 0xE000 ... 0xFFFE, even
-    // Writing any value to this register will disable MMC3 interrupts AND
+    // IRQ Enable  - 0xE001 ... 0xFFFF, odd
+    // Note: Disabling IRQ will disable MMC3 interrupts AND
     // acknowledge any pending interrupts.
-
-    // IRQ Enable - 0xE001 ... 0xFFFF, odd
-    // Writing any value to this register will enable MMC3 interrupts
-
+    bool irq_enabled;
   } reg;
 
-  // ---- Emulation Vars and Heplers ---- //
+  // ---- Emulation Vars and Helpers ---- //
+
+  bool ppu_rendering_enabled;
 
   bool fourscreen_mirroring = false;
 
@@ -156,5 +158,5 @@ public:
 
   Mirroring::Type mirroring() const override;
 
-  void cycle() override;
+  void cycle(uint scancycle, uint scanline, bool isRendering) override;
 };

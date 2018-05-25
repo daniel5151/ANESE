@@ -101,10 +101,10 @@ u8 Mapper_001::peek(u16 addr) const {
 
 void Mapper_001::write(u16 addr, u8 val) {
   if (this->write_just_happened) return;
-  // Why is it set to 2?
-  // Next cycle, it will be decremented to 1, which causes the early return.
-  // One more cycle, and it's back at 0, and writing is reenabled.
-  this->write_just_happened = 2;
+  // Why is it set to 6?
+  // Next CPU cycle, it will be decremented to 3, which causes the early return.
+  // One more CPU cycle, and it's back at 0, and writing is reenabled.
+  this->write_just_happened = 6;
 
   // If writing to RAM, do it, and then return
   if (in_range(addr, 0x0000, 0x0FFF)) return this->chr_lo->write(addr - 0x0000, val);
@@ -112,10 +112,9 @@ void Mapper_001::write(u16 addr, u8 val) {
   if (in_range(addr, 0x4020, 0x5FFF)) return; // do nothing to expansion ROM
   if (in_range(addr, 0x6000, 0x7FFF)) {
     // 0 means RAM is _enabled_. because fuck you that's why.
-    if (this->reg.prg.ram_enable == 0) {
-      this->prg_ram.write(addr - 0x6000, val);
-    }
-    return;
+    return (this->reg.prg.ram_enable == 0)
+      ? this->prg_ram.write(addr - 0x6000, val)
+      : void();
   }
 
   // Otherwise, handle writing to registers
@@ -218,7 +217,10 @@ Mirroring::Type Mapper_001::mirroring() const {
   }
 }
 
-void Mapper_001::cycle() {
+void Mapper_001::cycle(uint scancycle, uint scanline, bool isRendering) {
+  (void)scancycle;
+  (void)scanline;
+  (void)isRendering;
   if (this->write_just_happened)
     this->write_just_happened--;
 }

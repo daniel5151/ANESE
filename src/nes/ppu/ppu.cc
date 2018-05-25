@@ -646,8 +646,10 @@ void PPU::cycle() {
     PPU::Pixel spr_pixel = this->get_spr_pixel(bgr_pixel);
 
     // Perform data fetches
-    this->bgr_fetch();
-    this->spr_fetch();
+    if (this->reg.ppumask.is_rendering) {
+      this->bgr_fetch();
+      this->spr_fetch();
+    }
 
     // Priority Multiplexer decision table
     // https://wiki.nesdev.com/w/index.php/PPU_rendering#Preface

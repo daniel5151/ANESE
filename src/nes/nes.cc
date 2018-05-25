@@ -112,6 +112,7 @@ bool NES::loadCartridge(Mapper* cart) {
     return false;
 
   this->cart = cart;
+  this->cart->set_interrupt_line(&this->interrupts);
 
   this->cpu_mmu->loadCartridge(this->cart);
   this->ppu_mmu->loadCartridge(this->cart);
@@ -120,6 +121,7 @@ bool NES::loadCartridge(Mapper* cart) {
 }
 
 void NES::removeCartridge() {
+  this->cart->set_interrupt_line(nullptr);
   this->cart = nullptr;
 
   this->cpu_mmu->removeCartridge();
@@ -169,11 +171,15 @@ void NES::cycle() {
   // Execute a CPU instruction
   uint cpu_cycles = this->cpu->step();
 
-  // Run PPU 3x per cpu_cycle, and APU + Cartridge 1x per cpu_cycle
-  for (uint i = 0; i < cpu_cycles * 3; i++) this->ppu->cycle();
-  for (uint i = 0; i < cpu_cycles    ; i++) {
-    this->apu->cycle();
-    this->cart->cycle();
+  // Run PPU  + Cartridge 3x per cpu_cycle, and APU 1x per cpu_cycle
+  for (uint i = 0; i < cpu_cycles    ; i++) this->apu->cycle();
+  for (uint i = 0; i < cpu_cycles * 3; i++) {
+    this->ppu->cycle();
+    this->cart->cycle(
+      this->ppu->getScanCycle(),
+      this->ppu->getScanLine(),
+      this->ppu->isRendering()
+    );
   }
 
   // Check if the CPU halted, and stop NES if it is
