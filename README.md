@@ -99,10 +99,8 @@ Fast-Forward       | Space
 
 I wrote my CPU emulator to be _instruction-length cycle_ accurate, but not
 _sub-instruction cycle_ accurate. This doesn't affect most games, but there are
-a couple that rely on sub-instruction level timings (eg: Solomon's Key)
-
-I could put a nasty timing hack in my PPU to circumvent these issues in some
-games, but as of now, I'm just going to leave it be.
+a couple that rely on sub-instruction level timings (eg: Solomon's Key). Use the
+`--alt-nmi-timing` flag to turn on a hack that fixes some of these games.
 
 **NOTE:** The APU is _not my code_. I wanted to get ANESE partially up and
 running before new-years 2018, so I've used Blargg's venerable `nes_snd_emu`
@@ -172,8 +170,7 @@ stubbed)
       - [x] 001
       - [x] 002
       - [x] 003
-      - [ ] 004
-      - [ ] 005
+      - [x] 004
       - [x] 007
       - ...
     - [ ] Proper PAL handling
