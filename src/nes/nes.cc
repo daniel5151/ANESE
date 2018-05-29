@@ -175,11 +175,7 @@ void NES::cycle() {
   for (uint i = 0; i < cpu_cycles    ; i++) this->apu->cycle();
   for (uint i = 0; i < cpu_cycles * 3; i++) {
     this->ppu->cycle();
-    this->cart->cycle(
-      this->ppu->getScanCycle(),
-      this->ppu->getScanLine(),
-      this->ppu->isRendering()
-    );
+    this->cart->cycle(*this->ppu);
   }
 
   // Check if the CPU halted, and stop NES if it is

@@ -28,11 +28,28 @@ int main(int argc, char* argv[]) {
   args::ArgumentParser parser("ANESE - A Nintendo Entertainment System Emulator", "");
   args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
 
-  args::Flag log_cpu(parser, "log-cpu", "Output CPU execution over STDOUT", {"log-cpu"});
-  args::ValueFlag<std::string> arg_log_movie(parser, "log-movie", "log input in fm2 format", {"log-movie"});
-  args::ValueFlag<std::string> arg_fm2(parser, "fm2", "path to fm2 movie", {"fm2"});
+  // Debug
+  args::Flag log_cpu(parser, "log-cpu",
+    "Output CPU execution over STDOUT",
+    {'c', "log-cpu"});
 
-  args::Positional<std::string> rom(parser, "rom", "Valid iNES rom");
+  // Hacks
+  args::Flag ppu_timing_hack(parser, "alt-nmi-timing",
+    "Enable NMI timing fix "
+    "(needed to boot some games, eg: Bad Dudes, Solomon's Key)",
+    {"alt-nmi-timing"});
+
+  // Movies
+  args::ValueFlag<std::string> arg_log_movie(parser, "log-movie",
+    "log input in fm2 format",
+    {"log-movie"});
+  args::ValueFlag<std::string> arg_fm2(parser, "fm2",
+    "path to fm2 movie",
+    {"fm2"});
+
+  // Essential
+  args::Positional<std::string> rom(parser, "rom",
+    "Valid iNES rom");
 
   try {
     parser.ParseCLI(argc, argv);
@@ -50,6 +67,7 @@ int main(int argc, char* argv[]) {
   }
 
   if (log_cpu) { DEBUG_VARS::Get()->print_nestest = 1; }
+  if (ppu_timing_hack) { DEBUG_VARS::Get()->fogleman_hack = 1; }
 
   std::string rom_path;
 

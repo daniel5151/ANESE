@@ -7,6 +7,8 @@
 
 #include "nes/wiring/interrupt_lines.h"
 
+#include "nes/ppu/ppu.h" // MMC3 >:(
+
 // Mapper Interface
 class Mapper : public Memory {
 private:
@@ -49,13 +51,8 @@ public:
   virtual Mirroring::Type mirroring() const = 0; // Get mirroring mode
 
   // ---- Mapper Interactions ---- //
-  // most mappers are benign. These base implementations cut down on boilerplate
-  // A CPU cycle occured
-  virtual void cycle(uint scancycle, uint scanline, bool isRendering) {
-    (void)scancycle;
-    (void)scanline;
-    (void)isRendering;
-  }
+  // Mappers tend to be benign, but some do have some fancy behavior.
+  virtual void cycle(const PPU& ppu) { (void)ppu; }
 
   // ---- Utilities ---- //
   // creates correct mapper given an ROM_File object

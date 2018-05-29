@@ -178,8 +178,10 @@ private:
 
   /*----  Emulation Vars and Methods  ----*/
 
-  uint cycles; // total PPU cycles
-  uint frames; // total frames rendered
+  // fogleman NMI hack - gets some games to boot (eg: Bad Dudes)
+  int nmi_delay;
+  int nmi_previous;
+  void nmiChange();
 
   // framebuffer
   u8* framebuff;
@@ -190,6 +192,9 @@ private:
     uint line;  // 0 - 261
     uint cycle; // 0 - 340
   } scan;
+
+  uint cycles; // total PPU cycles
+  uint frames; // total frames rendered
 
 #ifdef DEBUG_PPU
   /*---------------  Debug  --------------*/
@@ -222,6 +227,7 @@ public:
   const u8* getFramebuff() const;
   uint      getFrames() const;
 
+  // MMC3 >:(
   bool isRendering()  const { return this->reg.ppumask.is_rendering; }
   uint getScanCycle() const { return this->scan.cycle; };
   uint getScanLine()  const { return this->scan.line;  };

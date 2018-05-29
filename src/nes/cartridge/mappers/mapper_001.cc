@@ -217,10 +217,8 @@ Mirroring::Type Mapper_001::mirroring() const {
   }
 }
 
-void Mapper_001::cycle(uint scancycle, uint scanline, bool isRendering) {
-  (void)scancycle;
-  (void)scanline;
-  (void)isRendering;
+void Mapper_001::cycle(const PPU& ppu) {
+  (void)ppu;
   if (this->write_just_happened)
     this->write_just_happened--;
 }

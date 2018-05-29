@@ -107,5 +107,5 @@ public:
 
   Mirroring::Type mirroring() const override;
 
-  void cycle(uint scancycle, uint scanline, bool isRendering) override;
+  void cycle(const PPU& ppu) override;
 };

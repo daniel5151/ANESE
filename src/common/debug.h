@@ -27,6 +27,8 @@ public:
   bool print_nestest = false;
   bool step_cpu = false;
 
+  bool fogleman_hack = false;
+
 };
 
 // Memory Singleton Template

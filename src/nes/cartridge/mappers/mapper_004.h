@@ -140,8 +140,6 @@ private:
 
   // ---- Emulation Vars and Helpers ---- //
 
-  bool ppu_rendering_enabled;
-
   bool fourscreen_mirroring = false;
 
   void update_banks();
@@ -158,5 +156,5 @@ public:
 
   Mirroring::Type mirroring() const override;
 
-  void cycle(uint scancycle, uint scanline, bool isRendering) override;
+  void cycle(const PPU& ppu) override;
 };

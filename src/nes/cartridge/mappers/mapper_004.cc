@@ -8,8 +8,6 @@ Mapper_004::Mapper_004(const ROM_File& rom_file)
 : Mapper(4, "MMC3")
 , prg_ram(0x2000)
 {
-  this->ppu_rendering_enabled = false;
-
   // Clear registers
   memset(&this->reg, 0, sizeof this->reg);
 
@@ -70,7 +68,6 @@ Mapper_004::~Mapper_004() {
 u8 Mapper_004::read(u16 addr) {
   // Wired to the PPU MMU
   if (in_range(addr, 0x000, 0x1FFF)) {
-    this->ppu_rendering_enabled = true; // for the janky irq implementation
     return this->chr_bank[addr / 0x400]->read(addr % 0x400);
   }
 
@@ -187,12 +184,14 @@ Mirroring::Type Mapper_004::mirroring() const {
     : Mirroring::Vertical;
 }
 
-// Ideally, if I had propper PPU sprite fetching implemented, I could simply
-// inspect PPU_A12 (i.e: bit 12 of addr) during reads to know when a scanline
-// was finishing.
-// Alas, I haven't done that, so instead, we have to use a kinda janky method.
-void Mapper_004::cycle(uint scancycle, uint scanline, bool isRendering) {
-  // this is the jankybit
+// Ideally, if I had proper timings for PPU sprite fetching implemented, I could
+// directly track PPU A12's state (i.e: bit 12 of addr) during reads to know
+// when to fire the interrupt.
+// I haven't done that, and instead, we use this janky method.
+void Mapper_004::cycle(const PPU& ppu) {
+  uint scanline    = ppu.getScanLine();
+  uint scancycle   = ppu.getScanCycle();
+  bool isRendering = ppu.isRendering();
   if (scancycle == 260 && (scanline == 261 || scanline < 240) && isRendering) {
     if (this->reg.irq_counter == 0) {
       this->reg.irq_counter = this->reg.irq_latch;

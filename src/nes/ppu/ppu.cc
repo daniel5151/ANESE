@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include "common/debug.h" // fogleman flag
+
 PPU::~PPU() {
   delete this->framebuff;
 }
@@ -78,6 +80,18 @@ void PPU::reset() {
   this->reg.ppudata = 0x00; // ?
 }
 
+// Timing hack grafted from fogleman's nes emulator.
+//
+// Some games fail to boot because of the CPU being instruction-cycle accurate,
+// instead of sub-instruction-cycle accurate.
+void PPU::nmiChange() { // hack
+  bool nmi = this->reg.ppuctrl.V && this->reg.ppustatus.V;
+  if (nmi && !this->nmi_previous) {
+    this->nmi_delay = 15;
+  }
+  this->nmi_previous = nmi;
+}
+
 /*--------------------------  Framebuffer Methods  ---------------------------*/
 
 uint PPU::getFrames() const { return this->frames; }
@@ -116,12 +130,13 @@ u8 PPU::read(u16 addr) {
   u8 retval;
 
   switch (addr) {
-  /*   0x2000    */
+  /*   0x2002    */
   case PPUSTATUS: { // Bottom 5 bits are the values happen to be present
                     // on the cpu data line
                     retval = (this->reg.ppustatus.raw & 0xE0)
                            | (this->cpu_data_bus      & 0x1F);
                     this->reg.ppustatus.V = false;
+                    this->nmiChange(); // hack
                     this->latch = false;
   /*   0x2004  */ } break;
   case OAMDATA:   { // Extra logic for handling reads during sprite evaluation
@@ -180,7 +195,7 @@ u8 PPU::peek(u16 addr) const {
   u8 retval;
 
   switch(addr) {
-  /*   0x2000    */
+  /*   0x2002    */
   case PPUSTATUS: { retval = (this->reg.ppustatus.raw & 0xE0)
                            | (this->cpu_data_bus      & 0x1F);
   /*   0x2004  */ } break;
@@ -254,6 +269,7 @@ void PPU::write(u16 addr, u8 val) {
                     bool toggled_V_on = !old_ppuctrl.V && this->reg.ppuctrl.V;
                     if (toggled_V_on && this->reg.ppustatus.V)
                       this->interrupts.request(Interrupts::Type::NMI);
+                    this->nmiChange(); // hack
                     // t: ....BA.. ........ = d: ......BA
                     this->reg.t.nametable = val & 0x03;
   /*   0x2001  */ } return;
@@ -680,14 +696,25 @@ void PPU::cycle() {
 
   // ---- Enable / Disable vblank ---- //
 
+  if (DEBUG_VARS::Get()->fogleman_hack) {
+    if (this->nmi_delay > 0) {
+      this->nmi_delay--;
+      if (this->nmi_delay == 0 && this->reg.ppuctrl.V && this->reg.ppustatus.V) {
+        this->interrupts.request(Interrupts::NMI);
+      }
+    }
+  }
+
   if (this->scan.cycle == 1) {
     // vblank start on line 241...
     if (this->scan.line == 241) {
       // MAJOR KEY: The vblank flag is _always_ set!
       this->reg.ppustatus.V = true;
+      this->nmiChange(); // hack
       // Only the interrupt is affected by ppuctrl.V (not the flag!)
       if (this->reg.ppuctrl.V) {
-        this->interrupts.request(Interrupts::NMI);
+        if (DEBUG_VARS::Get()->fogleman_hack == false)
+          this->interrupts.request(Interrupts::NMI);
       }
     }
 
@@ -696,6 +723,7 @@ void PPU::cycle() {
       this->reg.ppustatus.V = false;
       this->reg.ppustatus.S = false;
       this->reg.ppustatus.O = false;
+      this->nmiChange(); // hack
     }
   }
 
