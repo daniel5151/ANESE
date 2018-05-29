@@ -76,7 +76,7 @@ u8 Mapper_004::read(u16 addr) {
 
   // Wired to the CPU MMU
   if (in_range(addr, 0x4020, 0x5FFF)) return 0x00; // Nothing in "Expansion ROM"
-  if (in_range(addr, 0x6000, 0x7FFF)) return this->reg.ram_protect.enable_ram == 0
+  if (in_range(addr, 0x6000, 0x7FFF)) return this->reg.ram_protect.enable_ram
                                            ? this->prg_ram.read(addr - 0x6000)
                                            : 0x00; // should be open bus...
   if (in_range(addr, 0x8000, 0xFFFF)) {
@@ -95,7 +95,7 @@ u8 Mapper_004::peek(u16 addr) const {
 
   // Wired to the CPU MMU
   if (in_range(addr, 0x4020, 0x5FFF)) return 0x00; // Nothing in "Expansion ROM"
-  if (in_range(addr, 0x6000, 0x7FFF)) return this->reg.ram_protect.enable_ram == 0
+  if (in_range(addr, 0x6000, 0x7FFF)) return this->reg.ram_protect.enable_ram
                                            ? this->prg_ram.peek(addr - 0x6000)
                                            : 0x00; // should be open bus...
   if (in_range(addr, 0x8000, 0xFFFF)) {
@@ -113,8 +113,7 @@ void Mapper_004::write(u16 addr, u8 val) {
   }
   if (in_range(addr, 0x4020, 0x5FFF)) return; // do nothing to expansion ROM
   if (in_range(addr, 0x6000, 0x7FFF)) {
-    // 0 means writes are _enabled_. because fuck you that's why.
-    return (this->reg.ram_protect.write_enable == 0)
+    (this->reg.ram_protect.write_enable == 0)
       ? this->prg_ram.write(addr - 0x6000, val)
       : void();
   }
@@ -195,9 +194,11 @@ Mirroring::Type Mapper_004::mirroring() const {
 void Mapper_004::cycle(uint scancycle, uint scanline, bool isRendering) {
   // this is the jankybit
   if (scancycle == 260 && (scanline == 261 || scanline < 240) && isRendering) {
-    this->reg.irq_counter = (this->reg.irq_counter == 0)
-      ? this->reg.irq_latch
-      : this->reg.irq_counter - 1;
+    if (this->reg.irq_counter == 0) {
+      this->reg.irq_counter = this->reg.irq_latch;
+    } else {
+      this->reg.irq_counter--;
+    }
 
     if (this->reg.irq_counter == 0 && this->reg.irq_enabled) {
       this->irq_trigger();

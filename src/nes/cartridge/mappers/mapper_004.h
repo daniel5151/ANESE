@@ -83,7 +83,7 @@ private:
     // |||| ||||
     // ++++-++++- New bank value, based on last value written to
     //             Bank select register (mentioned above)
-    u8 bank_values [8]; // not really hardware registers, but it makes impl easy
+    u8 bank_values [8];
 
     // Mirroring - 0xA000 ... 0xBFFE, even
     // 7  bit  0

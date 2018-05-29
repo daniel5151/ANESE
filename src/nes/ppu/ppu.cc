@@ -258,9 +258,9 @@ void PPU::write(u16 addr, u8 val) {
                     this->reg.t.nametable = val & 0x03;
   /*   0x2001  */ } return;
   case PPUMASK:   { this->reg.ppumask.raw = val;
-  /*   0x2003  */ } return;
+  /*   0x2002  */ } return;
   case PPUSTATUS: { fprintf(stderr, "[PPU] Write to PPUSTATUS is undefined!\n");
-                  } return;
+  /*   0x2003  */ } return;
   case OAMADDR:   { this->reg.oamaddr = val;
   /*   0x2004  */ } return;
   case OAMDATA:   { this->oam[this->reg.oamaddr++] = val;

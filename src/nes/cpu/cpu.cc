@@ -32,11 +32,7 @@ void CPU::power_cycle() {
   this->state = CPU::State::Running;
 }
 
-// https://wiki.nesdev.com/w/index.php/CPU_power_up_state
 void CPU::reset() {
-  this->reg.s -= 3; // the stack pointer is decremented by 3 (weird...)
-  this->reg.p.i = 1;
-
   this->state = CPU::State::Running;
 }
 
@@ -62,6 +58,8 @@ void CPU::service_interrupt(Interrupts::Type interrupt, bool brk /* = false */) 
   if (interrupt != RESET) {
     this->s_push16(this->reg.pc);
     this->s_push(this->reg.p.raw);
+  } else {
+    this->reg.s -= 3;
   }
 
   // Interrupts take 7 cycles to execute
