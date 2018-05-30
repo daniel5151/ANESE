@@ -12,6 +12,9 @@ Mapper_004::Mapper_004(const ROM_File& rom_file)
   memset(&this->reg, 0, sizeof this->reg);
 
   this->fourscreen_mirroring = rom_file.meta.mirror_mode == Mirroring::FourScreen;
+  if (this->fourscreen_mirroring) {
+    this->four_screen_ram = new RAM (0x1000, "Mapper_004 FourScreen RAM");
+  }
 
   // Split up PRG ROM
 
@@ -63,12 +66,21 @@ Mapper_004::~Mapper_004() {
   for (uint i = 0; i < this->banks.chr.len; i++)
     delete this->banks.chr.bank[i];
   delete[] this->banks.chr.bank;
+
+  if (this->four_screen_ram)
+    delete four_screen_ram;
 }
 
 u8 Mapper_004::read(u16 addr) {
   // Wired to the PPU MMU
-  if (in_range(addr, 0x000, 0x1FFF)) {
+  if (in_range(addr, 0x0000, 0x1FFF)) {
     return this->chr_bank[addr / 0x400]->read(addr % 0x400);
+  }
+
+  // 4 Screen RAM
+  if (in_range(addr, 0x2000, 0x2FFF)) {
+    assert(this->four_screen_ram);
+    return this->four_screen_ram->read(addr - 0x2000);
   }
 
   // Wired to the CPU MMU
@@ -86,8 +98,14 @@ u8 Mapper_004::read(u16 addr) {
 
 u8 Mapper_004::peek(u16 addr) const {
   // Wired to the PPU MMU
-  if (in_range(addr, 0x000, 0x1FFF)) {
+  if (in_range(addr, 0x0000, 0x1FFF)) {
     return this->chr_bank[addr / 0x400]->peek(addr % 0x400);
+  }
+
+  // 4 Screen RAM
+  if (in_range(addr, 0x2000, 0x2FFF)) {
+    assert(this->four_screen_ram);
+    return this->four_screen_ram->peek(addr - 0x2000);
   }
 
   // Wired to the CPU MMU
@@ -107,6 +125,11 @@ void Mapper_004::write(u16 addr, u8 val) {
   if (in_range(addr, 0x0000, 0x1FFF)) {
     // CHR might be RAM (potentially)
     return this->chr_bank[addr / 0x400]->write(addr % 0x400, val);
+  }
+  // 4 Screen RAM
+  if (in_range(addr, 0x2000, 0x2FFF)) {
+    assert(this->four_screen_ram);
+    return this->four_screen_ram->write(addr - 0x2000, val);
   }
   if (in_range(addr, 0x4020, 0x5FFF)) return; // do nothing to expansion ROM
   if (in_range(addr, 0x6000, 0x7FFF)) {

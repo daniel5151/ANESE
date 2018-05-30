@@ -42,6 +42,9 @@ private:
   // 0x1C00 0x1FFF (or $0C00-$0FFF): 1 KB switchable CHR bank
   Memory* chr_bank [8];
 
+  // 4 Screen Mirroring RAM
+  RAM* four_screen_ram;
+
   struct { // Registers
     // Bank select - 0x8000 ... $9FFE, even
     // 7  bit  0
