@@ -153,15 +153,15 @@ stubbed)
   - Better Usability
     - [x] Loading Files with picker
     - [x] Reset / Power-cycle
-    - [ ] Run / Pause / Stop
     - [x] Fast Forward
+    - [ ] Run / Pause / Step
+    - Saving
+      - [x] Battery Backed RAM
+      - [ ] Save-states
     - [ ] Config File
       - [ ] Remap controls
     - [x] Running NESTEST (behind a flag)
     - [x] Controller support - _currently very basic_
-    - Saving
-      - [ ] Battery Backed RAM
-      - [ ] Save-states
     - Full-fledged in application GUI
       - [ ] imgui maybe?
   - Accuracy & Compatibility improvements
@@ -205,7 +205,6 @@ stubbed)
     - [x] Movie recording and playback
   - [ ] Debugger!
     - [ ] CPU
-      - [ ] Serialize state
       - [x] Step through instructions - _super jank, no external flags_
     - [ ] PPU Views
       - [x] Static Palette

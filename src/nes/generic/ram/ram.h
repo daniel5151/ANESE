@@ -3,9 +3,11 @@
 #include "common/util.h"
 #include "nes/interfaces/memory.h"
 
+#include "nes/interfaces/serializable.h"
+
 // Dead simple 16 bit RAM ADT
 // (max 64K of RAM)
-class RAM final : public Memory {
+class RAM final : public Memory, public Serializable {
 private:
   u8*  ram;
   uint size;

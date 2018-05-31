@@ -17,6 +17,11 @@ RAM::RAM(uint ram_size, const char* label /* = "?" */) {
   // Init RAM
   for (uint addr = 0; addr < this->size; addr++)
     this->ram[addr] = 0x00;
+
+  SERIALIZE_START(2)
+    SERIALIZE_ARRAY_VARIABLE(this->ram, this->size),
+    SERIALIZE_POD(this->size),
+  SERIALIZE_END(2)
 }
 
 RAM::~RAM() {

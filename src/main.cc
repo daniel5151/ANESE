@@ -33,6 +33,10 @@ int main(int argc, char* argv[]) {
     "Output CPU execution over STDOUT",
     {'c', "log-cpu"});
 
+  args::Flag no_sav(parser, "no-sav",
+    "don't load sav file",
+    {"no-sav"});
+
   // Hacks
   args::Flag ppu_timing_hack(parser, "alt-nmi-timing",
     "Enable NMI timing fix "
@@ -162,6 +166,19 @@ int main(int argc, char* argv[]) {
 
   // Slap that cartridge in!
   nes.loadCartridge(cart.get_mapper());
+
+  // Try to load batter-backed save data if needed
+  if (cart.get_mapper()->hasBatterySave() && !no_sav) {
+    u8* data;
+    uint len;
+    if (load_file((rom_path + ".sav").c_str(), data, len)) {
+      fprintf(stderr, "[Savegame][Load] Found save data.\n");
+      cart.get_mapper()->setBatterySave(data, len);
+    } else {
+      fprintf(stderr, "[Savegame][Load] No existing save data found.\n");
+    }
+    delete data;
+  }
 
   // Power up the NES
   nes.power_cycle();
@@ -423,6 +440,21 @@ int main(int argc, char* argv[]) {
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
+
+  // Save RAM
+  if (cart.get_mapper()->hasBatterySave()) {
+    const u8* data;
+    uint len;
+    cart.get_mapper()->getBatterySave(data, len);
+    FILE* sav = fopen((rom_path + ".sav").c_str(), "w");
+    if (sav) {
+      fwrite(data, 1, len, sav);
+      fclose(sav);
+      fprintf(stderr, "[Savegame][Save] Game successfully saved!\n");
+    } else {
+      fprintf(stderr, "[Savegame][Save] Failed to open save file!\n");
+    }
+  }
 
   printf("\nANESE closed successfully\n");
 

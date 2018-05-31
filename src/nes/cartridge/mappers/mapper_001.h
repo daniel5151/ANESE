@@ -108,4 +108,8 @@ public:
   Mirroring::Type mirroring() const override;
 
   void cycle(const PPU& ppu) override;
+
+  bool hasBatterySave() const override { return true; }
+  void getBatterySave(const u8*& data, uint& len) const override;
+  void setBatterySave(const u8*  data, uint  len) override;
 };

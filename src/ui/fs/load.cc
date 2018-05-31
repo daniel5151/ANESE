@@ -23,7 +23,7 @@ static inline std::string get_file_ext(const char* filename) {
 /*----------  File Data Loaders  ----------*/
 
 // Loads file directly into memory
-void load_file(const char* filepath, u8*& data, uint& data_len) {
+bool load_file(const char* filepath, u8*& data, uint& data_len) {
   if (!filepath) {
     fprintf(stderr, "[Load] filepath == nullptr in load_file!\n");
     assert(false);
@@ -33,7 +33,7 @@ void load_file(const char* filepath, u8*& data, uint& data_len) {
 
   if (!rom_file.is_open()) {
     fprintf(stderr, "[Load] Could not open '%s'\n", filepath);
-    return;
+    return false;
   }
 
   // get length of file
@@ -43,7 +43,7 @@ void load_file(const char* filepath, u8*& data, uint& data_len) {
 
   if (rom_file_size == -1) {
     fprintf(stderr, "[Load] Could not read '%s'\n", filepath);
-    return;
+    return false;
   }
 
   data_len = rom_file_size;
@@ -51,10 +51,12 @@ void load_file(const char* filepath, u8*& data, uint& data_len) {
   rom_file.read((char*) data, data_len);
 
   fprintf(stderr, "[Load] Successfully read '%s'\n", filepath);
+
+  return true;
 }
 
 // Searches for valid roms inside .zip files, and loads them into memory
-static void load_zip_file_data(const char* filepath, u8*& data, uint& data_len) {
+static bool load_zip_file_data(const char* filepath, u8*& data, uint& data_len) {
   if (!filepath) {
     fprintf(stderr, "[Load] filepath == nullptr in load_zip_file_data!\n");
     assert(false);
@@ -70,7 +72,7 @@ static void load_zip_file_data(const char* filepath, u8*& data, uint& data_len) 
   if (!status) {
     fprintf(stderr, "[Load][.zip] Could not read '%s'\n", filepath);
     mz_zip_reader_end(&zip_archive);
-    return;
+    return false;
   }
 
   // Try to find a .nes file in the archive
@@ -95,7 +97,7 @@ static void load_zip_file_data(const char* filepath, u8*& data, uint& data_len) 
         printf("[Load][.zip][UnZip] Could not decompress '%s'\n", filepath);
         mz_free(p);
         mz_zip_reader_end(&zip_archive);
-        return;
+        return false;
       }
 
       // Nice! We got data!
@@ -112,6 +114,8 @@ static void load_zip_file_data(const char* filepath, u8*& data, uint& data_len) 
       mz_zip_reader_end(&zip_archive);
     }
   }
+
+  return true;
 }
 
 /*----------  Public Interface  ----------*/

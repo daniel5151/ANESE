@@ -54,6 +54,17 @@ public:
   // Mappers tend to be benign, but some do have some fancy behavior.
   virtual void cycle(const PPU& ppu) { (void)ppu; }
 
+  // ---- Battery Backed Saving ---- //
+  virtual bool hasBatterySave() const { return false; }
+  virtual void getBatterySave(const u8*& data, uint& len) const {
+    data = nullptr;
+    len = 0;
+  }
+  virtual void setBatterySave(const u8* data, uint len) {
+    (void)data;
+    (void)len;
+  };
+
   // ---- Utilities ---- //
   // creates correct mapper given an ROM_File object
   static Mapper* Factory(const ROM_File* rom_file);
