@@ -40,6 +40,13 @@ private:
     } bank_select;
   } reg;
 
+  void update_banks() override;
+
+  SERIALIZE_START(2, "Mapper_007")
+    SERIALIZE_POD(reg)
+    SERIALIZE_SERIALIZABLE_PTR(dynamic_cast<RAM*>(chr_mem))
+  SERIALIZE_END(2)
+
 public:
   Mapper_007(const ROM_File& rom_file);
   ~Mapper_007();

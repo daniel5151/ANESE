@@ -40,6 +40,14 @@ private:
 
   Mirroring::Type mirror_mode;
 
+  void update_banks() override;
+
+  SERIALIZE_START(3, "Mapper_003")
+    SERIALIZE_POD(mirror_mode)
+    SERIALIZE_POD(reg)
+    SERIALIZE_SERIALIZABLE_PTR(dynamic_cast<RAM*>(chr_mem))
+  SERIALIZE_END(3)
+
 public:
   Mapper_003(const ROM_File& rom_file);
   ~Mapper_003();

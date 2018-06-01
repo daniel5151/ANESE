@@ -4,10 +4,12 @@
 #include "nes/cartridge/mapper.h"
 #include "nes/interfaces/memory.h"
 
+#include "nes/interfaces/serializable.h"
+
 // PPU Memory Map (MMU)
 // NESdoc.pdf
 // http://wiki.nesdev.com/w/index.php/PPU_memory_map
-class PPU_MMU final : public Memory {
+class PPU_MMU final : public Memory, public Serializable {
 private:
   // Fixed References (these will never be invalidated)
   Memory& ciram; // PPU internal VRAM
@@ -23,6 +25,14 @@ private:
   u16 nt_1;
   u16 nt_2;
   u16 nt_3;
+
+  SERIALIZE_START(5, "PPU_MMU")
+    SERIALIZE_POD(mirroring)
+    SERIALIZE_POD(nt_0)
+    SERIALIZE_POD(nt_1)
+    SERIALIZE_POD(nt_2)
+    SERIALIZE_POD(nt_3)
+  SERIALIZE_END(5)
 
   void set_mirroring();
 

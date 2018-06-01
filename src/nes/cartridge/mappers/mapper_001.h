@@ -6,8 +6,6 @@
 #include "common/util.h"
 #include "../mapper.h"
 
-#include "nes/interfaces/serializable.h"
-
 // https://wiki.nesdev.com/w/index.php/MMC1
 class Mapper_001 final : public Mapper {
 private:
@@ -96,13 +94,19 @@ private:
 
   uint write_just_happened;
 
-  void update_banks();
-
-  SERIALIZE_START(3, "Mapper_001")
+  SERIALIZE_START(3 + this->banks.chr.len, "Mapper_001")
     SERIALIZE_SERIALIZABLE(prg_ram)
+    SERIALIZE_CUSTOM() {
+      for (uint j = 0; j < this->banks.chr.len; j++) {
+        RAM* bank = dynamic_cast<RAM*>(this->banks.chr.bank[j]);
+        SERIALIZE_SERIALIZABLE_PTR(bank)
+      }
+    }
     SERIALIZE_POD(reg)
     SERIALIZE_POD(write_just_happened)
-  SERIALIZE_END(3)
+  SERIALIZE_END(3 + this->banks.chr.len)
+
+  void update_banks() override;
 
 public:
   Mapper_001(const ROM_File& rom_file);

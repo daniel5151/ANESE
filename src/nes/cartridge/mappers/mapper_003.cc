@@ -86,6 +86,10 @@ void Mapper_003::write(u16 addr, u8 val) {
 
   if (in_range(addr, 0x8000, 0xFFFF)) {
     this->reg.bank_select = val;
-    this->chr_mem = this->banks.chr.bank[val % this->banks.chr.len];
+    this->update_banks();
   }
+}
+
+void Mapper_003::update_banks() {
+  this->chr_mem = this->banks.chr.bank[this->reg.bank_select % this->banks.chr.len];
 }

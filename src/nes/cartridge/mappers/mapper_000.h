@@ -19,6 +19,11 @@ private:
 
   Mirroring::Type mirror_mode;
 
+  SERIALIZE_START(2, "Mapper_000")
+    SERIALIZE_POD(mirror_mode)
+    SERIALIZE_SERIALIZABLE_PTR(dynamic_cast<RAM*>(chr_mem))
+  SERIALIZE_END(2)
+
 public:
   Mapper_000(const ROM_File& rom_file);
   ~Mapper_000();

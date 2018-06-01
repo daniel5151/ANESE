@@ -332,9 +332,9 @@ int main(int argc, char* argv[]) {
             delete savestate;
             savestate = nes.serialize();
             break;
-          case SDLK_1:      nes.deserialize(savestate);   break;
-          case SDLK_r:      nes.reset();                  break;
-          case SDLK_p:      nes.power_cycle();            break;
+          case SDLK_1: nes.deserialize(savestate); break;
+          case SDLK_r: nes.reset();                break;
+          case SDLK_p: nes.power_cycle();          break;
           case SDLK_EQUALS: {
             nes.set_speed(speedup += 25);
             speed_counter = 0;

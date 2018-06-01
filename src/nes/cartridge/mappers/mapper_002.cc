@@ -75,6 +75,10 @@ void Mapper_002::write(u16 addr, u8 val) {
 
   if (in_range(addr, 0x8000, 0xFFFF)) {
     this->reg.bank_select = val;
-    this->prg_lo = this->banks.prg.bank[val % this->banks.prg.len];
+    this->update_banks();
   }
+}
+
+void Mapper_002::update_banks() {
+  this->prg_lo = this->banks.prg.bank[this->reg.bank_select % this->banks.prg.len];
 }

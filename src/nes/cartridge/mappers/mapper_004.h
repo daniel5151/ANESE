@@ -145,14 +145,20 @@ private:
 
   bool fourscreen_mirroring = false;
 
-  SERIALIZE_START(4, "Mapper_004")
+  void update_banks() override;
+
+  SERIALIZE_START(4 + this->banks.chr.len, "Mapper_004")
     SERIALIZE_SERIALIZABLE(prg_ram)
     SERIALIZE_SERIALIZABLE_PTR(four_screen_ram)
+    SERIALIZE_CUSTOM() {
+      for (uint j = 0; j < this->banks.chr.len; j++) {
+        RAM* bank = dynamic_cast<RAM*>(this->banks.chr.bank[j]);
+        SERIALIZE_SERIALIZABLE_PTR(bank)
+      }
+    }
     SERIALIZE_POD(reg)
     SERIALIZE_POD(fourscreen_mirroring)
-  SERIALIZE_END(4)
-
-  void update_banks();
+  SERIALIZE_END(4 + this->banks.chr.len)
 
 public:
   Mapper_004(const ROM_File& rom_file);

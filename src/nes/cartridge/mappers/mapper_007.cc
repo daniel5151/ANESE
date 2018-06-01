@@ -89,9 +89,7 @@ void Mapper_007::write(u16 addr, u8 val) {
 
   if (in_range(addr, 0x8000, 0xFFFF)) {
     this->reg.bank_select.val = val;
-
-    const u8 bank = this->reg.bank_select.prg_bank;
-    this->prg_rom = this->banks.prg.bank[bank % this->banks.prg.len];
+    this->update_banks();
   }
 }
 
@@ -101,3 +99,7 @@ Mirroring::Type Mapper_007::mirroring() const {
     : Mirroring::SingleScreenHi;
 };
 
+void Mapper_007::update_banks() {
+  const u8 bank = this->reg.bank_select.prg_bank;
+  this->prg_rom = this->banks.prg.bank[bank % this->banks.prg.len];
+}

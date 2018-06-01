@@ -37,6 +37,10 @@ private:
   APU* apu;
   PPU* ppu;
 
+  // MMUs
+  CPU_MMU* cpu_mmu;
+  PPU_MMU* ppu_mmu;
+
   // RAM
   RAM* cpu_wram; // 2k CPU general purpose Work RAM
   RAM* ppu_vram; // 2k PPU nametable VRAM
@@ -53,31 +57,28 @@ private:
   // Interrupt wiring
   InterruptLines interrupts;
 
-  /*-----------  Static Resources  ------------*/
-  // Fixed, non-stateful compnents
-
-  CPU_MMU* cpu_mmu;
-  PPU_MMU* ppu_mmu;
-
   /*=====================================
   =            Emulator Vars            =
   =====================================*/
 
   bool is_running;
 
-  SERIALIZE_START(11, "NES")
+  SERIALIZE_START(13, "NES")
     SERIALIZE_POD(is_running)
     SERIALIZE_SERIALIZABLE_PTR(cart)
-    SERIALIZE_SERIALIZABLE_PTR(cpu)
-    SERIALIZE_SERIALIZABLE_PTR(ppu)
-    SERIALIZE_SERIALIZABLE_PTR(cpu_wram)
-    SERIALIZE_SERIALIZABLE_PTR(ppu_vram)
-    SERIALIZE_SERIALIZABLE_PTR(ppu_pram)
-    SERIALIZE_SERIALIZABLE_PTR(ppu_oam)
-    SERIALIZE_SERIALIZABLE_PTR(ppu_oam2)
-    SERIALIZE_SERIALIZABLE_PTR(dma)
+    SERIALIZE_SERIALIZABLE(*cpu)
+    SERIALIZE_SERIALIZABLE(*apu)
+    SERIALIZE_SERIALIZABLE(*ppu)
+  //SERIALIZE_SERIALIZABLE(*cpu_mmu) // not actually stateful
+    SERIALIZE_SERIALIZABLE(*ppu_mmu)
+    SERIALIZE_SERIALIZABLE(*cpu_wram)
+    SERIALIZE_SERIALIZABLE(*ppu_vram)
+    SERIALIZE_SERIALIZABLE(*ppu_pram)
+    SERIALIZE_SERIALIZABLE(*ppu_oam)
+    SERIALIZE_SERIALIZABLE(*ppu_oam2)
+    SERIALIZE_SERIALIZABLE(*dma)
     SERIALIZE_SERIALIZABLE(interrupts)
-  SERIALIZE_END(11)
+  SERIALIZE_END(13)
 
 public:
   ~NES();

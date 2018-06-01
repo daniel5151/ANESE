@@ -225,7 +225,7 @@ void Mapper_001::cycle(const PPU& ppu) {
 
 void Mapper_001::getBatterySave(const u8*& data, uint& len) const {
   Serializable::Chunk* chunky_data = this->prg_ram.serialize();
-  chunky_data->collate(data, len);
+  Serializable::Chunk::collate(data, len, chunky_data);
   delete chunky_data;
 }
 

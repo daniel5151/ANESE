@@ -27,6 +27,9 @@ protected:
       this->interrupt_line->service(Interrupts::IRQ);
   }
 
+  // Called when deserializing
+  virtual void update_banks() {}
+
 public:
   virtual ~Mapper() = default;
   Mapper(uint number, const char* name) : name(name), number(number) {};
@@ -38,9 +41,9 @@ public:
 
   // <Memory>
   // reading doesn't tend to have side-effects, except in very advanced mappers
-  virtual u8 read(u16 addr) { return this->peek(addr); }
-  virtual u8 peek(u16 addr) const      = 0;
-  virtual void write(u16 addr, u8 val) = 0;
+  virtual u8 read(u16 addr) override { return this->peek(addr); }
+  virtual u8 peek(u16 addr) const override      = 0;
+  virtual void write(u16 addr, u8 val) override = 0;
   // <Memory/>
 
   // ---- Mapper Queries ---- //
@@ -64,6 +67,13 @@ public:
     (void)data;
     (void)len;
   };
+
+  // ---- Serialization ---- //
+  virtual const Chunk* deserialize(const Chunk* c) override {
+    c = this->Serializable::deserialize(c);
+    this->update_banks();
+    return c;
+  }
 
   // ---- Utilities ---- //
   // creates correct mapper given an ROM_File object

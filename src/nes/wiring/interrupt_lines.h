@@ -19,7 +19,7 @@ private:
   bool status [4]; // status[0] is unused
 
   SERIALIZE_START(1, "Interrupts")
-    SERIALIZE_ARRAY_FIXED(status, 4)
+    SERIALIZE_POD(status)
   SERIALIZE_END(1)
 
 public:
