@@ -83,6 +83,12 @@ static uint indent_i = 0;
 void indent_add() { indent_buf[indent_i++] = ' ';  }
 void indent_del() { indent_buf[--indent_i] = '\0'; }
 
+#ifdef _WIN32
+const char* pathstrip = "nes\\";
+#elif
+const char* pathstrip = "nes/";
+#endif
+
 Serializable::Chunk* Serializable::serialize() const {
   indent_add();
   const Serializable::_field_data* field_data = nullptr;
@@ -97,7 +103,7 @@ Serializable::Chunk* Serializable::serialize() const {
     fprintf(stderr, "[Serialization][%d] %s%-60s: len %X | ",
       field.type,
       indent_buf,
-      strstr(field.label, "nes/"),
+      strstr(field.label, pathstrip),
       (field.type > 3)
         ? 0
         : (field.type == 3 ? *field.len_variable : field.len_fixed)
@@ -162,7 +168,7 @@ const Serializable::Chunk* Serializable::deserialize(const Chunk* c) {
     fprintf(stderr, "[DeSerialization][%d] %s%-60s: len %X | ",
       field.type,
       indent_buf,
-      strstr(field.label, "nes/"),
+      strstr(field.label, pathstrip),
       (field.type > 3)
         ? 0
         : (field.type == 3 ? *field.len_variable : field.len_fixed)
@@ -225,7 +231,7 @@ const Serializable::Chunk* Serializable::deserialize(const Chunk* c) {
 
 //   u8* varlen_array;
 
-//   SERIALIZE_START(4)
+//   SERIALIZE_START(4, "test")
 //     SERIALIZE_POD(this->val)
 //     SERIALIZE_SERIALIZABLE_PTR(this->next)
 //     SERIALIZE_POD(this->val2)

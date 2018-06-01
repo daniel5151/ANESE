@@ -169,7 +169,7 @@ int main(int argc, char* argv[]) {
   // Slap that cartridge in!
   nes.loadCartridge(cart.get_mapper());
 
-  // Try to load batter-backed save data if needed
+  // Try to load battery-backed save data if needed
   if (cart.get_mapper()->hasBatterySave() && !reset_sav) {
     u8* data = nullptr;
     uint len = 0;

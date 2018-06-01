@@ -158,62 +158,72 @@ protected:
 
 // The macros themselves
 
-#define SERIALIZE_START(n, label) \
-  const char* _serializable_state_label = label; \
-  const uint  _serializable_state_len = n; \
-  const Serializable::_field_data* _serializable_state = nullptr; \
-  void _delete_serializable_state() const override { \
-    delete this->_serializable_state; \
-    /* we are lying to the compiler about this being a const function... */ \
-    *((Serializable::_field_data**)&this->_serializable_state) = nullptr; \
-  } \
+#define SERIALIZE_START(n, label)                                              \
+  const char* _serializable_state_label = label;                               \
+  const uint  _serializable_state_len = n;                                     \
+  const Serializable::_field_data* _serializable_state = nullptr;              \
+  void _delete_serializable_state() const override {                           \
+    delete this->_serializable_state;                                          \
+    /* we are lying to the compiler about this being a const function... */    \
+    *((Serializable::_field_data**)&this->_serializable_state) = nullptr;      \
+  }                                                                            \
+                                                                               \
   void _get_serializable_state(const Serializable::_field_data*& data, uint& len) const override { \
-    /* update pointers to serializables */ \
-    delete this->_serializable_state; \
-    /* we are lying to the compiler about this being a const function... */ \
-    *((Serializable::_field_data**)&this->_serializable_state) \
-      = new Serializable::_field_data [this->_serializable_state_len] {
+    /* update pointers to serializables */                                     \
+    delete this->_serializable_state;                                          \
+    /* MSVC is a lil bitch, and fails on aggregate instantiation */            \
+    /* Instead, we do some less-elegant stuff */                               \
+    Serializable::_field_data* new_state                                       \
+      = new Serializable::_field_data [this->_serializable_state_len];         \
+    uint i = 0;                                                                \
+    /* ... SERIALIZE_BLAHBLAHBLAH() ... */
 
-#define SERIALIZE_END(n) \
-    }; \
-    data = this->_serializable_state; \
-    len = this->_serializable_state_len; \
-    /* sanity check */ \
-    assert(len == n); \
+#define SERIALIZE_END(n)                                                       \
+    /* we are lying to the compiler about this being a const function... */    \
+    *((Serializable::_field_data**)&this->_serializable_state) = new_state;    \
+    data = this->_serializable_state;                                          \
+    len = this->_serializable_state_len;                                       \
+    /* sanity check */                                                         \
+    assert(len == n);                                                          \
   };
 
 
-#define SERIALIZE_POD(thing) { \
-    _serializable_state_label, __FILE__ ":" #thing, \
-    Serializable::_field_type::POD, \
-    (void*)&(thing), \
-    sizeof(thing), 0 \
-  },
+#define SERIALIZE_POD(thing)                            \
+  new_state[i++] = {                                    \
+    _serializable_state_label, __FILE__ ":" #thing,     \
+    Serializable::_field_type::POD,                     \
+    (void*)&(thing),                                    \
+    sizeof(thing), 0                                    \
+  };
 
-#define SERIALIZE_ARRAY_FIXED(thing, len) { \
-    _serializable_state_label, __FILE__ ":" #thing, \
-    Serializable::_field_type::ARRAY_FIXED, \
-    (void*)&(thing), \
-    len, 0 \
-  },
+#define SERIALIZE_ARRAY_FIXED(thing, len)               \
+  new_state[i++] = {                                    \
+    _serializable_state_label, __FILE__ ":" #thing,     \
+    Serializable::_field_type::ARRAY_FIXED,             \
+    (void*)&(thing),                                    \
+    len, 0                                              \
+  };
 
-#define SERIALIZE_ARRAY_VARIABLE(thing, len) { \
-    _serializable_state_label, __FILE__ ":" #thing, \
-    Serializable::_field_type::ARRAY_VARIABLE, \
-    (void*)&(thing), \
-    0, (uint*)&len \
-  },
+#define SERIALIZE_ARRAY_VARIABLE(thing, len)            \
+  new_state[i++] = {                                    \
+    _serializable_state_label, __FILE__ ":" #thing,     \
+    Serializable::_field_type::ARRAY_VARIABLE,          \
+    (void*)&(thing),                                    \
+    0, (uint*)&len                                      \
+  };
 
-#define SERIALIZE_SERIALIZABLE(thing) { \
-    _serializable_state_label, __FILE__ ":" #thing, \
-    Serializable::_field_type::SERIALIZABLE, \
+#define SERIALIZE_SERIALIZABLE(thing)                   \
+  new_state[i++] = {                                    \
+    _serializable_state_label, __FILE__ ":" #thing,     \
+    Serializable::_field_type::SERIALIZABLE,            \
     (void*)dynamic_cast<const Serializable*>(&(thing)), \
-    0, 0 \
-  },
+    0, 0                                                \
+  };
 
-#define SERIALIZE_SERIALIZABLE_PTR(thingptr) { \
-    _serializable_state_label, __FILE__ ":" #thingptr, \
-    Serializable::_field_type::SERIALIZABLE_PTR, \
+#define SERIALIZE_SERIALIZABLE_PTR(thingptr)            \
+  new_state[i++] = {                                    \
+    _serializable_state_label, __FILE__ ":" #thingptr,  \
+    Serializable::_field_type::SERIALIZABLE_PTR,        \
     (void*)dynamic_cast<const Serializable*>(thingptr), \
-    0, 0 \
-  },
+    0, 0                                                \
+  };
