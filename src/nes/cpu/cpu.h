@@ -7,11 +7,13 @@
 
 #include "nes/wiring/interrupt_lines.h"
 
+#include "nes/interfaces/serializable.h"
+
 // MOS 6502 (no BCD)
 // https://wiki.nesdev.com/w/index.php/CPU
 // http://users.telenet.be/kim1-6502/6502
 // http://obelisk.me.uk/6502
-class CPU {
+class CPU final : public Serializable {
 public:
   enum class State {
     Running,
@@ -52,6 +54,12 @@ private:
 
   uint cycles; // Cycles elapsed
   State state; // CPU state
+
+  SERIALIZE_START(3, "CPU")
+    SERIALIZE_POD(reg)
+    SERIALIZE_POD(cycles)
+    SERIALIZE_POD(state)
+  SERIALIZE_END(3)
 
   /*--------------  Helpers  -------------*/
 

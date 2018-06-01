@@ -10,7 +10,7 @@
 #include "nes/ppu/ppu.h" // MMC3 >:(
 
 // Mapper Interface
-class Mapper : public Memory {
+class Mapper : public Memory, public Serializable {
 private:
   const char* name;
   const uint  number;

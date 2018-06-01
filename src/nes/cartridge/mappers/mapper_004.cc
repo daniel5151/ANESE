@@ -14,6 +14,8 @@ Mapper_004::Mapper_004(const ROM_File& rom_file)
   this->fourscreen_mirroring = rom_file.meta.mirror_mode == Mirroring::FourScreen;
   if (this->fourscreen_mirroring) {
     this->four_screen_ram = new RAM (0x1000, "Mapper_004 FourScreen RAM");
+  } else {
+    this->four_screen_ram = nullptr;
   }
 
   // Split up PRG ROM

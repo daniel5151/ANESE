@@ -2,6 +2,8 @@
 
 #include "common/util.h"
 
+#include "nes/interfaces/serializable.h"
+
 namespace Interrupts {
   enum Type {
     NONE  = 0,
@@ -11,10 +13,14 @@ namespace Interrupts {
   };
 }
 
-class InterruptLines {
+class InterruptLines : public Serializable {
 public:
 private:
   bool status [4]; // status[0] is unused
+
+  SERIALIZE_START(1, "Interrupts")
+    SERIALIZE_ARRAY_FIXED(status, 4)
+  SERIALIZE_END(1)
 
 public:
   ~InterruptLines() = default;

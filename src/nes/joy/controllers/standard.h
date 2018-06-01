@@ -3,6 +3,8 @@
 #include "common/util.h"
 #include "nes/interfaces/memory.h"
 
+#include "nes/interfaces/serializable.h"
+
 namespace JOY_Standard_Button {
   enum Type : unsigned {
     A = 0,
@@ -16,7 +18,7 @@ namespace JOY_Standard_Button {
   };
 }
 
-class JOY_Standard final : public Memory {
+class JOY_Standard final : public Memory, public Serializable {
 private:
   bool strobe = false;
   uint curr_btn = 0; // from 0 - 7
@@ -36,6 +38,12 @@ private:
   } buttons;
 
   const char* label;
+
+  SERIALIZE_START(3, "JOY_Standard")
+    SERIALIZE_POD(strobe)
+    SERIALIZE_POD(curr_btn)
+    SERIALIZE_POD(buttons)
+  SERIALIZE_END(3)
 
 public:
   JOY_Standard(const char* label = "?");

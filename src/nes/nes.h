@@ -13,10 +13,12 @@
 #include "wiring/ppu_mmu.h"
 #include "wiring/interrupt_lines.h"
 
+#include "nes/interfaces/serializable.h"
+
 // Core NES class.
 // - Owns all NES core resources (but NOT the cartridge)
 // - Runs CPU, PPU, APU
-class NES {
+class NES final : public Serializable {
 private:
   /*================================
   =            Hardware            =
@@ -45,21 +47,37 @@ private:
   // Joypad controller
   JOY* joy;
 
+  // DMA Facilitator
+  DMA* dma;
+
+  // Interrupt wiring
+  InterruptLines interrupts;
+
   /*-----------  Static Resources  ------------*/
   // Fixed, non-stateful compnents
 
-  InterruptLines interrupts;
-
   CPU_MMU* cpu_mmu;
   PPU_MMU* ppu_mmu;
-
-  DMA* dma;
 
   /*=====================================
   =            Emulator Vars            =
   =====================================*/
 
   bool is_running;
+
+  SERIALIZE_START(11, "NES")
+    SERIALIZE_POD(is_running)
+    SERIALIZE_SERIALIZABLE_PTR(cart)
+    SERIALIZE_SERIALIZABLE_PTR(cpu)
+    SERIALIZE_SERIALIZABLE_PTR(ppu)
+    SERIALIZE_SERIALIZABLE_PTR(cpu_wram)
+    SERIALIZE_SERIALIZABLE_PTR(ppu_vram)
+    SERIALIZE_SERIALIZABLE_PTR(ppu_pram)
+    SERIALIZE_SERIALIZABLE_PTR(ppu_oam)
+    SERIALIZE_SERIALIZABLE_PTR(ppu_oam2)
+    SERIALIZE_SERIALIZABLE_PTR(dma)
+    SERIALIZE_SERIALIZABLE(interrupts)
+  SERIALIZE_END(11)
 
 public:
   ~NES();

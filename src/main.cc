@@ -6,6 +6,8 @@
 #include "nes/joy/controllers/standard.h"
 #include "nes/nes.h"
 
+#include "nes/interfaces/serializable.h"
+
 #include "common/debug.h"
 
 #include <iostream>
@@ -33,9 +35,9 @@ int main(int argc, char* argv[]) {
     "Output CPU execution over STDOUT",
     {'c', "log-cpu"});
 
-  args::Flag no_sav(parser, "no-sav",
-    "don't load sav file",
-    {"no-sav"});
+  args::Flag reset_sav(parser, "reset-sav",
+    "don't load sav file, and overwrite existing one",
+    {"reset-sav"});
 
   // Hacks
   args::Flag ppu_timing_hack(parser, "alt-nmi-timing",
@@ -168,9 +170,9 @@ int main(int argc, char* argv[]) {
   nes.loadCartridge(cart.get_mapper());
 
   // Try to load batter-backed save data if needed
-  if (cart.get_mapper()->hasBatterySave() && !no_sav) {
-    u8* data;
-    uint len;
+  if (cart.get_mapper()->hasBatterySave() && !reset_sav) {
+    u8* data = nullptr;
+    uint len = 0;
     if (load_file((rom_path + ".sav").c_str(), data, len)) {
       fprintf(stderr, "[Savegame][Load] Found save data.\n");
       cart.get_mapper()->setBatterySave(data, len);
@@ -254,6 +256,8 @@ int main(int argc, char* argv[]) {
   uint speedup = 100;
   int  speed_counter = 0;
 
+  const Serializable::Chunk* savestate = nullptr;
+
   // Main Loop
   bool quit = false;
   while (!quit) {
@@ -324,6 +328,11 @@ int main(int argc, char* argv[]) {
         // Meta Modified keys
         if (event.type == SDL_KEYDOWN && did_hit_meta) {
           switch (event.key.keysym.sym) {
+          case SDLK_BACKQUOTE:
+            delete savestate;
+            savestate = nes.serialize();
+            break;
+          case SDLK_1:      nes.deserialize(savestate);   break;
           case SDLK_r:      nes.reset();                  break;
           case SDLK_p:      nes.power_cycle();            break;
           case SDLK_EQUALS: {

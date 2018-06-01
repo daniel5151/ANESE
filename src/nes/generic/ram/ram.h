@@ -14,6 +14,11 @@ private:
 
   const char* label;
 
+  SERIALIZE_START(2, "RAM")
+    SERIALIZE_POD(size)
+    SERIALIZE_ARRAY_VARIABLE(ram, size)
+  SERIALIZE_END(2)
+
 public:
   RAM(uint ram_size, const char* label = "?");
   ~RAM();

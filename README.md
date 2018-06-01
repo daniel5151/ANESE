@@ -83,7 +83,7 @@ Right  | Right arrow | D-Pad
 
 Any xbox-compatible controller should work.
 
-There are also a couple emulator actions:
+There are also a couple of emulator actions:
 
 Action             | Keys
 -------------------|--------
@@ -94,6 +94,8 @@ Toggle CPU logging | Ctrl - C
 Speed++            | Ctrl - =
 Speed--            | Ctrl - -
 Fast-Forward       | Space
+Make Save-State    | Ctrl - \`
+Load Save-State    | Ctrl - 1
 
 ## DISCLAIMERS
 
@@ -156,8 +158,8 @@ stubbed)
     - [x] Fast Forward
     - [ ] Run / Pause / Step
     - Saving
-      - [x] Battery Backed RAM
-      - [ ] Save-states
+      - [x] Battery Backed RAM - Saves to `.sav`
+      - [x] Save-states
     - [ ] Config File
       - [ ] Remap controls
     - [x] Running NESTEST (behind a flag)

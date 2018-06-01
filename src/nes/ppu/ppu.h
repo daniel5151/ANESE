@@ -9,6 +9,8 @@
 #include "nes/generic/ram/ram.h"
 #include "nes/wiring/interrupt_lines.h"
 
+#include "nes/interfaces/serializable.h"
+
 namespace PPURegisters {
   enum Reg {
     PPUCTRL   = 0x2000,
@@ -26,7 +28,7 @@ namespace PPURegisters {
 // Picture Processing Unit
 // This guy is NOT cycle-accurate at the moment!
 // http://wiki.nesdev.com/w/index.php/PPU_programmer_reference
-class PPU final : public Memory {
+class PPU final : public Memory, public Serializable {
 private:
 
   /*----------  "Hardware"  ----------*/
@@ -195,6 +197,18 @@ private:
 
   uint cycles; // total PPU cycles
   uint frames; // total frames rendered
+
+  SERIALIZE_START(9, "PPU")
+    SERIALIZE_POD(spr)
+    SERIALIZE_POD(bgr)
+    SERIALIZE_POD(cpu_data_bus)
+    SERIALIZE_POD(odd_frame_latch)
+    SERIALIZE_POD(latch)
+    SERIALIZE_POD(reg)
+    SERIALIZE_POD(scan)
+    SERIALIZE_POD(cycles)
+    SERIALIZE_POD(frames)
+  SERIALIZE_END(9)
 
 #ifdef DEBUG_PPU
   /*---------------  Debug  --------------*/

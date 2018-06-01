@@ -145,6 +145,13 @@ private:
 
   bool fourscreen_mirroring = false;
 
+  SERIALIZE_START(4, "Mapper_004")
+    SERIALIZE_SERIALIZABLE(prg_ram)
+    SERIALIZE_SERIALIZABLE_PTR(four_screen_ram)
+    SERIALIZE_POD(reg)
+    SERIALIZE_POD(fourscreen_mirroring)
+  SERIALIZE_END(4)
+
   void update_banks();
 
 public:

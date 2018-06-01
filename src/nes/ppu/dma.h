@@ -3,13 +3,19 @@
 #include "common/util.h"
 #include "nes/interfaces/memory.h"
 
+#include "nes/interfaces/serializable.h"
+
 // Thin bridge class that facilitates CPU -> PPU OAMDMA, without giving the PPU
 // direct access to the CPU MMU
-class DMA final {
+class DMA final : public Serializable {
 private:
   Memory& cpu_mmu;
 
   u16 addr = 0x0000; // CPU addr to read from
+
+  SERIALIZE_START(1, "DMA")
+    SERIALIZE_POD(addr)
+  SERIALIZE_END(1)
 
 public:
   DMA(Memory& cpu_mmu) : cpu_mmu(cpu_mmu) {}

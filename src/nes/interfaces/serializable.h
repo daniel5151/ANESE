@@ -9,15 +9,17 @@
 #include <csignal>
 
 // A DIY data-serialization system.
-// **Cannot do circular references!**
+// Incredibly hacky, and a massive abuse of C++'s typesystem.
+// But hey, it works!
 
 // Caveats:
 // --------
-// 1) The chunks do _not_ have any sort of tags on them, so if the order of
-//    serialization changes, old versions of the data will not work!
+// 1) The chunks are _not_ tagged, so serialization order must be preserved!
 // 2) Circular dependencties will not work (i.e: bad things will happen if you
 //    call serialize() on A, which attemps to serialize() member B, who happens
 //    to need to serialize A)
+// 3) `Serializable` Inheritence is not handled properly, with only the data
+//    of the leaf-class being serialized (not any of it's base classes)
 
 // Usage:
 // ------
@@ -25,7 +27,7 @@
 // ```
 //   struct my_thing {
 //     // a POD type of fixed size
-//     uint some_flag;
+//     uint some_flags;
 //
 //     // a fixed-length array
 //     u8 regs [10];
@@ -34,8 +36,9 @@
 //     u8*  ram;
 //     uint ram_len;
 //
-//     // a nontrivial serializable type - WIP, NOT WORKING YET
-//     Serializable_Derived* fancyboi;
+//     // a nontrivial serializable type
+//     Serializable_Derived  fancyboi;
+//     Serializable_Derived* fancyboi_mightbenull;
 //   }
 // ```
 //
@@ -44,16 +47,24 @@
 // 1) make the struct extend Serializable's public interface:
 //      `struct my_thing : public Serializable`
 //
-// 2) define the serialization structure in the structure's constructor
+// 2) define the serialization structure in the structure's definition
 // ```
 //   my_thing() {
-//     SERIALIZE_START(4)
-//       SERIALIZE_POD(this->some_flag),
-//       SERIALIZE_ARRAY_FIXED(this->regs, 10),
-//       SERIALIZE_ARRAY_VARIABLE(this->ram, this->ram_len),
-//       SERIALIZE_POD(this->ram_len),
-//       SERIALIZE_SERIALIZABLE(this->fancyboi),
-//     SERIALIZE_END(4)
+//     // a POD type of fixed ssize
+//     uint some_flags;
+//     ...
+//     ...
+//     // a nontrivial serializable type
+//     Serializable_Derived* fancyboi;
+//
+//     SERIALIZE_START(6) // <-- number of fields to serialize
+//       SERIALIZE_POD(this->some_flags)
+//       SERIALIZE_ARRAY_FIXED(this->regs 10)
+//       SERIALIZE_ARRAY_VARIABLE(this->ram this->ram_len)
+//       SERIALIZE_POD(this->ram_len)
+//       SERIALIZE_SERIALIZABLE(this->fancyboi)
+//       SERIALIZE_SERIALIZABLE_PTR(this->fancyboimightbenull)
+//     SERIALIZE_END(6) // <-- number of fields to serialize (sanity check)
 //   }
 // ```
 //
@@ -78,22 +89,21 @@ public:
   struct Chunk {
     uint len;
     u8* data;
+
     Chunk* next;
 
     ~Chunk();
     Chunk();
     Chunk(const void* data, uint len);
 
-    void debugprint() const {
-      fprintf(stderr, "Chunk len %d, starts with 0x%08X\n",
-        this->len,
-        *((uint*)this->data));
+    const Chunk* debugprint() const {
+      fprintf(stderr, "| %4X | ", this->len);
+      if (this->len) fprintf(stderr, "0x%08X\n", *((uint*)this->data));
+      else           fprintf(stderr, "(null)\n");
 
-      if (this->next) {
-        this->next->debugprint();
-      } else {
-        fprintf(stderr, "\n");
-      }
+      if (this->next) this->next->debugprint();
+
+      return this; // for chaining
     }
 
     // Collates the list of chunks into a flat array
@@ -111,38 +121,99 @@ public:
 /*------------------------------  Macro Support  -----------------------------*/
 
   // Macro Supports
-  enum _field_type { POD, ARRAY_FIXED, ARRAY_VARIABLE, SERIALIZABLE };
+  enum _field_type {
+    INVALID = 0,
+    POD,
+    ARRAY_FIXED,
+    ARRAY_VARIABLE,
+    SERIALIZABLE,
+    SERIALIZABLE_PTR
+  };
+
   struct _field_data {
-    void* thing;
-    uint  len;
-    uint* varlen;
+    const char* parent_label;
+    const char* label;
     _field_type type;
+    void* thing;
+    // only one of the two is used
+    uint len_fixed;
+    uint* len_variable;
   };
 
 protected:
-  void _init_serializable_state(Serializable::_field_data* state, uint len) {
-    this->_serializable_state = state;
-    this->_serializable_state_len = len;
+  virtual void _delete_serializable_state() const {}
+  virtual void _get_serializable_state(const _field_data*& data, uint& len) const {
+    // To keep things cleaner in serialization / deserialization, if something
+    // is marked serializable but doesn't provide a serializable state, then
+    // simply return this empty
+    static uint dump = 0;
+    static const _field_data nothing [1] = {{
+      "<nothing>", "<nothing>", _field_type::POD, &dump, sizeof dump, nullptr
+    }};
+
+    data = nothing;
+    len = 1;
   }
-private:
-  Serializable::_field_data* _serializable_state = nullptr;
-  uint                      _serializable_state_len = 0;
-public:
-  virtual ~Serializable() { delete this->_serializable_state; }
 };
 
 // The macros themselves
 
-#define SERIALIZE_START(n) \
-  _init_serializable_state(new Serializable::_field_data [n] {
-#define SERIALIZE_END(n) }, n);
+#define SERIALIZE_START(n, label) \
+  const char* _serializable_state_label = label; \
+  const uint  _serializable_state_len = n; \
+  const Serializable::_field_data* _serializable_state = nullptr; \
+  void _delete_serializable_state() const override { \
+    delete this->_serializable_state; \
+    /* we are lying to the compiler about this being a const function... */ \
+    *((Serializable::_field_data**)&this->_serializable_state) = nullptr; \
+  } \
+  void _get_serializable_state(const Serializable::_field_data*& data, uint& len) const override { \
+    /* update pointers to serializables */ \
+    delete this->_serializable_state; \
+    /* we are lying to the compiler about this being a const function... */ \
+    *((Serializable::_field_data**)&this->_serializable_state) \
+      = new Serializable::_field_data [this->_serializable_state_len] {
 
-#define SERIALIZE_POD(thing) \
-  { &(thing), sizeof(thing), 0,      Serializable::_field_type::POD            }
-#define SERIALIZE_ARRAY_FIXED(thing, len) \
-  {  (thing), (len),         0,      Serializable::_field_type::ARRAY_FIXED    }
-#define SERIALIZE_ARRAY_VARIABLE(thing, len) \
-  {  (thing), 0,             &(len), Serializable::_field_type::ARRAY_VARIABLE }
-// WIP
-#define SERIALIZE_SERIALIZABLE(thing) \
-  { &(thing), 0,             0,      Serializable::_field_type::SERIALIZABLE   }
+#define SERIALIZE_END(n) \
+    }; \
+    data = this->_serializable_state; \
+    len = this->_serializable_state_len; \
+    /* sanity check */ \
+    assert(len == n); \
+  };
+
+
+#define SERIALIZE_POD(thing) { \
+    _serializable_state_label, __FILE__ ":" #thing, \
+    Serializable::_field_type::POD, \
+    (void*)&(thing), \
+    sizeof(thing), 0 \
+  },
+
+#define SERIALIZE_ARRAY_FIXED(thing, len) { \
+    _serializable_state_label, __FILE__ ":" #thing, \
+    Serializable::_field_type::ARRAY_FIXED, \
+    (void*)&(thing), \
+    len, 0 \
+  },
+
+#define SERIALIZE_ARRAY_VARIABLE(thing, len) { \
+    _serializable_state_label, __FILE__ ":" #thing, \
+    Serializable::_field_type::ARRAY_VARIABLE, \
+    (void*)&(thing), \
+    0, (uint*)&len \
+  },
+
+#define SERIALIZE_SERIALIZABLE(thing) { \
+    _serializable_state_label, __FILE__ ":" #thing, \
+    Serializable::_field_type::SERIALIZABLE, \
+    (void*)dynamic_cast<const Serializable*>(&(thing)), \
+    0, 0 \
+  },
+
+#define SERIALIZE_SERIALIZABLE_PTR(thingptr) { \
+    _serializable_state_label, __FILE__ ":" #thingptr, \
+    Serializable::_field_type::SERIALIZABLE_PTR, \
+    (void*)dynamic_cast<const Serializable*>(thingptr), \
+    0, 0 \
+  },
