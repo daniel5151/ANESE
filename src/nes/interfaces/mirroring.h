@@ -21,5 +21,6 @@ namespace Mirroring {
     CASE(INVALID);
     }
     #undef CASE
+    return nullptr;
   }
 }

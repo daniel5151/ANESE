@@ -403,14 +403,14 @@ uint CPU::step() {
               } break;
     case ROL: { if (opcode.addrm == Instructions::AddrM::acc) {
                   bool old_bit_0 = nth_bit(this->reg.a, 7);
-                  this->reg.a = (this->reg.a << 1) | this->reg.p.c;
+                  this->reg.a = (this->reg.a << 1) | u8(this->reg.p.c);
                   this->reg.p.c = old_bit_0;
                   set_zn(this->reg.a);
                 } else {
                   u8 val = this->mem[addr];
                   this->mem[addr] = val; // dummy-write
                   bool old_bit_0 = nth_bit(val, 7);
-                  val = (val << 1) | this->reg.p.c;
+                  val = (val << 1) | u8(this->reg.p.c);
                   this->reg.p.c = old_bit_0;
                   set_zn(val);
                   this->mem[addr] = val;

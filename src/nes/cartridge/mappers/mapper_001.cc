@@ -213,7 +213,7 @@ Mirroring::Type Mapper_001::mirroring() const {
     fprintf(stderr, "[Mapper_001] Unhandled mirroring case %u. Dying...\n",
       u8(this->reg.control.mirroring));
     assert(false);
-    break;
+    return Mirroring::INVALID;
   }
 }
 

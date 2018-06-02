@@ -147,4 +147,6 @@ ROM_File* load_rom_file(const char* filepath) {
   case NES2: return parse_iNES(data, data_len); // ignore NES2.0 headers
   case INVALID: return nullptr;
   }
+
+  return nullptr;
 }

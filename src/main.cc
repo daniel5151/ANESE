@@ -456,7 +456,7 @@ int main(int argc, char* argv[]) {
     const u8* data;
     uint len;
     Serializable::Chunk::collate(data, len, sav);
-    FILE* sav_file = fopen((rom_path + ".sav").c_str(), "w");
+    FILE* sav_file = fopen((rom_path + ".sav").c_str(), "wb");
     if (sav_file) {
       fwrite(data, 1, len, sav_file);
       fclose(sav_file);

@@ -529,9 +529,9 @@ PPU::Pixel PPU::get_bgr_pixel() {
     this->bgr.shift.tile[1] <<= 1;
 
     this->bgr.shift.at[0] <<= 1;
-    this->bgr.shift.at[0] |= this->bgr.shift.at_latch[0];
+    this->bgr.shift.at[0] |= u8(this->bgr.shift.at_latch[0]);
     this->bgr.shift.at[1] <<= 1;
-    this->bgr.shift.at[1] |= this->bgr.shift.at_latch[1];
+    this->bgr.shift.at[1] |= u8(this->bgr.shift.at_latch[1]);
   }
 
   // Check for background mask disable

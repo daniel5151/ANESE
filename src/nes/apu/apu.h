@@ -10,7 +10,10 @@
 
 #include <Nes_Apu.h>
 #include <apu_snapshot.h>
-static apu_snapshot_t savestate; // hack
+
+namespace {
+static apu_snapshot_t apu_savestate; // hack
+}
 
 // NES APU
 // Part of the NES RP2A03
@@ -33,18 +36,18 @@ private:
   uint frame_cycles; // Frame Cycles elapsed
 
   SERIALIZE_START(3, "Blaarg APU")
-    SERIALIZE_POD(savestate) // hack
+    SERIALIZE_POD(apu_savestate) // hack
     SERIALIZE_POD(cycles)
     SERIALIZE_POD(frame_cycles)
   SERIALIZE_END(3)
 
   virtual Chunk* serialize() const override {
-    this->blargg_apu.save_snapshot(&savestate);
+    this->blargg_apu.save_snapshot(&apu_savestate);
     return this->Serializable::serialize();
   }
   virtual const Chunk* deserialize(const Chunk* c) override {
     c = this->Serializable::deserialize(c);
-    this->blargg_apu.load_snapshot(savestate);
+    this->blargg_apu.load_snapshot(apu_savestate);
     return c;
   }
 
