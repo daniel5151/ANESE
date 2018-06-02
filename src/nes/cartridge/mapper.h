@@ -7,6 +7,8 @@
 
 #include "nes/wiring/interrupt_lines.h"
 
+#include "nes/interfaces/serializable.h"
+
 #include "nes/ppu/ppu.h" // MMC3 >:(
 
 // Mapper Interface
@@ -58,18 +60,11 @@ public:
   virtual void cycle(const PPU& ppu) { (void)ppu; }
 
   // ---- Battery Backed Saving ---- //
-  virtual bool hasBatterySave() const { return false; }
-  virtual void getBatterySave(const u8*& data, uint& len) const {
-    data = nullptr;
-    len = 0;
-  }
-  virtual void setBatterySave(const u8* data, uint len) {
-    (void)data;
-    (void)len;
-  };
+  virtual const Serializable::Chunk* getBatterySave() const { return nullptr; }
+  virtual void setBatterySave(const Serializable::Chunk* c) { (void)c; }
 
   // ---- Serialization ---- //
-  virtual const Chunk* deserialize(const Chunk* c) override {
+  virtual const Serializable::Chunk* deserialize(const Serializable::Chunk* c) override {
     c = this->Serializable::deserialize(c);
     this->update_banks();
     return c;

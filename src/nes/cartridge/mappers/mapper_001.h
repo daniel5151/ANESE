@@ -121,7 +121,10 @@ public:
 
   void cycle(const PPU& ppu) override;
 
-  bool hasBatterySave() const override { return true; }
-  void getBatterySave(const u8*& data, uint& len) const override;
-  void setBatterySave(const u8*  data, uint  len) override;
+  const Serializable::Chunk* getBatterySave() const override {
+    return this->prg_ram.serialize();
+  }
+  void setBatterySave(const Serializable::Chunk* c) override {
+    this->prg_ram.deserialize(c);
+  }
 };

@@ -169,15 +169,16 @@ int main(int argc, char* argv[]) {
   // Slap that cartridge in!
   nes.loadCartridge(cart.get_mapper());
 
-  // Try to load battery-backed save data if needed
-  if (cart.get_mapper()->hasBatterySave() && !reset_sav) {
+  // Try to load battery-backed save data
+  {
     u8* data = nullptr;
     uint len = 0;
-    if (load_file((rom_path + ".sav").c_str(), data, len)) {
+    if (!reset_sav && load_file((rom_path + ".sav").c_str(), data, len)) {
       fprintf(stderr, "[Savegame][Load] Found save data.\n");
-      cart.get_mapper()->setBatterySave(data, len);
+      const Serializable::Chunk* sav = Serializable::Chunk::parse(data, len);
+      cart.get_mapper()->setBatterySave(sav);
     } else {
-      fprintf(stderr, "[Savegame][Load] No existing save data found.\n");
+      fprintf(stderr, "[Savegame][Load] No save data found.\n");
     }
     delete data;
   }
@@ -451,18 +452,19 @@ int main(int argc, char* argv[]) {
   SDL_Quit();
 
   // Save RAM
-  if (cart.get_mapper()->hasBatterySave()) {
+  if (const Serializable::Chunk* sav = cart.get_mapper()->getBatterySave()) {
     const u8* data;
     uint len;
-    cart.get_mapper()->getBatterySave(data, len);
-    FILE* sav = fopen((rom_path + ".sav").c_str(), "w");
-    if (sav) {
-      fwrite(data, 1, len, sav);
-      fclose(sav);
+    Serializable::Chunk::collate(data, len, sav);
+    FILE* sav_file = fopen((rom_path + ".sav").c_str(), "w");
+    if (sav_file) {
+      fwrite(data, 1, len, sav_file);
+      fclose(sav_file);
       fprintf(stderr, "[Savegame][Save] Game successfully saved!\n");
     } else {
       fprintf(stderr, "[Savegame][Save] Failed to open save file!\n");
     }
+    delete sav;
   }
 
   printf("\nANESE closed successfully\n");
