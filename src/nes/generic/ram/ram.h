@@ -20,8 +20,9 @@ private:
   SERIALIZE_END(2)
 
 public:
-  RAM(uint ram_size, const char* label = "?");
   ~RAM();
+  RAM() = delete;
+  RAM(uint ram_size, const char* label = "?");
 
   // <Memory>
   u8 read(u16 addr)       override;

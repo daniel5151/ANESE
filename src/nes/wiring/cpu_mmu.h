@@ -19,7 +19,7 @@ private:
   // Changing References
   Mapper* cart;
 public:
-  ~CPU_MMU() = default; // no owned resources
+  CPU_MMU() = delete;
   CPU_MMU(
     Memory& ram,
     Memory& ppu,

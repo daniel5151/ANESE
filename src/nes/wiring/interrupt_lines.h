@@ -23,7 +23,6 @@ private:
   SERIALIZE_END(1)
 
 public:
-  ~InterruptLines() = default;
   InterruptLines();
 
   InterruptLines(const InterruptLines&) = delete;

@@ -47,8 +47,8 @@ private:
 
   // ---- Sprite Hardware ---- //
 
-  RAM& oam;  // Primary OAM - 256 bytes (Object Attribute Memory)
-  RAM& oam2; // Secondary OAM - 32 bytes (8 sprites to render on scanline)
+  RAM oam;  // Primary OAM - 256 bytes (Object Attribute Memory)
+  RAM oam2; // Secondary OAM - 32 bytes (8 sprites to render on scanline)
 
   struct {
     struct {
@@ -186,7 +186,7 @@ private:
   void nmiChange();
 
   // framebuffer
-  u8* framebuff;
+  u8 framebuff [240 * 256 * 4];
   void draw_dot(Color color, uint x, uint y);
 
   // scanline tracker
@@ -198,7 +198,9 @@ private:
   uint cycles; // total PPU cycles
   uint frames; // total frames rendered
 
-  SERIALIZE_START(9, "PPU")
+  SERIALIZE_START(11, "PPU")
+    SERIALIZE_SERIALIZABLE(oam)
+    SERIALIZE_SERIALIZABLE(oam2)
     SERIALIZE_POD(spr)
     SERIALIZE_POD(bgr)
     SERIALIZE_POD(cpu_data_bus)
@@ -208,7 +210,7 @@ private:
     SERIALIZE_POD(scan)
     SERIALIZE_POD(cycles)
     SERIALIZE_POD(frames)
-  SERIALIZE_END(9)
+  SERIALIZE_END(11)
 
 #ifdef DEBUG_PPU
   /*---------------  Debug  --------------*/
@@ -218,11 +220,9 @@ private:
 #endif // DEBUG_PPU
 
 public:
-  ~PPU();
+  PPU() = delete;
   PPU(
     Memory& mem,
-    RAM& oam,
-    RAM& oam2,
     DMA& dma,
     InterruptLines& interrupts
   );

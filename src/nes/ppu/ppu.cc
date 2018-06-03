@@ -6,25 +6,17 @@
 
 #include "common/debug.h" // fogleman flag
 
-PPU::~PPU() {
-  delete this->framebuff;
-}
-
 PPU::PPU(
   Memory& mem,
-  RAM& oam,
-  RAM& oam2,
   DMA& dma,
   InterruptLines& interrupts
 ) :
   dma(dma),
   interrupts(interrupts),
   mem(mem),
-  oam(oam),
-  oam2(oam2)
+  oam(256, "OAM"),
+  oam2(32, "Secondary OAM")
 {
-  this->framebuff = new u8[240 * 256 * 4]();
-
   this->power_cycle();
 
 #ifdef DEBUG_PPU

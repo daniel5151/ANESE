@@ -8,8 +8,6 @@
 
 /*-----------------------------  Public Methods  -----------------------------*/
 
-CPU::~CPU() {}
-
 CPU::CPU(Memory& mem, InterruptLines& interrupt)
 : interrupt(interrupt),
   mem(mem)

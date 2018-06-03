@@ -2,7 +2,7 @@
 
 namespace Mirroring {
   enum Type {
-    Vertical,
+    Vertical = 0,
     Horizontal,
     FourScreen,
     SingleScreenLo,

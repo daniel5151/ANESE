@@ -24,35 +24,31 @@ private:
   =            Hardware            =
   ================================*/
 
-  /*----------  Borrowed Resources  -----------*/
-  // Not owned by NES
+  /*----------  External Hardware  ----------*/
+  // I.e: Things not present on the NES mainboard
 
-  Mapper* cart; // Game Cartridge
+  Mapper* cart = nullptr; // Game Cartridge
 
-  /*----------  Volatile Resources  -----------*/
-  // Fixed components, but have state
+  /*----------  Chips  ----------*/
+  RAM cpu_wram; // 2k CPU general purpose Work RAM
+  RAM ppu_vram; // 2k PPU nametable VRAM
+  RAM ppu_pram; // 32 bytes PPU palette RAM
+  
+  CPU cpu;
+  APU apu;
+  PPU ppu;
 
-  // Processors
-  CPU* cpu;
-  APU* apu;
-  PPU* ppu;
-
+  /*----------  Wiring  ----------*/
+  
   // MMUs
-  CPU_MMU* cpu_mmu;
-  PPU_MMU* ppu_mmu;
+  CPU_MMU cpu_mmu;
+  PPU_MMU ppu_mmu;
 
-  // RAM
-  RAM* cpu_wram; // 2k CPU general purpose Work RAM
-  RAM* ppu_vram; // 2k PPU nametable VRAM
-  RAM* ppu_pram; // 32 bytes PPU palette RAM
-  RAM* ppu_oam;  // 256 bytes PPU Object Attribute Memory (OAM)
-  RAM* ppu_oam2; // 32 bytes secondary OAM
-
-  // Joypad controller
-  JOY* joy;
+  // Joypad router
+  JOY joy;
 
   // DMA Facilitator
-  DMA* dma;
+  DMA dma;
 
   // Interrupt wiring
   InterruptLines interrupts;
@@ -61,32 +57,23 @@ private:
   =            Emulator Vars            =
   =====================================*/
 
-  bool is_running;
+  bool is_running = false;
 
-  SERIALIZE_START(13, "NES")
+  SERIALIZE_START(10, "NES")
     SERIALIZE_POD(is_running)
     SERIALIZE_SERIALIZABLE_PTR(cart)
-    SERIALIZE_SERIALIZABLE(*cpu)
-    SERIALIZE_SERIALIZABLE(*apu)
-    SERIALIZE_SERIALIZABLE(*ppu)
-  //SERIALIZE_SERIALIZABLE(*cpu_mmu) // not actually stateful
-    SERIALIZE_SERIALIZABLE(*ppu_mmu)
-    SERIALIZE_SERIALIZABLE(*cpu_wram)
-    SERIALIZE_SERIALIZABLE(*ppu_vram)
-    SERIALIZE_SERIALIZABLE(*ppu_pram)
-    SERIALIZE_SERIALIZABLE(*ppu_oam)
-    SERIALIZE_SERIALIZABLE(*ppu_oam2)
-    SERIALIZE_SERIALIZABLE(*dma)
+    SERIALIZE_SERIALIZABLE(cpu)
+    SERIALIZE_SERIALIZABLE(apu)
+    SERIALIZE_SERIALIZABLE(ppu)
+    SERIALIZE_SERIALIZABLE(cpu_wram)
+    SERIALIZE_SERIALIZABLE(ppu_vram)
+    SERIALIZE_SERIALIZABLE(ppu_pram)
+    SERIALIZE_SERIALIZABLE(dma)
     SERIALIZE_SERIALIZABLE(interrupts)
-  SERIALIZE_END(13)
+  SERIALIZE_END(10)
 
 public:
-  ~NES();
   NES();
-
-  // Until I am at a point where I can serialize the state of the NES, i'm
-  // disallowing copying NES instances
-  NES(const NES&) = delete;
 
   /*-----------  Key Operation Functions  ------------*/
 
@@ -111,5 +98,6 @@ public:
   /*-----------  "Fun" Functions  ------------*/
   // i.e: toggles things the original hardware doesn't actually support / do
 
+  // notify the APU of the speed change
   void set_speed(uint speed);
 };

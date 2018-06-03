@@ -53,6 +53,7 @@ private:
 
 public:
   ~APU();
+  APU() = delete;
   APU(Memory& mem, InterruptLines& interrupt);
 
   // <Memory>

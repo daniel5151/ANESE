@@ -14,6 +14,7 @@ private:
   const char* label;
 
 public:
+  ROM() = delete;
   ROM(uint rom_size, const u8* content, const char* label = "?");
 
   // <Memory>

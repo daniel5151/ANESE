@@ -79,7 +79,7 @@ private:
   void nestest(const Instructions::Opcode& opcode) const;
 
 public:
-  ~CPU();
+  CPU() = delete;
   CPU(Memory& mem, InterruptLines& interrupt);
 
   void power_cycle();
