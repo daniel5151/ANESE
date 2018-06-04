@@ -15,21 +15,13 @@ private:
 
   // Changing References
   Mapper* cart = nullptr; // Plugged in cartridge
-  
+
   // VRAM is usually == &ciram, but it == cart when FourScreen mirroring
   Memory* vram;
 
   // Nametable offsets + Mirror mode
-  static constexpr uint nt_mirroring [5][4] = {
-    /* Vertical       */ { 0, 1, 0, 1 },
-    /* Horizontal     */ { 0, 0, 1, 1 },
-    /* FourScreen     */ { 0, 1, 2, 3 },
-    /* SingleScreenLo */ { 0, 0, 0, 0 },
-    /* SingleScreenHi */ { 1, 1, 1, 1 }
-  };
   Mirroring::Type mirroring;
-  const uint* nt; // pointer to current offsets for current nametable mirroring
-  uint fix_4s;    // Set to 0, unless mirroring is FourScreen, then it's 0x2000 
+  const uint* nt; // pointer to array of  offsets for current nt mirroring
 
   u16 nt_mirror(u16 addr) const; // helper for doing nametable address routing
 

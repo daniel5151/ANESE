@@ -28,7 +28,7 @@ inline u16 pram_mirror(u16 addr) {
   if (addr % 4 == 0) {
     if (addr >= 16) return addr -= 16;
   }
-  
+
   return addr;
 }
 
@@ -84,10 +84,18 @@ void PPU_MMU::write(u16 addr, u8 val) {
 }
 
 void PPU_MMU::set_mirroring() {
+  static constexpr uint nt_mirroring [5][4] = {
+    /* Vertical       */ { 0, 1, 0, 1 },
+    /* Horizontal     */ { 0, 0, 1, 1 },
+    /* FourScreen     */ { 0, 1, 2, 3 },
+    /* SingleScreenLo */ { 0, 0, 0, 0 },
+    /* SingleScreenHi */ { 1, 1, 1, 1 }
+  };
+
   if (this->cart == nullptr) {
     this->mirroring = Mirroring::Type::INVALID;
     this->vram = &this->ciram;
-    this->nt = PPU_MMU::nt_mirroring[Mirroring::Type::SingleScreenLo]; // y not
+    this->nt = nt_mirroring[Mirroring::Type::SingleScreenLo]; // y not
     return;
   }
 
@@ -104,7 +112,7 @@ void PPU_MMU::set_mirroring() {
     Mirroring::toString(this->mirroring)
   );
 
-  this->nt = PPU_MMU::nt_mirroring[this->mirroring];
+  this->nt = nt_mirroring[this->mirroring];
   this->vram = (this->mirroring == Mirroring::Type::FourScreen)
     ? this->cart // Unlikely, but some games do this (Rad Racer II)
     : &this->ciram;
