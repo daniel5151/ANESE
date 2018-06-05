@@ -5,7 +5,10 @@
 </p>
 <p align="center">
   <a href="https://ci.appveyor.com/project/daniel5151/anese">
-    <img src="https://ci.appveyor.com/api/projects/status/qgy19m8us3ss6ilt?svg=true" alt="Build Status">
+    <img src="https://ci.appveyor.com/api/projects/status/qgy19m8us3ss6ilt?svg=true" alt="Build Status Windows">
+  </a>
+  <a href="https://travis-ci.org/daniel5151/ANESE">
+    <img src="https://travis-ci.org/daniel5151/ANESE.svg?branch=master" alt="Build Status macOS/Linux">
   </a>
 </p>
 

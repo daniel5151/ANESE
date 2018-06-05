@@ -1,7 +1,7 @@
 version: 0.0.{build}
 image:
   - Visual Studio 2015
-  - Ubuntu
+  - Visual Studio 2017
 environment:
   SDL2: C:\projects\anese\SDL2-2.0.8
 cache:
@@ -11,14 +11,12 @@ before_build:
   - cmd: echo "Download SDL Development Headers"
   - cmd: if not exist SDL2-devel-2.0.8-VC.zip appveyor DownloadFile https://www.libsdl.org/release/SDL2-devel-2.0.8-VC.zip
   - cmd: 7z x -y SDL2-devel-2.0.8-VC.zip
-  - sh: sudo apt-get install -y libsdl2-dev
   - mkdir build
   - cd build
   - cmake --version
   - cmake ..
 build_script:
   - cmd: msbuild "C:\projects\anese\build\anese.sln" /p:Configuration=Release /verbosity:normal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
-  - sh: make
 after_build:
   - cmd: cd ..
   - cmd: echo "Download SDL Release DLLs"
