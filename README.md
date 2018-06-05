@@ -19,18 +19,18 @@ Accuracy is a long-term goal, but the primary goal is simply getting ANESE to
 play some of the more popular titles. As of now, most basic Mappers have been
 implemented, so popular titles should be working! :smile:
 
-ANESE is built with _cross-platform_ in mind, and builds are CI'd on all major
-platforms (macOS, Linux (Ubuntu), and Windows). ANESE doesn't use any
-vendor-specific extensions, and is compiled with quite strict compiler flags.
-The code is also linted fairly regularly.
+ANESE is built with _cross-platform_ in mind, and should build on all major
+platforms (macOS, Windows, and Linux). ANESE doesn't use any vendor-specific
+language extensions, and is compiled with strict compiler flags.
+It is also linted (fairly) regularly.
 
-ANESE seeks to have clean and _interesting_ C++11 code, with a emphasis on
-maintaining a readable and maintainable source. Performance is important, but
-it's not a primary focus.
+ANESE strives for clean and _interesting_ C++11 code, with an emphasis on
+readability and maintainability. Performance is important, but it's not a
+primary focus.
 
 ## Downloads
 
-Right now, there are official binary releases.
+Right now, there are no proper binary releases.
 
 [AppVeyor](https://ci.appveyor.com/project/daniel5151/anese) does create build
 artifacts for every commit of ANESE though, so you could grab Windows binaries
@@ -55,7 +55,7 @@ some require additional installation:
       - Modify the `SDL2_MORE_INCLUDE_DIR` variable in `CMakeLists.txt` to point
         to the SDL2 dev libs (or just plop them down into `C:\sdl2\`)
 
-Once that's installed, it's a standard cmake install
+Once that's installed, it's a standard CMake install
 ```bash
 # in ANESE root
 mkdir build
@@ -122,10 +122,10 @@ Load Save-State    | Ctrl - 1
 
 ## DISCLAIMERS
 
-- I wrote my CPU emulator to be _instruction-length cycle_ accurate, but not
-_sub-instruction cycle_ accurate. This doesn't affect most games, but there are
-a couple that rely on sub-instruction level timings (eg: Solomon's Key).
-  - The `--alt-nmi-timing` flag might fixe some of these games.
+- The CPU is _instruction-cycle_ accurate, but not _sub-instruction cycle_
+accurate. While this inaccuracy doesn't affect most games, there are some that
+that rely on sub-instruction level timings (eg: Solomon's Key).
+  - The `--alt-nmi-timing` flag might fix some of these games.
 - The APU is _not my code_. I wanted to get ANESE partially up and
 running before new-years 2018, so I'm using Blargg's venerable `nes_snd_emu`
 library to handle sound (for now). Once I polish up some of the other aspects
