@@ -1,6 +1,13 @@
-<h1 align="center">
-  <img height="128px" src="resources/icons/anese.ico" alt="ANESE Logo">
-</h1>
+<p align="center">
+  <a href="https://prilik.com/ANESE">
+    <img height="128px" src="resources/icons/anese.ico" alt="ANESE Logo">
+  </a>
+</p>
+<p align="center">
+  <a href="https://ci.appveyor.com/project/daniel5151/anese">
+    <img src="https://ci.appveyor.com/api/projects/status/qgy19m8us3ss6ilt?svg=true" alt="Build Status">
+  </a>
+</p>
 
 **ANESE** (**A**nother **NES** **E**mulator) is a Nintendo Entertainment System
 Emulator being written for fun and learning.
@@ -24,6 +31,12 @@ would be fun to figure things out myself :D
 That said, a big shout-out to [LaiNES](https://github.com/AndreaOrru/LaiNES) and
 [fogleman/nes](https://github.com/fogleman/nes), two solid NES emulators that I
 referenced while implementing some particularly tricky parts of the PPU)
+
+## Downloads
+
+Check out [AppVeyor](https://ci.appveyor.com/project/daniel5151/anese)'s build
+artifacts for the latest builds of ANESE. Only Windows builds have releases at
+the moment.
 
 ## Building
 

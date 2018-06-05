@@ -104,12 +104,12 @@ void Mapper_009::write(u16 addr, u8 val) {
 
   // Otherwise, handle writing to registers
 
-  if (in_range(addr, 0xA000, 0xAFFF)) this->reg.prg_bank = val;       return;
-  if (in_range(addr, 0xB000, 0xBFFF)) this->reg.chr_bank.lo[0] = val; return;
-  if (in_range(addr, 0xC000, 0xCFFF)) this->reg.chr_bank.lo[1] = val; return;
-  if (in_range(addr, 0xD000, 0xDFFF)) this->reg.chr_bank.hi[0] = val; return;
-  if (in_range(addr, 0xE000, 0xEFFF)) this->reg.chr_bank.hi[1] = val; return;
-  if (in_range(addr, 0xF000, 0xFFFF)) this->reg.mirroring = val;      return;
+  if (in_range(addr, 0xA000, 0xAFFF)) { this->reg.prg_bank = val;       return; }
+  if (in_range(addr, 0xB000, 0xBFFF)) { this->reg.chr_bank.lo[0] = val; return; }
+  if (in_range(addr, 0xC000, 0xCFFF)) { this->reg.chr_bank.lo[1] = val; return; }
+  if (in_range(addr, 0xD000, 0xDFFF)) { this->reg.chr_bank.hi[0] = val; return; }
+  if (in_range(addr, 0xE000, 0xEFFF)) { this->reg.chr_bank.hi[1] = val; return; }
+  if (in_range(addr, 0xF000, 0xFFFF)) { this->reg.mirroring = val;      return; }
 }
 
 void Mapper_009::update_banks() {
