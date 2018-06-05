@@ -5,6 +5,10 @@
 project(anese)
 cmake_minimum_required(VERSION 2.8.3)
 
+if(APPLE)
+  set(GUI_TYPE MACOSX_BUNDLE)
+endif(APPLE)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${anese_SOURCE_DIR}/cmake")
 set(BIN_DIR ${anese_SOURCE_DIR}/bin)
 
@@ -105,4 +109,23 @@ target_link_libraries(anese
   tinyfiledialogs
 )
 
-install(TARGETS anese RUNTIME DESTINATION ${BIN_DIR})
+if (APPLE)
+  # Do some spooky macOS bundle magic that took far to long to figure out...
+  # note: this is a brittle system, as it relies on the SDL2 version on homebrew
+  #       to stay constant! Not ideal!
+  install(CODE "
+    set(CMAKE_INSTALL_LOCAL_ONLY true) # no need to install miniz!
+    execute_process(COMMAND sh -c \"
+      cp /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib ../resources/ANESE.app/Contents/Frameworks/
+      chmod 755 ../resources/ANESE.app/Contents/Frameworks/libSDL2-2.0.0.dylib
+      cp ./anese ../resources/ANESE.app/Contents/MacOS/
+      install_name_tool -change /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib @executable_path/../Frameworks/libSDL2-2.0.0.dylib ../resources/ANESE.app/Contents/MacOS/anese
+      mkdir ../bin/
+      cp -R ../resources/ANESE.app ../bin/
+      echo 'Success! ANESE.app built in `bin` directory.'
+    \")
+  " COMPONENT Runtime)
+else()
+  install(CODE "set(CMAKE_INSTALL_LOCAL_ONLY true)") # no need to install miniz!
+  install(TARGETS anese RUNTIME DESTINATION ${BIN_DIR})
+endif()

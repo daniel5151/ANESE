@@ -16,37 +16,32 @@
 Emulator being written for fun and learning.
 
 Accuracy is a long-term goal, but the primary goal is simply getting ANESE to
-play some of the more popular titles :smile:
+play some of the more popular titles. As of now, most basic Mappers have been
+implemented, so popular titles should be working! :smile:
 
-I'm aiming for clean and _interesting_ C++11 code, with a emphasis on keeping
-the source readable and maintainable. Performance is important, but it's not a
-primary focus.
+ANESE is built with _cross-platform_ in mind, and builds are CI'd on all major
+platforms (macOS, Linux (Ubuntu), and Windows). ANESE doesn't use any
+vendor-specific extensions, and is compiled with quite strict compiler flags.
+The code is also linted fairly regularly.
 
-ANESE is built with _cross-platform_ in mind, and building should work on macOS,
-Linux (Ubuntu), and Windows. The C++ doesn't rely on any vendor-specific
-extentions, and is compiled with relatively strict compiler flags. The code is
-linted regularly.
-
-Lastly, I actively avoided looking at the source codes of other NES emulators
-while writing initial implementations of the CPU and PPU, since I thought it
-would be fun to figure things out myself :D
-
-That said, a big shout-out to [LaiNES](https://github.com/AndreaOrru/LaiNES) and
-[fogleman/nes](https://github.com/fogleman/nes), two solid NES emulators that I
-referenced while implementing some particularly tricky parts of the PPU)
+ANESE seeks to have clean and _interesting_ C++11 code, with a emphasis on
+maintaining a readable and maintainable source. Performance is important, but
+it's not a primary focus.
 
 ## Downloads
 
-Check out [AppVeyor](https://ci.appveyor.com/project/daniel5151/anese)'s build
-artifacts for the latest builds of ANESE. Only Windows builds have releases at
-the moment.
+Right now, there are official binary releases.
+
+[AppVeyor](https://ci.appveyor.com/project/daniel5151/anese) does create build
+artifacts for every commit of ANESE though, so you could grab Windows binaries
+from there.
 
 ## Building
 
 ANESE uses **CMake**, so make sure it is installed.
 
-ANESE's emualtion core doesn't have any major dependencies (aside from clib),
-but there are a couple used for the UI.
+ANESE's emulation core (src/nes) doesn't have any major dependencies, (aside
+from the c standard library), but there are a couple of libraries for the UI.
 Most of these dependencies are bundled with ANESE (see: /thirdparty), although
 some require additional installation:
 
@@ -55,18 +50,28 @@ some require additional installation:
   - _MacOS_: `brew install SDL2`
   - _Windows_:
     - Download dev libs from [here](https://www.libsdl.org/download-2.0.php)
-    - Modfiy the `SDL2_MORE_INCLUDE_DIR` variable in `CMakeLists.txt` to point
-      to the SDL2 dev libs (or just plop them down into `C:\sdl2\`)
+    - EITHER:
+      - Set the `SDL` environment variable to point to the dev libs
+      - Modify the `SDL2_MORE_INCLUDE_DIR` variable in `CMakeLists.txt` to point
+        to the SDL2 dev libs (or just plop them down into `C:\sdl2\`)
 
+Once that's installed, it's a standard cmake install
 ```bash
 # in ANESE root
 mkdir build
 cd build
 cmake ..
 make
+make install # on macOS: creates ANESE.app in ANESE/bin/
 ```
 
-Building on Windows has been tested with VS 2017 using MSVC.
+On Windows, building is very similar:
+```bat
+mkdir build
+cd build
+cmake ..
+msbuild anese.sln /p:Configuration=Release
+```
 
 If you're interested in looking under the hood of the PPU, you can pass the
 `-DDEBUG_PPU` flag to cmake and get an `anese` build with some neat debug info.
@@ -80,7 +85,9 @@ select a valid NES rom.
 
 For a full list of switches, run `anese -h`
 
-**Windows Users:** make sure the executable can find `SDL2.dll`!
+**Windows Users:** make sure the executable can find `SDL2.dll`! Download the
+runtime DLLs from the SDL website, and plop them in the same directory as
+anese.exe
 
 ## Controls
 
@@ -115,16 +122,31 @@ Load Save-State    | Ctrl - 1
 
 ## DISCLAIMERS
 
-I wrote my CPU emulator to be _instruction-length cycle_ accurate, but not
+- I wrote my CPU emulator to be _instruction-length cycle_ accurate, but not
 _sub-instruction cycle_ accurate. This doesn't affect most games, but there are
-a couple that rely on sub-instruction level timings (eg: Solomon's Key). Use the
-`--alt-nmi-timing` flag to turn on a hack that fixes some of these games.
-
-**NOTE:** The APU is _not my code_. I wanted to get ANESE partially up and
-running before new-years 2018, so I've used Blargg's venerable `nes_snd_emu`
+a couple that rely on sub-instruction level timings (eg: Solomon's Key).
+  - The `--alt-nmi-timing` flag might fixe some of these games.
+- The APU is _not my code_. I wanted to get ANESE partially up and
+running before new-years 2018, so I'm using Blargg's venerable `nes_snd_emu`
 library to handle sound (for now). Once I polish up some of the other aspects
-of the emulator, I will revisit my own APU implementation (which is currently
-stubbed)
+of the emulator, I'll try to revisit my own APU implementation (which is
+currently a stub)
+
+## Attributions
+
+- A big shout-out to [LaiNES](https://github.com/AndreaOrru/LaiNES) and
+[fogleman/nes](https://github.com/fogleman/nes), two solid NES emulators that I
+referenced while implementing some particularly tricky parts of the PPU). While
+I actively avoided looking at the source codes of other NES emulators
+as I set about writing my initial implementations of the CPU and PPU, I did
+sneak a peek at how others did some things when I got very stuck.
+- Blargg's [nes_snd_emu](http://www.slack.net/~ant/libs/audio.html) makes ANESE
+  sound as good as it does :smile:
+- These awesome libraries make ANESE a lot nicer to use:
+  - [sdl2](https://www.libsdl.org/)
+  - [args](https://github.com/Taywee/args)
+  - [miniz](https://github.com/richgel999/miniz)
+  - [tinyfiledialogs](https://sourceforge.net/projects/tinyfiledialogs/)
 
 ## TODO
 
@@ -176,6 +198,7 @@ stubbed)
     - Saving
       - [x] Battery Backed RAM - Saves to `.sav`
       - [x] Save-states
+        - [ ] Dump to file
     - [ ] Config File
       - [ ] Remap controls
     - [x] Running NESTEST (behind a flag)
@@ -190,25 +213,24 @@ stubbed)
       - [x] 003
       - [x] 004
       - [x] 007
+      - [?] 009 - _(Punch Out!)_ Relies on accurate PPU sprite fetches
       - ...
-    - [ ] Proper PAL handling
     - CPU
       - [ ] Implement Unofficial Opcodes
       - [ ] Pass More Tests yo
       - [ ] _\(Stretch\)_ Switch to sub-instruction level cycle-based emulation
             (vs instruction level)
     - PPU
-      - [ ] Make value in PPU <-> CPU bus decay
+      - [ ] Make the sprite rendering pipeline more accurate (fetch-timings)
+        - This _should_ fix _Punch Out!!_
       - [ ] Pass More Tests yo
+      - [ ] Make value in PPU <-> CPU bus decay
   - Cleanup Code
-    - [ ] OH GOD DON'T LOOK AT `main.cc` I'M SORRY IN ADVANCE
-      - [ ] Modularize EVERYTHING and get it out of main!
+    - [ ] Modularize `main.cc`
     - Movies
-      - [ ] Confrom to the `.fm2` movie format better (in parsing and recording)
-      - [ ] Make movie recording a seperate class (and not a bunch of ad-hoc f
-            printfs scattered around the codebase)
+      - [ ] Conform to the `.fm2` movie format better (in parsing and recording)
     - Better file parsing
-      - [ ] Actually bounds-check stuff
+      - [ ] Actually bounds-check stuff lol
     - Better error handling and logging
       - [ ] Remove fatal asserts (?)
       - [ ] Switch to a better logging system (\*cough\* not fprintf \*cough\*)
@@ -221,6 +243,7 @@ stubbed)
     - [ ] Rewind
     - [ ] Game Genie
     - [x] Movie recording and playback
+    - [ ] Proper PAL handling?
   - [ ] Debugger!
     - [ ] CPU
       - [x] Step through instructions - _super jank, no external flags_

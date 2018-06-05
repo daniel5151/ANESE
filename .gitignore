@@ -5,6 +5,11 @@ roms/retail/*
 .DS_Store
 
 # build and debugging artifacts
+/bin
 /build*
 /anese.dSYM
 *.aps
+
+# macOS bundle stuff
+/resources/ANESE.app/Contents/MacOS/*
+/resources/ANESE.app/Contents/Frameworks/libSDL2-2.0.0.dylib
