@@ -40,9 +40,12 @@ private:
     // xxxx PPPP
     //      ||||
     //      ++++- Select 8 KB PRG ROM bank for CPU $8000-$9FFF
-    u8 prg_bank;
+    union {
+      u8 val;
+      BitField<0, 4> bank;
+    } prg;
 
-    u8 latch [2]; // never directly written to
+    bool latch [2]; // never directly written to by CPU/PPU
     // CHR ROM $FD/0000 bank select ($B000-$BFFF)
     // CHR ROM $FE/0000 bank select ($C000-$CFFF)
     // CHR ROM $FD/1000 bank select ($D000-$DFFF)
@@ -54,9 +57,11 @@ private:
     //    +-++++- Select 4 KB CHR ROM bank for PPU $0000/$1000-$0FFF/$1FFF
     //            used when latch 0/1 = $FD/$FE
     struct {
-      u8 lo [2];
-      u8 hi [2];
-    } chr_bank;
+      union {
+        u8 val;
+        BitField<0, 5> bank;
+      } lo [2], hi [2];
+    } chr;
 
     // Mirroring ($F000-$FFFF)
     // 7  bit  0

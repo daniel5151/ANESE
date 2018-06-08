@@ -12,8 +12,8 @@ Mapper_009::Mapper_009(const ROM_File& rom_file)
 {
   // Clear registers
   memset(&this->reg, 0, sizeof this->reg);
-  this->reg.latch[0] = 0xFE;
-  this->reg.latch[1] = 0xFE;
+  this->reg.latch[0] = 1;
+  this->reg.latch[1] = 1;
 
   // ---- PRG ROM ---- //
 
@@ -65,11 +65,13 @@ Mapper_009::~Mapper_009() {
 u8 Mapper_009::read(u16 addr) {
   // Interestingly enough, MMC2 has bank-switching behavior on certain reads!
   if (
-    ((addr & 0xF000) == 0x1000 || (addr & 0xF000) == 0x0000) &&
-    ((addr & 0x0FF8) == 0x0FD8 || (addr & 0x0FF8) == 0x0FE8)
+    in_range(addr, 0x0FD8) ||
+    in_range(addr, 0x0FE8) ||
+    in_range(addr, 0x1FD8, 0x1FDF) ||
+    in_range(addr, 0x1FE8, 0x1FEF)
   ) {
     const u8 retval = this->peek(addr); // latch only updated _after_ read
-    this->reg.latch[!!(addr & 0x1000)] = (addr & 0x0FF0) >> 4;
+    this->reg.latch[!!(addr & 0x1000)] = ((addr & 0x0FF0) >> 4) == 0xFE;
     this->update_banks();
     return retval;
   }
@@ -81,9 +83,9 @@ u8 Mapper_009::read(u16 addr) {
 u8 Mapper_009::peek(u16 addr) const {
   // Wired to the PPU MMU
   if (in_range(addr, 0x0000, 0x0FFF))
-    return this->chr_rom.lo[this->reg.latch[0] == 0xFE]->peek(addr - 0x0000);
+    return this->chr_rom.lo[this->reg.latch[0]]->peek(addr - 0x0000);
   if (in_range(addr, 0x1000, 0x1FFF))
-    return this->chr_rom.hi[this->reg.latch[1] == 0xFE]->peek(addr - 0x1000);
+    return this->chr_rom.hi[this->reg.latch[1]]->peek(addr - 0x1000);
 
   // Wired to the CPU MMU
   if (in_range(addr, 0x4020, 0x5FFF)) return 0x00; // Nothing in "Expansion ROM"
@@ -104,19 +106,21 @@ void Mapper_009::write(u16 addr, u8 val) {
 
   // Otherwise, handle writing to registers
 
-  if (in_range(addr, 0xA000, 0xAFFF)) { this->reg.prg_bank = val;       return; }
-  if (in_range(addr, 0xB000, 0xBFFF)) { this->reg.chr_bank.lo[0] = val; return; }
-  if (in_range(addr, 0xC000, 0xCFFF)) { this->reg.chr_bank.lo[1] = val; return; }
-  if (in_range(addr, 0xD000, 0xDFFF)) { this->reg.chr_bank.hi[0] = val; return; }
-  if (in_range(addr, 0xE000, 0xEFFF)) { this->reg.chr_bank.hi[1] = val; return; }
-  if (in_range(addr, 0xF000, 0xFFFF)) { this->reg.mirroring = val;      return; }
+  if (in_range(addr, 0xA000, 0xAFFF)) this->reg.prg.bank = val;
+  if (in_range(addr, 0xB000, 0xBFFF)) this->reg.chr.lo[0].bank = val;
+  if (in_range(addr, 0xC000, 0xCFFF)) this->reg.chr.lo[1].bank = val;
+  if (in_range(addr, 0xD000, 0xDFFF)) this->reg.chr.hi[0].bank = val;
+  if (in_range(addr, 0xE000, 0xEFFF)) this->reg.chr.hi[1].bank = val;
+  if (in_range(addr, 0xF000, 0xFFFF)) this->reg.mirroring = val;
+
+  this->update_banks();
 }
 
 void Mapper_009::update_banks() {
   // Update PRG Banks
   // Swappable first PRG ROM bank
   const uint prg_len = this->banks.prg.len;
-  this->prg_rom[0] = this->banks.prg.bank[this->reg.prg_bank % prg_len];
+  this->prg_rom[0] = this->banks.prg.bank[this->reg.prg.bank % prg_len];
   // Fix last-3 PRG ROM banks
   this->prg_rom[1] = this->banks.prg.bank[prg_len - 3];
   this->prg_rom[2] = this->banks.prg.bank[prg_len - 2];
@@ -124,10 +128,10 @@ void Mapper_009::update_banks() {
 
   // Update CHR Banks
   const uint chr_len = this->banks.chr.len;
-  this->chr_rom.lo[0] = this->banks.chr.bank[this->reg.chr_bank.lo[0] % chr_len];
-  this->chr_rom.lo[1] = this->banks.chr.bank[this->reg.chr_bank.lo[1] % chr_len];
-  this->chr_rom.hi[0] = this->banks.chr.bank[this->reg.chr_bank.hi[0] % chr_len];
-  this->chr_rom.hi[1] = this->banks.chr.bank[this->reg.chr_bank.hi[1] % chr_len];
+  this->chr_rom.lo[0] = this->banks.chr.bank[this->reg.chr.lo[0].bank % chr_len];
+  this->chr_rom.lo[1] = this->banks.chr.bank[this->reg.chr.lo[1].bank % chr_len];
+  this->chr_rom.hi[0] = this->banks.chr.bank[this->reg.chr.hi[0].bank % chr_len];
+  this->chr_rom.hi[1] = this->banks.chr.bank[this->reg.chr.hi[1].bank % chr_len];
 }
 
 Mirroring::Type Mapper_009::mirroring() const {

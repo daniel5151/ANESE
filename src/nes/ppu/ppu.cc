@@ -335,48 +335,103 @@ void PPU::write(u16 addr, u8 val) {
 
 /*----------------------------  Helper Functions  ----------------------------*/
 
-// TODO: cycle accurate
-// For now, it just performs all the calculations on cycle 0 of a scanline
+// TODO: Hardware Accurate
+// For now, it just performs all the calculations on cycle 0 of a scanline.
 void PPU::spr_fetch() {
-  if (this->scan.cycle != 0)
-    return;
+  if (this->scan.cycle == 0) {
+    // Fill OAM2 memory with 0xFF
+    for (uint addr = 0; addr < 32; addr++)
+      this->oam2[addr] = 0xFF;
 
-  // Fill OAM2 memory with 0xFF
-  for (uint addr = 0; addr < 32; addr++)
-    this->oam2[addr] = 0xFF;
+    this->spr.spr_zero_on_line = false;
 
-  this->spr.spr_zero_on_line = false;
+    // Pointer into OAM2 RAM
+    uint oam2_addr = 0; // from 0 - 32
 
-  // Pointer into OAM2 RAM
-  uint oam2_addr = 0; // from 0 - 32
+    for (uint sprite = 0; sprite < 64; sprite++) {
+      // Check if sprite is on current line
+      u8 y_pos = this->oam[sprite * 4 + 0];
+      bool on_this_line = in_range(
+        int(y_pos),
+        int(this->scan.line) - (this->reg.ppuctrl.H ? 16 : 8),
+        int(this->scan.line) - 1
+      );
 
-  for (uint sprite = 0; sprite < 64; sprite++) {
-    // Check if sprite is on current line
-    u8 y_pos = this->oam[sprite * 4 + 0];
-    bool on_this_line = in_range(
-      int(y_pos),
-      int(this->scan.line) - (this->reg.ppuctrl.H ? 16 : 8),
-      int(this->scan.line) - 1
+      if (!on_this_line) {
+        continue;
+      }
+
+      if (sprite == 0) {
+        this->spr.spr_zero_on_line = true;
+      }
+
+      // Otherwise, copy this sprite into OAM2 (room permitting)
+      if (oam2_addr < 32) {
+        this->oam2[oam2_addr++] = this->oam[sprite * 4 + 0];
+        this->oam2[oam2_addr++] = this->oam[sprite * 4 + 1];
+        this->oam2[oam2_addr++] = this->oam[sprite * 4 + 2];
+        this->oam2[oam2_addr++] = this->oam[sprite * 4 + 3];
+      } else {
+        if (this->reg.ppumask.is_rendering) {
+          this->reg.ppustatus.O = true; // Sprite Overflow
+        }
+      }
+    }
+  }
+
+  // Fetch sprite gfx
+  // Not even close to how the hardware does it, but it _is_ cycle accurate,
+  // which means mappers can rely on these fetches for IRQ timing!
+  if (in_range(this->scan.cycle, 257, 320)) {
+    // Skip fetching garbage-nametable bytes
+    if (this->scan.cycle % 8 == 1 || this->scan.cycle % 8 == 3)
+      return;
+
+    const uint sprite = (this->scan.cycle - 257) / 8;
+
+    u8 y_pos      = this->oam2[sprite * 4 + 0];
+    u8 tile_index = this->oam2[sprite * 4 + 1];
+    union {
+      u8 val;
+      BitField<0, 2> palette;
+    //BitField<2, 3> unimplemented;
+      BitField<5> priority;
+      BitField<6> flip_horizontal;
+      BitField<7> flip_vertical;
+    } attributes  { this->oam2[sprite * 4 + 2] };
+    u8 x_pos      = this->oam2[sprite * 4 + 4];
+
+    const bool is_dummy = (
+      0xFF == y_pos &&
+      0xFF == x_pos &&
+      0xFF == tile_index &&
+      0xFF == attributes.val
     );
 
-    if (!on_this_line) {
-      continue;
-    }
-
-    if (sprite == 0) {
-      this->spr.spr_zero_on_line = true;
-    }
-
-    // Otherwise, copy this sprite into OAM2 (room permitting)
-    if (oam2_addr < 32) {
-      this->oam2[oam2_addr++] = this->oam[sprite * 4 + 0];
-      this->oam2[oam2_addr++] = this->oam[sprite * 4 + 1];
-      this->oam2[oam2_addr++] = this->oam[sprite * 4 + 2];
-      this->oam2[oam2_addr++] = this->oam[sprite * 4 + 3];
-    } else {
-      if (this->reg.ppumask.is_rendering) {
-        this->reg.ppustatus.O = true; // Sprite Overflow
+    uint spr_row = this->scan.line - y_pos - 1;
+    const uint sprite_height = this->reg.ppuctrl.H ? 16 : 8;
+    if (attributes.flip_vertical) spr_row = sprite_height - 1 - spr_row;
+    const bool sprite_table = !this->reg.ppuctrl.H
+      ? this->reg.ppuctrl.S
+      : tile_index & 1;
+    if (this->reg.ppuctrl.H) {
+      tile_index &= 0xFE;
+      // And if we have finished the top half, read from adjacent tile
+      if (spr_row > 7) {
+        tile_index++;
+        spr_row -= 8;
       }
+    }
+
+    if (is_dummy) spr_row = 0;
+
+    const u16 tile_addr = (0x1000 * sprite_table) + (tile_index * 16) + spr_row;
+
+    if (this->scan.cycle % 8 == 5) {
+      this->spr.sliver[sprite].lo = this->mem[tile_addr + 0];
+    }
+    if (this->scan.cycle % 8 == 7) {
+      this->spr.sliver[sprite].lo = this->mem[tile_addr + 8];
     }
   }
 }
@@ -460,7 +515,7 @@ void PPU::bgr_fetch() {
     // Both of the bytes fetched here are the same nametable byte that will be
     // fetched at the beginning of the next scanline (tile 3, in other words).
     if (this->scan.cycle % 2 == 0) {
-      this->bgr.nt_byte = this->mem[this->reg.v.val];
+      this->bgr.nt_byte = this->mem[0x2000 | (this->reg.v.val & 0x0FFF)];
     }
     // This is used for timing by some mappers.
   }
@@ -608,8 +663,8 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
     }
 
     u16 tile_addr = (0x1000 * sprite_table) + (tile_index * 16) + spr_row;
-    u8 lo_bp = this->mem[tile_addr + 0];
-    u8 hi_bp = this->mem[tile_addr + 8];
+    u8 lo_bp = this->mem.peek(tile_addr + 0);
+    u8 hi_bp = this->mem.peek(tile_addr + 8);
     u8 pixel_type = nth_bit(lo_bp, spr_col) + (nth_bit(hi_bp, spr_col) << 1);
 
     // If the pixel is transparent, continue looking for a sprite to render...
@@ -630,7 +685,7 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
     // Otherwise, fetch which pallete color to use, and return the pixel!
     return Pixel {
       /* is_on    */ true,
-      /* palette  */ this->mem[0x3F10 + attributes.palette * 4 + pixel_type],
+      /* palette  */ this->mem.peek(0x3F10 + attributes.palette * 4 + pixel_type),
       /* priority */ bool(attributes.priority)
     };
   }

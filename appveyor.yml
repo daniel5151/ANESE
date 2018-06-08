@@ -22,10 +22,9 @@ after_build:
   - cmd: echo "Download SDL Release DLLs"
   - cmd: if not exist SDL2-2.0.8-win32-x86.zip appveyor DownloadFile https://www.libsdl.org/release/SDL2-2.0.8-win32-x86.zip
   - cmd: echo "Create Release Directory"
-  - cmd: set "ReleaseDir=release_%APPVEYOR_BUILD_VERSION%"
-  - cmd: mkdir "%ReleaseDir%"
-  - cmd: cd "%ReleaseDir%"
+  - cmd: mkdir latest
+  - cmd: cd latest
   - cmd: 7z x -y ..\SDL2-2.0.8-win32-x86.zip
   - cmd: move ..\build\Release\anese.exe .\
 artifacts:
-  - path: release_$(APPVEYOR_BUILD_VERSION)
+  - path: latest

@@ -119,7 +119,7 @@ public:
 
   Mirroring::Type mirroring() const override;
 
-  void cycle(const PPU& ppu) override;
+  void cycle() override;
 
   const Serializable::Chunk* getBatterySave() const override {
     return this->prg_ram.serialize();

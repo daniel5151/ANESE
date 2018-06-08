@@ -76,6 +76,22 @@ Mapper_004::~Mapper_004() {
 u8 Mapper_004::read(u16 addr) {
   // Wired to the PPU MMU
   if (in_range(addr, 0x0000, 0x1FFF)) {
+    // The MMC3 scanline counter is based entirely on PPU A12,
+    // being clocked on A12's rising edge
+    bool next = nth_bit(addr, 12);
+    if (this->last_A12 == 0 && next == 1) { // Rising Edge
+      if (this->reg.irq_counter == 0) {
+        this->reg.irq_counter = this->reg.irq_latch;
+      } else {
+        this->reg.irq_counter--;
+      }
+
+      if (this->reg.irq_counter == 0 && this->reg.irq_enabled) {
+        this->irq_trigger();
+      }
+    }
+    this->last_A12 = next;
+
     return this->chr_bank[addr / 0x400]->read(addr % 0x400);
   }
 
@@ -207,25 +223,4 @@ Mirroring::Type Mapper_004::mirroring() const {
   return this->reg.mirroring.mode
     ? Mirroring::Horizontal
     : Mirroring::Vertical;
-}
-
-// Ideally, if I had proper timings for PPU sprite fetching implemented, I could
-// directly track PPU A12's state (i.e: bit 12 of addr) during reads to know
-// when to fire the interrupt.
-// I haven't done that, and instead, we use this janky method.
-void Mapper_004::cycle(const PPU& ppu) {
-  uint scanline    = ppu.getScanLine();
-  uint scancycle   = ppu.getScanCycle();
-  bool isRendering = ppu.isRendering();
-  if (scancycle == 260 && (scanline == 261 || scanline < 240) && isRendering) {
-    if (this->reg.irq_counter == 0) {
-      this->reg.irq_counter = this->reg.irq_latch;
-    } else {
-      this->reg.irq_counter--;
-    }
-
-    if (this->reg.irq_counter == 0 && this->reg.irq_enabled) {
-      this->irq_trigger();
-    }
-  }
 }

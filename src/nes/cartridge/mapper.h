@@ -9,8 +9,6 @@
 
 #include "nes/interfaces/serializable.h"
 
-#include "nes/ppu/ppu.h" // MMC3 >:(
-
 // Mapper Interface
 class Mapper : public Memory, public Serializable {
 private:
@@ -57,7 +55,7 @@ public:
 
   // ---- Mapper Interactions ---- //
   // Mappers tend to be benign, but some do have some fancy behavior.
-  virtual void cycle(const PPU& ppu) { (void)ppu; }
+  virtual void cycle() {}
 
   // ---- Battery Backed Saving ---- //
   virtual const Serializable::Chunk* getBatterySave() const { return nullptr; }

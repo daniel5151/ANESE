@@ -143,6 +143,8 @@ private:
 
   // ---- Emulation Vars and Helpers ---- //
 
+  bool last_A12 = false; // bit 12 of last CHR Memory read, used for IRQ
+
   bool fourscreen_mirroring = false;
 
   void update_banks() override;
@@ -171,8 +173,6 @@ public:
   // <Memory/>
 
   Mirroring::Type mirroring() const override;
-
-  void cycle(const PPU& ppu) override;
 
   const Serializable::Chunk* getBatterySave() const override {
     return this->prg_ram.serialize();

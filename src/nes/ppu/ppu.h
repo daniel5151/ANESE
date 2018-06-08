@@ -26,7 +26,7 @@ namespace PPURegisters {
 } // PPURegisters
 
 // Picture Processing Unit
-// This guy is NOT cycle-accurate at the moment!
+// _Should_ be cycle-accurate
 // http://wiki.nesdev.com/w/index.php/PPU_programmer_reference
 class PPU final : public Memory, public Serializable {
 private:
@@ -52,10 +52,12 @@ private:
 
   struct {
     struct {
-      u8 tile [8][2]; // 8 pairs of 8-bit shift registers (for bitmaps)
-      u8 at   [8];    // Attribute byte (per sprite)
-      u8 xpos [8];    // x-position of sprites
-    } shift;
+      u8 lo;
+      u8 hi;
+    } sliver [8]; // 8 pairs of 8-bit shift registers (for bitmaps)
+    u8 at    [8]; // Attribute byte (per sprite)
+    u8 xpos  [8]; // x-position of sprites
+
     bool spr_zero_on_line; // temp, not in hardware (just a workaround for now)
   } spr;
 
@@ -240,11 +242,6 @@ public:
 
   const u8* getFramebuff() const;
   uint      getFrames() const;
-
-  // MMC3 >:(
-  bool isRendering()  const { return this->reg.ppumask.is_rendering; }
-  uint getScanCycle() const { return this->scan.cycle; };
-  uint getScanLine()  const { return this->scan.line;  };
 
   // NES color palette (static, for the time being)
   static const Color palette [64];

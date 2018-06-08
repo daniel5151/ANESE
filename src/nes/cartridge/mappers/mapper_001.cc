@@ -217,8 +217,7 @@ Mirroring::Type Mapper_001::mirroring() const {
   }
 }
 
-void Mapper_001::cycle(const PPU& ppu) {
-  (void)ppu;
+void Mapper_001::cycle() {
   if (this->write_just_happened)
     this->write_just_happened--;
 }

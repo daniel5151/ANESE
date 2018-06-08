@@ -4,7 +4,7 @@
 
 // The constructor creates the individual NES components, and "wires them up"
 // to one antother.
-NES::NES() : 
+NES::NES() :
 // RAM Modules
 cpu_wram(0x800, "WRAM"),
 ppu_vram(0x800, "CIRAM"),
@@ -103,7 +103,7 @@ void NES::cycle() {
   for (uint i = 0; i < cpu_cycles    ; i++) this->apu.cycle();
   for (uint i = 0; i < cpu_cycles * 3; i++) {
     this->ppu.cycle();
-    this->cart->cycle(this->ppu);
+    this->cart->cycle();
   }
 
   // Check if the CPU halted, and stop NES if it is
@@ -129,7 +129,7 @@ void NES::getAudiobuff(short*& samples, uint& len) {
 }
 
 bool NES::isRunning() const {
-  return this->is_running; 
+  return this->is_running;
 }
 
 void NES::set_speed(uint speed) {
