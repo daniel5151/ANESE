@@ -37,8 +37,8 @@ nightly releases.
 [AppVeyor](https://ci.appveyor.com/project/daniel5151/anese)'s build artifacts
 page.
 
-**macOS:** Travis can (and does) generate ANESE.app bundles, but I haven't yet
-set up artifact uploading (I don't really know of a free place to put them).
+**macOS:** Nightly ANESE.app bundles are uploaded from Travis to
+[this GDrive folder](https://drive.google.com/drive/folders/1GWiinQ4tjDSZlhjReVMdElwK1b-Zvagf).
 
 ## Building
 

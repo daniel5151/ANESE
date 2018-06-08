@@ -14,8 +14,29 @@ addons:
       - libsdl2-dev
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update      ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install SDL2; fi
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]
+    then
+      brew install SDL2
+    fi
+
+after_success:
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "osx" && "$CXX" == "clang++" ]]
+    then
+      brew install gdrive
+      ARCHIVE="ANESE_macOS_`date +"%Y%m%d"`_`git rev-parse --short HEAD`.zip"
+      echo "Creating $ARCHIVE"
+      cd $TRAVIS_BUILD_DIR/bin
+      zip -r $ARCHIVE ANESE.app
+      echo "Starting Google Drive upload"
+      echo "Uploading commit"
+      gdrive upload --refresh-token $GDRIVE_REFRESH_TOKEN --parent $GDRIVE_MACOS_FOLDER $ARCHIVE
+      echo "Updating ANESE_macOS_latest.zip"
+      mv $ARCHIVE ANESE_macOS_latest.zip
+      gdrive update --refresh-token $GDRIVE_REFRESH_TOKEN 1wodUcWpAT9q4y12YPZ-QOrbvDUNcnZ2I ANESE_macOS_latest.zip
+      echo "Finished Google Drive upload"
+    fi
 
 script:
   - mkdir build

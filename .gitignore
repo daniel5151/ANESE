@@ -11,5 +11,5 @@ roms/retail/*
 *.aps
 
 # macOS bundle stuff
-/resources/ANESE.app/Contents/MacOS/*
+/resources/ANESE.app/Contents/MacOS/anese
 /resources/ANESE.app/Contents/Frameworks/libSDL2-2.0.0.dylib
