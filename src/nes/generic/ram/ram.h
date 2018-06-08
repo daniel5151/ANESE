@@ -3,7 +3,7 @@
 #include "common/util.h"
 #include "nes/interfaces/memory.h"
 
-#include "nes/interfaces/serializable.h"
+#include "common/serializable.h"
 
 // Dead simple 16 bit RAM ADT
 // (max 64K of RAM)

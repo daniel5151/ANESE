@@ -9,7 +9,7 @@
 #include "nes/generic/ram/ram.h"
 #include "nes/wiring/interrupt_lines.h"
 
-#include "nes/interfaces/serializable.h"
+#include "common/serializable.h"
 
 namespace PPURegisters {
   enum Reg {

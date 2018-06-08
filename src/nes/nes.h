@@ -13,7 +13,7 @@
 #include "wiring/ppu_mmu.h"
 #include "wiring/interrupt_lines.h"
 
-#include "nes/interfaces/serializable.h"
+#include "common/serializable.h"
 
 // Core NES class.
 // - Owns all NES core resources (but NOT the cartridge)
@@ -33,13 +33,13 @@ private:
   RAM cpu_wram; // 2k CPU general purpose Work RAM
   RAM ppu_vram; // 2k PPU nametable VRAM
   RAM ppu_pram; // 32 bytes PPU palette RAM
-  
+
   CPU cpu;
   APU apu;
   PPU ppu;
 
   /*----------  Wiring  ----------*/
-  
+
   // MMUs
   CPU_MMU cpu_mmu;
   PPU_MMU ppu_mmu;

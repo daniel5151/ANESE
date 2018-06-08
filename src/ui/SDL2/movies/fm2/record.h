@@ -5,7 +5,7 @@
 
 #include "nes/joy/controllers/standard.h"
 
-#include "common.h"
+#include "fm2_common.h"
 
 #include <cstdio>
 

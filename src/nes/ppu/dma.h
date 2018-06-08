@@ -3,7 +3,7 @@
 #include "common/util.h"
 #include "nes/interfaces/memory.h"
 
-#include "nes/interfaces/serializable.h"
+#include "common/serializable.h"
 
 // Thin bridge class that facilitates CPU -> PPU OAMDMA, without giving the PPU
 // direct access to the CPU MMU

@@ -1,8 +1,7 @@
 #include "load.h"
 
 #include "nes/cartridge/rom_file.h"
-
-#include "parse_rom.h"
+#include "nes/cartridge/parse_rom.h"
 
 #include <fstream>
 #include <iostream>
@@ -56,9 +55,9 @@ bool load_file(const char* filepath, u8*& data, uint& data_len) {
 }
 
 // Searches for valid roms inside .zip files, and loads them into memory
-static bool load_zip_file_data(const char* filepath, u8*& data, uint& data_len) {
+static bool load_zipped_nes_file(const char* filepath, u8*& data, uint& data_len) {
   if (!filepath) {
-    fprintf(stderr, "[Load] filepath == nullptr in load_zip_file_data!\n");
+    fprintf(stderr, "[Load] filepath == nullptr in load_zipped_nes_file!\n");
     assert(false);
   }
 
@@ -118,8 +117,6 @@ static bool load_zip_file_data(const char* filepath, u8*& data, uint& data_len) 
   return true;
 }
 
-/*----------  Public Interface  ----------*/
-
 // Given a filepath, tries to open and parse it as a NES ROM.
 // Returns a valid ROM_File, or a nullptr if something went wrong
 ROM_File* load_rom_file(const char* filepath) {
@@ -134,19 +131,11 @@ ROM_File* load_rom_file(const char* filepath) {
 
   std::string rom_ext = get_file_ext(filepath);
   /**/ if (rom_ext == ".nes") load_file(filepath, data, data_len);
-  else if (rom_ext == ".zip") load_zip_file_data(filepath, data, data_len);
+  else if (rom_ext == ".zip") load_zipped_nes_file(filepath, data, data_len);
   else {
     fprintf(stderr, "[Load] Invalid file extension.\n");
     return nullptr;
   }
 
-  // Determine ROM type, and parse it
-  switch(rom_type(data, data_len)) {
-  using namespace FileFormat;
-  case iNES: return parse_iNES(data, data_len);
-  case NES2: return parse_iNES(data, data_len); // ignore NES2.0 headers
-  case INVALID: return nullptr;
-  }
-
-  return nullptr;
+  return parse_ROM(data, data_len);
 }

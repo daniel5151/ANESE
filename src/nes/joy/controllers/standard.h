@@ -3,7 +3,7 @@
 #include "common/util.h"
 #include "nes/interfaces/memory.h"
 
-#include "nes/interfaces/serializable.h"
+#include "common/serializable.h"
 
 namespace JOY_Standard_Button {
   enum Type : unsigned {

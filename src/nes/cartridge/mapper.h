@@ -7,7 +7,7 @@
 
 #include "nes/wiring/interrupt_lines.h"
 
-#include "nes/interfaces/serializable.h"
+#include "common/serializable.h"
 
 // Mapper Interface
 class Mapper : public Memory, public Serializable {

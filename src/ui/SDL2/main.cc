@@ -6,10 +6,11 @@
 #include "nes/joy/controllers/standard.h"
 #include "nes/nes.h"
 
-#include "nes/interfaces/serializable.h"
+#include "common/serializable.h"
 
 #include "common/debug.h"
 
+#include <cstdio>
 #include <iostream>
 #include <string>
 
@@ -17,16 +18,27 @@
 #include <SDL.h>
 #include <tinyfiledialogs.h>
 
-#include "ui/sdl/Sound_Queue.h"
-#include "ui/movies/fm2/common.h"
-#include "ui/movies/fm2/replay.h"
-#include "ui/movies/fm2/record.h"
-#include "ui/fs/load.h"
+#include "fs/load.h"
+#include "movies/fm2/record.h"
+#include "movies/fm2/replay.h"
+#include "util/Sound_Queue.h"
 
 int main(int argc, char* argv[]) {
   // --------------------------- Argument Parsing --------------------------- //
 
+  struct {
+    bool log_cpu;
+    bool reset_sav;
+    bool ppu_timing_hack;
+
+    std::string log_movie;
+    std::string fm2;
+
+    std::string rom;
+  } args;
+
   // use `args` to parse arguments
+  { // don't pollute main's scope
   args::ArgumentParser parser("ANESE - A Nintendo Entertainment System Emulator", "");
   args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
 
@@ -46,10 +58,10 @@ int main(int argc, char* argv[]) {
     {"alt-nmi-timing"});
 
   // Movies
-  args::ValueFlag<std::string> arg_log_movie(parser, "log-movie",
+  args::ValueFlag<std::string> log_movie(parser, "log-movie",
     "log input in fm2 format",
     {"log-movie"});
-  args::ValueFlag<std::string> arg_fm2(parser, "fm2",
+  args::ValueFlag<std::string> fm2(parser, "fm2",
     "path to fm2 movie",
     {"fm2"});
 
@@ -72,12 +84,22 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  if (log_cpu) { DEBUG_VARS::Get()->print_nestest = 1; }
-  if (ppu_timing_hack) { DEBUG_VARS::Get()->fogleman_hack = 1; }
+  args.log_cpu = log_cpu;
+  args.reset_sav = reset_sav;
+  args.ppu_timing_hack = ppu_timing_hack;
+  args.log_movie = args::get(log_movie);
+  args.fm2 = args::get(fm2);
+  args.rom = args::get(rom);
+
+  }
+
+
+  if (args.log_cpu) { DEBUG_VARS::Get()->print_nestest = 1; }
+  if (args.ppu_timing_hack) { DEBUG_VARS::Get()->fogleman_hack = 1; }
 
   std::string rom_path;
 
-  if (!rom) {
+  if (args.rom == "") {
     // use `tinyfiledialogs` to open file-select dialog (if no rom provided)
     const char* rom_formats[] = { "*.nes", "*.zip" };
     const char* file = tinyfd_openFileDialog(
@@ -95,7 +117,7 @@ int main(int argc, char* argv[]) {
       rom_path = std::string(file);
     }
   } else {
-    rom_path = args::get(rom);
+    rom_path = args.rom;
   }
 
   fprintf(stderr, "[Load] Loading '%s'\n", rom_path.c_str());
@@ -103,8 +125,8 @@ int main(int argc, char* argv[]) {
   // ---------------------------- Movie Support ----------------------------- //
 
   FM2_Replay fm2_replay;
-  if (arg_fm2) {
-    bool did_load = fm2_replay.init(args::get(arg_fm2).c_str());
+  if (args.fm2 != "") {
+    bool did_load = fm2_replay.init(args.fm2.c_str());
     if (!did_load) {
       fprintf(stderr, "[Replay][fm2] Movie loading failed!\n");
       return 1;
@@ -113,8 +135,8 @@ int main(int argc, char* argv[]) {
   }
 
   FM2_Record fm2_record;
-  if (arg_log_movie) {
-    bool did_load = fm2_record.init(args::get(arg_log_movie).c_str());
+  if (args.log_movie != "") {
+    bool did_load = fm2_record.init(args.log_movie.c_str());
     if (!did_load) {
       fprintf(stderr, "[Record][fm2] Failed to setup Movie recording!\n");
       return 1;
@@ -173,7 +195,7 @@ int main(int argc, char* argv[]) {
   {
     u8* data = nullptr;
     uint len = 0;
-    if (!reset_sav && load_file((rom_path + ".sav").c_str(), data, len)) {
+    if (!args.reset_sav && load_file((rom_path + ".sav").c_str(), data, len)) {
       fprintf(stderr, "[Savegame][Load] Found save data.\n");
       const Serializable::Chunk* sav = Serializable::Chunk::parse(data, len);
       cart.get_mapper()->setBatterySave(sav);

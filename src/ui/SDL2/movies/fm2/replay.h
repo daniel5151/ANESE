@@ -5,7 +5,7 @@
 
 #include "nes/joy/controllers/standard.h"
 
-#include "common.h"
+#include "fm2_common.h"
 
 // Parses .fm2 movies, and creates + updates joypads for playback
 class FM2_Replay final {

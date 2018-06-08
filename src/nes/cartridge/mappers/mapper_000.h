@@ -5,7 +5,7 @@
 #include "common/util.h"
 #include "../mapper.h"
 
-#include "nes/interfaces/serializable.h"
+#include "common/serializable.h"
 
 // http://wiki.nesdev.com/w/index.php/NROM
 class Mapper_000 final : public Mapper {

@@ -2,7 +2,7 @@
 
 #include "common/util.h"
 
-#include "nes/interfaces/serializable.h"
+#include "common/serializable.h"
 
 namespace Interrupts {
   enum Type {

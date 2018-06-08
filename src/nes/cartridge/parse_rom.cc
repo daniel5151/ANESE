@@ -1,42 +1,10 @@
 #include "parse_rom.h"
 
-#include "nes/cartridge/rom_file.h"
+#include "rom_file.h"
 
 #include <cstdio>
 
-FileFormat::Type rom_type(const u8* data, uint data_len) {
-  (void)data_len;
-
-  // Can't parse data if there is none ;)
-  if (data == nullptr) {
-    fprintf(stderr, "[File Parsing] ROM file is nullptr!\n");
-    return FileFormat::INVALID;
-  }
-
-  // Try to determine ROM format
-  const bool is_iNES = (data[0] == 'N' &&
-                        data[1] == 'E' &&
-                        data[2] == 'S' &&
-                        data[3] == 0x1A);
-
-  if (is_iNES) {
-    fprintf(stderr, "[File Parsing] ROM has iNES header.\n");
-
-    // Double-check that it's not NES2
-    const bool is_NES2 = nth_bit(data[7], 3) && !nth_bit(data[6], 2);
-    if (is_NES2) {
-      fprintf(stderr, "[File Parsing] ROM has NES 2.0 header.\n");
-      return FileFormat::NES2;
-    }
-
-    return FileFormat::iNES;
-  }
-
-  fprintf(stderr, "[File Parsing] Cannot identify ROM type!\n");
-  return FileFormat::INVALID;
-}
-
-ROM_File* parse_iNES(const u8* data, uint data_len) {
+static ROM_File* parse_iNES(const u8* data, uint data_len) {
   (void)data_len;
 
   const u8 prg_rom_pages = data[4];
@@ -160,4 +128,45 @@ ROM_File* parse_iNES(const u8* data, uint data_len) {
   }
 
   return rom_file;
+}
+
+static ROMFileFormat::Type rom_type(const u8* data, uint data_len) {
+  (void)data_len;
+
+  // Can't parse data if there is none ;)
+  if (data == nullptr) {
+    fprintf(stderr, "[File Parsing] ROM file is nullptr!\n");
+    return ROMFileFormat::INVALID;
+  }
+
+  // Try to determine ROM format
+  const bool is_iNES = (data[0] == 'N' &&
+                        data[1] == 'E' &&
+                        data[2] == 'S' &&
+                        data[3] == 0x1A);
+
+  if (is_iNES) {
+    fprintf(stderr, "[File Parsing] ROM has iNES header.\n");
+
+    // Double-check that it's not NES2
+    const bool is_NES2 = nth_bit(data[7], 3) && !nth_bit(data[6], 2);
+    if (is_NES2) {
+      fprintf(stderr, "[File Parsing] ROM has NES 2.0 header.\n");
+      return ROMFileFormat::NES2;
+    }
+
+    return ROMFileFormat::iNES;
+  }
+
+  fprintf(stderr, "[File Parsing] Cannot identify ROM type!\n");
+  return ROMFileFormat::INVALID;
+}
+
+ROM_File* parse_ROM(const u8* data, uint data_len) {
+  // Determine ROM type, and parse it
+  switch(rom_type(data, data_len)) {
+  case ROMFileFormat::iNES: return parse_iNES(data, data_len);
+  case ROMFileFormat::NES2: return parse_iNES(data, data_len);
+  case ROMFileFormat::INVALID: return nullptr;
+  }
 }

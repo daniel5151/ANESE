@@ -1,6 +1,6 @@
 #include "replay.h"
 
-#include "ui/fs/load.h"
+#include "ui/SDL2/fs/load.h"
 
 #include <cstdio>
 #include <cassert>

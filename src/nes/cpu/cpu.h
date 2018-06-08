@@ -7,7 +7,7 @@
 
 #include "nes/wiring/interrupt_lines.h"
 
-#include "nes/interfaces/serializable.h"
+#include "common/serializable.h"
 
 // MOS 6502 (no BCD)
 // https://wiki.nesdev.com/w/index.php/CPU
