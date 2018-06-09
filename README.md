@@ -143,8 +143,10 @@ Toggle CPU logging | Ctrl - C
 Speed++            | Ctrl - =
 Speed--            | Ctrl - -
 Fast-Forward       | Space
-Make Save-State    | Ctrl - \`
-Load Save-State    | Ctrl - 1
+Make Save-State    | Ctrl - (1-4)
+Load Save-State    | Ctrl - Shift - (1-4)
+
+(there are 4 save-state slots)
 
 ## DISCLAIMERS
 
@@ -165,8 +167,9 @@ the top higher on my priority list:
 
 - [ ] _Implement_: My own APU (don't use Blarrg's)
 - [ ] _Refactor_: Push common mapper behavior to Base Mapper (eg: bank chunking)
-- [ ] _Refactor_: Modularize `main.cc` - push everything into `src/ui/`
+- [x] _Refactor_: Modularize `main.cc` - push everything into `src/ui/`
 - [ ] _CMake_: Make building macOS bundles less brittle
+- [ ] _Implement_: LibRetro Core
 - [ ] _Implement_: Sub-instruction cycle accurate CPU
 - [ ] _Cleanup_: Unify naming conventions (either camelCase or snake_case)
 - [ ] _Cleanup_: Comment the codebase _even more_
