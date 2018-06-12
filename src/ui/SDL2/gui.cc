@@ -7,7 +7,9 @@
 #include <args.hxx>
 
 #define CUTE_FILES_IMPLEMENTATION
+extern "C" {
 #include <cute_files.h>
+}
 
 namespace SDL2_inprint {
 extern "C" {

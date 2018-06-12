@@ -13,7 +13,9 @@
 #include <SDL.h>
 #include "util/Sound_Queue.h"
 
+extern "C" {
 #include <cute_files.h>
+}
 
 struct ANESE_Args {
   bool log_cpu;
