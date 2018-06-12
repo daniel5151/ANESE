@@ -26,5 +26,6 @@ after_build:
   - cmd: cd ANESE_win_latest
   - cmd: 7z x -y ..\SDL2-2.0.8-win32-x86.zip
   - cmd: move ..\build\Release\anese.exe .\
+  - cmd: xcopy ..\roms\demos .\ /e
 artifacts:
   - path: ANESE_win_latest

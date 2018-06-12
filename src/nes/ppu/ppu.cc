@@ -168,10 +168,10 @@ u8 PPU::read(u16 addr) {
                     retval = 0x00;
                   } break;
   default:        { retval = this->cpu_data_bus;
-                    fprintf(stderr,
-                      "[PPU] Reading from Write-Only register: 0x%04X\n",
-                      addr
-                    );
+                    // fprintf(stderr,
+                    //   "[PPU] Reading from Write-Only register: 0x%04X\n",
+                    //   addr
+                    // );
                   } break;
   }
 

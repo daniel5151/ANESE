@@ -28,7 +28,8 @@ after_success:
       ARCHIVE="ANESE_macOS_`date +"%Y%m%d"`_`git rev-parse --short HEAD`.zip"
       echo "Creating $ARCHIVE"
       cd $TRAVIS_BUILD_DIR/bin
-      zip -r $ARCHIVE ANESE.app
+      cp -R ../roms/demos ./
+      zip -r $ARCHIVE ANESE.app demos
       echo "Starting Google Drive upload"
       echo "Uploading commit"
       gdrive upload --refresh-token $GDRIVE_REFRESH_TOKEN --parent $GDRIVE_MACOS_FOLDER $ARCHIVE
