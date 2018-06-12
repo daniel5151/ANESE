@@ -6,16 +6,14 @@
 
 #include <args.hxx>
 
-#define CUTE_FILES_IMPLEMENTATION
-extern "C" {
-#include <cute_files.h>
-}
-
 namespace SDL2_inprint {
 extern "C" {
 #include <SDL2_inprint.h>
 }
 }
+
+#define CUTE_FILES_IMPLEMENTATION
+#include <cute_files.h>
 
 #include "common/util.h"
 #include "common/serializable.h"
