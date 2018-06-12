@@ -76,6 +76,10 @@ set(SDL2_MORE_INCLUDE_DIR "C:/sdl2")
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIR})
 
+# ---- SDL_inprint ---- #
+include_directories(thirdparty/SDL_inprint)
+add_library(SDL_inprint STATIC thirdparty/SDL_inprint/inprint2.c)
+
 # ---- miniz ---- #
 add_subdirectory(thirdparty/miniz)
 include_directories(thirdparty/miniz)
@@ -84,9 +88,8 @@ include_directories(thirdparty/miniz)
 add_subdirectory(thirdparty/args)
 include_directories(thirdparty/args)
 
-# ---- tinyfiledialogs ---- #
-include_directories(thirdparty/tinyfiledialogs)
-add_library(tinyfiledialogs STATIC thirdparty/tinyfiledialogs/tinyfiledialogs.c)
+# ---- cute_headers ---- #
+include_directories(thirdparty/cute_headers)
 
 # ---- nes_snd_emu ---- #
 include_directories(SYSTEM thirdparty/nes_snd_emu/nes_apu)
@@ -103,10 +106,10 @@ target_include_directories(nes_snd_emu PUBLIC thirdparty/nes_snd_emu)
 # Finally, link up!
 target_link_libraries(anese
   ${SDL2_LIBRARY}
+  SDL_inprint
   args
   miniz
   nes_snd_emu
-  tinyfiledialogs
 )
 
 if (APPLE)

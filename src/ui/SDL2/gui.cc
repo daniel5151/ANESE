@@ -1,10 +1,19 @@
 #include "gui.h"
 
-#include <iostream>
+#include <algorithm>
 #include <cstdio>
+#include <iostream>
 
 #include <args.hxx>
-#include <tinyfiledialogs.h>
+
+#define CUTE_FILES_IMPLEMENTATION
+#include <cute_files.h>
+
+namespace SDL2_inprint {
+extern "C" {
+#include <SDL2_inprint.h>
+}
+}
 
 #include "common/util.h"
 #include "common/serializable.h"
@@ -19,7 +28,7 @@
 constexpr uint RES_X = 256;
 constexpr uint RES_Y = 240;
 
-SDL_GUI::SDL_GUI(int argc, char* argv[]) {
+int SDL_GUI::init(int argc, char* argv[]) {
   fprintf(stderr, "[SDL2] Starting SDL2 GUI\n");
   // --------------------------- Argument Parsing --------------------------- //
 
@@ -58,18 +67,15 @@ SDL_GUI::SDL_GUI(int argc, char* argv[]) {
     parser.ParseCLI(argc, argv);
   } catch (args::Help) {
     std::cout << parser;
-    init_error_val = 1;
-    return;
+    return 0;
   } catch (args::ParseError& e) {
     std::cerr << e.what() << std::endl;
     std::cerr << parser;
-    init_error_val = 1;
-    return;
+    return 1;
   } catch (args::ValidationError& e) {
     std::cerr << e.what() << std::endl;
     std::cerr << parser;
-    init_error_val = 1;
-    return;
+    return 1;
   }
 
   this->args.log_cpu = log_cpu;
@@ -79,34 +85,10 @@ SDL_GUI::SDL_GUI(int argc, char* argv[]) {
   this->args.replay_fm2_path = args::get(replay_fm2_path);
   this->args.rom = args::get(rom);
 
-  // ----------------------------- Get ROM Path ----------------------------- //
-  // Until I implement proper file-browsing in the SDL GUI, i'm using the nifty
-  // `tinyfiledialogs` library to open a thin file-select dialog in the case
-  // that no ROM file was provided
-
-  if (args.rom == "") {
-    const char* rom_formats[] = { "*.nes", "*.zip" };
-    const char* file = tinyfd_openFileDialog(
-      "Select ROM",
-      nullptr,
-      2, rom_formats,
-      "NES roms",
-      0
-    );
-
-    if (!file) {
-      printf("[File Select] Canceled File Select. Closing...\n");
-      init_error_val = 1;
-      return;
-    }
-
-    this->args.rom = std::string(file);
-  }
-
   // ------------------------------ Init SDL2 ------------------------------- //
 
-  int window_w = RES_X * 2;
-  int window_h = RES_Y * 2;
+  const int window_w = RES_X * 2;
+  const int window_h = RES_Y * 2;
 
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
 
@@ -139,6 +121,8 @@ SDL_GUI::SDL_GUI(int argc, char* argv[]) {
 
   // Letterbox the screen in the window
   SDL_RenderSetLogicalSize(this->sdl.renderer, window_w, window_h);
+  // Allow opacity when drawing menu
+  SDL_SetRenderDrawBlendMode(this->sdl.renderer, SDL_BLENDMODE_BLEND);
 
   /* Open the first available controller. */
   for (int i = 0; i < SDL_NumJoysticks(); i++) {
@@ -152,7 +136,11 @@ SDL_GUI::SDL_GUI(int argc, char* argv[]) {
     }
   }
 
-  this->sdl.sound_queue.init(44100);
+  this->sdl.nes_sound_queue.init(44100);
+
+  // Setup SDL2_inprint font
+  SDL2_inprint::inrenderer(this->sdl.renderer);
+  SDL2_inprint::prepare_inline_font();
 
   // ---------------------------- Debug Switches ---------------------------- //
 
@@ -174,24 +162,54 @@ SDL_GUI::SDL_GUI(int argc, char* argv[]) {
       fprintf(stderr, "[Record][fm2] Failed to setup Movie recording!\n");
     fprintf(stderr, "[Record][fm2] Movie recording is setup!\n");
   }
+
+  // -------------------------- NES Initialization -------------------------- //
+
+  // pass controllers to this->fm2_record
+  this->fm2_record.set_joy(0, FM2_Controller::SI_GAMEPAD, &joy_1);
+  this->fm2_record.set_joy(1, FM2_Controller::SI_GAMEPAD, &joy_2);
+
+  // Check if there is fm2 to replay
+  if (this->fm2_replay.is_enabled()) {
+    // plug in fm2 controllers
+    this->nes.attach_joy(0, this->fm2_replay.get_joy(0));
+    this->nes.attach_joy(1, this->fm2_replay.get_joy(1));
+  } else {
+    // plug in physical nes controllers
+    this->nes.attach_joy(0, &joy_1);
+    this->nes.attach_joy(1, &joy_2);
+  }
+
+  // Load ROM if one has been passed as param
+  if (this->args.rom != "") {
+    this->in_menu = false;
+    int error = this->load_rom(this->args.rom.c_str());
+    if (error) return error;
+  }
+
+  return 0;
 }
 
-int SDL_GUI::set_up_cartridge(const char* rompath) {
+int SDL_GUI::load_rom(const char* rompath) {
   delete this->cart;
 
   fprintf(stderr, "[Load] Loading '%s'\n", rompath);
-  this->cart = new Cartridge (load_rom_file(rompath));
+  Cartridge* cart = new Cartridge (load_rom_file(rompath));
 
-  switch (this->cart->status()) {
+  switch (cart->status()) {
   case Cartridge::Status::BAD_DATA:
     fprintf(stderr, "[Cart] ROM file could not be parsed!\n");
+    delete cart;
     return 1;
   case Cartridge::Status::BAD_MAPPER:
     fprintf(stderr, "[Cart] Mapper %u has not been implemented yet!\n",
-      this->cart->get_rom_file()->meta.mapper);
+      cart->get_rom_file()->meta.mapper);
+    delete cart;
     return 1;
   case Cartridge::Status::NO_ERROR:
     fprintf(stderr, "[Cart] ROM file loaded successfully!\n");
+    strcpy(this->current_rom_file, rompath);
+    this->cart = cart;
     break;
   }
 
@@ -205,19 +223,57 @@ int SDL_GUI::set_up_cartridge(const char* rompath) {
     if (data) {
       fprintf(stderr, "[Savegame][Load] Found save data.\n");
       sav = Serializable::Chunk::parse(data, len);
+      this->cart->get_mapper()->setBatterySave(sav);
     } else {
       fprintf(stderr, "[Savegame][Load] No save data found.\n");
     }
     delete data;
   }
 
-  // Inject Battery-Backed RAM Save
-  this->cart->get_mapper()->setBatterySave(sav);
+  // Slap a cartridge in!
+  this->nes.loadCartridge(this->cart->get_mapper());
+
+  // Power-cycle the NES
+  this->nes.power_cycle();
 
   return 0;
 }
 
-void SDL_GUI::update_joypads(const SDL_Event& event) {
+int SDL_GUI::unload_rom(Cartridge* cart) {
+  if (!cart) return 0;
+
+  fprintf(stderr, "[UnLoad] Unloading cart...\n");
+  // Save Battey-Backed RAM
+  if (cart != nullptr) {
+    const Serializable::Chunk* sav = cart->get_mapper()->getBatterySave();
+    if (sav) {
+      const u8* data;
+      uint len;
+      Serializable::Chunk::collate(data, len, sav);
+
+      const char* sav_file_name = (std::string(this->current_rom_file) + ".sav").c_str();
+
+      FILE* sav_file = fopen(sav_file_name, "wb");
+      if (!sav_file) {
+        fprintf(stderr, "[Savegame][Save] Failed to open save file!\n");
+        return 1;
+      }
+
+      fwrite(data, 1, len, sav_file);
+      fclose(sav_file);
+      fprintf(stderr, "[Savegame][Save] Game successfully saved to '%s'!\n",
+        sav_file_name);
+
+      delete sav;
+    }
+  }
+
+  this->nes.removeCartridge();
+
+  return 0;
+}
+
+void SDL_GUI::update_input_nes_joypads(const SDL_Event& event) {
   // Update from Controllers
   if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
     bool new_state = (event.type == SDL_CONTROLLERBUTTONDOWN) ? true : false;
@@ -236,16 +292,16 @@ void SDL_GUI::update_joypads(const SDL_Event& event) {
     }
 
     // Player 2
-    switch (event.cbutton.button) {
-    case SDL_CONTROLLER_BUTTON_A:          this->joy_2.set_button(A,      new_state); break;
-    case SDL_CONTROLLER_BUTTON_X:          this->joy_2.set_button(B,      new_state); break;
-    case SDL_CONTROLLER_BUTTON_START:      this->joy_2.set_button(Start,  new_state); break;
-    case SDL_CONTROLLER_BUTTON_BACK:       this->joy_2.set_button(Select, new_state); break;
-    case SDL_CONTROLLER_BUTTON_DPAD_UP:    this->joy_2.set_button(Up,     new_state); break;
-    case SDL_CONTROLLER_BUTTON_DPAD_DOWN:  this->joy_2.set_button(Down,   new_state); break;
-    case SDL_CONTROLLER_BUTTON_DPAD_LEFT:  this->joy_2.set_button(Left,   new_state); break;
-    case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: this->joy_2.set_button(Right,  new_state); break;
-    }
+    // switch (event.cbutton.button) {
+    // case SDL_CONTROLLER_BUTTON_A:          this->joy_2.set_button(A,      new_state); break;
+    // case SDL_CONTROLLER_BUTTON_X:          this->joy_2.set_button(B,      new_state); break;
+    // case SDL_CONTROLLER_BUTTON_START:      this->joy_2.set_button(Start,  new_state); break;
+    // case SDL_CONTROLLER_BUTTON_BACK:       this->joy_2.set_button(Select, new_state); break;
+    // case SDL_CONTROLLER_BUTTON_DPAD_UP:    this->joy_2.set_button(Up,     new_state); break;
+    // case SDL_CONTROLLER_BUTTON_DPAD_DOWN:  this->joy_2.set_button(Down,   new_state); break;
+    // case SDL_CONTROLLER_BUTTON_DPAD_LEFT:  this->joy_2.set_button(Left,   new_state); break;
+    // case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: this->joy_2.set_button(Right,  new_state); break;
+    // }
   }
 
   // Update from Keyboard
@@ -267,26 +323,39 @@ void SDL_GUI::update_joypads(const SDL_Event& event) {
     }
 
     // Player 2
-    // For now: mapped to player 1
+    // switch (event.key.keysym.sym) {
+    // case SDLK_z:      this->joy_2.set_button(A,      new_state); break;
+    // case SDLK_x:      this->joy_2.set_button(B,      new_state); break;
+    // case SDLK_RETURN: this->joy_2.set_button(Start,  new_state); break;
+    // case SDLK_RSHIFT: this->joy_2.set_button(Select, new_state); break;
+    // case SDLK_UP:     this->joy_2.set_button(Up,     new_state); break;
+    // case SDLK_DOWN:   this->joy_2.set_button(Down,   new_state); break;
+    // case SDLK_LEFT:   this->joy_2.set_button(Left,   new_state); break;
+    // case SDLK_RIGHT:  this->joy_2.set_button(Right,  new_state); break;
+    // }
+  }
+}
+
+void SDL_GUI::update_input_global(const SDL_Event& event) {
+  if (
+    (event.type == SDL_QUIT) ||
+    (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE)
+  ) this->sdl_running = false;
+
+  if (event.type == SDL_KEYDOWN) {
     switch (event.key.keysym.sym) {
-    case SDLK_z:      this->joy_2.set_button(A,      new_state); break;
-    case SDLK_x:      this->joy_2.set_button(B,      new_state); break;
-    case SDLK_RETURN: this->joy_2.set_button(Start,  new_state); break;
-    case SDLK_RSHIFT: this->joy_2.set_button(Select, new_state); break;
-    case SDLK_UP:     this->joy_2.set_button(Up,     new_state); break;
-    case SDLK_DOWN:   this->joy_2.set_button(Down,   new_state); break;
-    case SDLK_LEFT:   this->joy_2.set_button(Left,   new_state); break;
-    case SDLK_RIGHT:  this->joy_2.set_button(Right,  new_state); break;
+      case SDLK_ESCAPE: this->in_menu = !this->in_menu; break;
+    }
+  }
+
+  if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
+    switch (event.cbutton.button) {
+    case SDL_CONTROLLER_BUTTON_LEFTSTICK: this->in_menu = !this->in_menu; break;
     }
   }
 }
 
-void SDL_GUI::check_misc_actions(const SDL_Event& event) {
-  if (
-    (event.type == SDL_QUIT) ||
-    (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE)
-  ) this->running = false;
-
+void SDL_GUI::update_input_nes_misc(const SDL_Event& event) {
   // Handle Key-events
   if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
     bool mod_shift = event.key.keysym.mod & KMOD_SHIFT;
@@ -297,16 +366,23 @@ void SDL_GUI::check_misc_actions(const SDL_Event& event) {
 
     // Regular 'ol keys
     switch (event.key.keysym.sym) {
-      case SDLK_ESCAPE:
-        // Quit
-        this->running = false;
-        break;
       case SDLK_SPACE:
         // Fast-Forward
         this->speedup = (event.type == SDL_KEYDOWN) ? 200 : 100;
         this->speed_counter = 0;
-        this->nes.set_speed(speedup);
+        this->nes.set_speed(this->speedup);
         break;
+    }
+
+    // Controller
+    if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
+      switch (event.cbutton.button) {
+      case SDL_CONTROLLER_BUTTON_RIGHTSTICK:
+        this->speedup = (event.type == SDL_CONTROLLERBUTTONDOWN) ? 200 : 100;
+        this->speed_counter = 0;
+        this->nes.set_speed(this->speedup);
+        break;
+      }
     }
 
     // Meta Modified keys
@@ -348,46 +424,192 @@ void SDL_GUI::check_misc_actions(const SDL_Event& event) {
   }
 }
 
+void SDL_GUI::step_nes() {
+  // Calculate the number of frames to render
+  // (speedup values that are not clean multiples of 100 imply that some the
+  //  number of nes frames / real frame will vary)
+  uint numframes = 0;
+  this->speed_counter += speedup;
+  while (this->speed_counter > 0) {
+    this->speed_counter -= 100;
+    numframes++;
+  }
+
+  // Run ANESE core for some number of frames
+  for (uint i = 0; i < numframes; i++) {
+    // log frame to fm2
+    if (this->fm2_record.is_enabled())
+      this->fm2_record.step_frame();
+
+    // set input from fm2
+    if (this->fm2_replay.is_enabled())
+      this->fm2_replay.step_frame();
+
+    // run the NES for a frame
+    this->nes.step_frame();
+  }
+
+  if (this->nes.isRunning() == false) {
+    // this->sdl_running = true;
+  }
+}
+
+void SDL_GUI::output_nes() {
+  // output audio!
+  short* samples = nullptr;
+  uint   count = 0;
+  this->nes.getAudiobuff(samples, count);
+  if (count) this->sdl.nes_sound_queue.write(samples, count);
+
+  // output video!
+  const u8* framebuffer = this->nes.getFramebuff();
+  SDL_UpdateTexture(this->sdl.nes_texture, nullptr, framebuffer, RES_X * 4);
+  SDL_RenderCopy(this->sdl.renderer, this->sdl.nes_texture, nullptr, &this->sdl.nes_screen);
+}
+
+
+void SDL_GUI::update_input_ui(const SDL_Event& event) {
+  if (event.type == SDL_KEYDOWN) {
+    switch (event.key.keysym.sym) {
+    case SDLK_RETURN: this->menu.hit.enter = true; break;
+    case SDLK_DOWN:   this->menu.hit.down  = true; break;
+    case SDLK_UP:     this->menu.hit.up    = true; break;
+    case SDLK_LEFT:   this->menu.hit.left  = true; break;
+    case SDLK_RIGHT:  this->menu.hit.right = true; break;
+    }
+    // basic "fast skipping" though file-names
+    const char* key_pressed = SDL_GetKeyName(event.key.keysym.sym);
+    if (key_pressed[1] == '\0' && (isalnum(key_pressed[0]) || key_pressed[0] == '.'))
+      this->menu.hit.last_ascii = key_pressed[0];
+  }
+
+  if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
+    switch (event.cbutton.button) {
+    case SDL_CONTROLLER_BUTTON_A:         this->menu.hit.enter = true; break;
+    case SDL_CONTROLLER_BUTTON_DPAD_UP:   this->menu.hit.up    = true; break;
+    case SDL_CONTROLLER_BUTTON_DPAD_DOWN: this->menu.hit.down  = true; break;
+    case SDL_CONTROLLER_BUTTON_DPAD_LEFT: this->menu.hit.left  = true; break;
+    }
+  }
+
+  std::vector<cf_file_t>& files = this->menu.files;
+
+  if (this->menu.hit.enter || this->menu.hit.right) {
+    this->menu.hit.enter = false;
+    this->menu.hit.right = false;
+    const cf_file_t& file = files[this->menu.selected_i];
+    if (file.is_dir) {
+      strcpy(this->menu.directory, file.path);
+      this->menu.selected_i = 0;
+      this->menu.should_update_dir = true;
+    } else {
+      fprintf(stderr, "[Menu] Selected '%s'\n", file.name);
+      this->unload_rom(this->cart);
+      this->load_rom(file.path);
+      this->in_menu = false;
+    }
+  }
+
+  if (this->menu.should_update_dir) {
+    this->menu.should_update_dir = false;
+    files.clear();
+
+    // Get file-listing
+    cf_dir_t dir;
+    cf_dir_open(&dir, this->menu.directory);
+    bool skip_first = true;
+    while (dir.has_next) {
+      cf_file_t file;
+      cf_read_file(&dir, &file);
+      if (!skip_first)
+        files.push_back(file);
+      cf_dir_next(&dir);
+      skip_first = false;
+    }
+    cf_dir_close(&dir);
+
+    // Remove all file-types we don't care about
+    files.erase(
+      std::remove_if(files.begin(), files.end(), [](const cf_file_t& file) {
+        return file.is_dir == false &&
+          !(strcmp("nes", file.ext) == 0 || strcmp("zip", file.ext) == 0);
+      }),
+      files.end()
+    );
+
+    // Sort the directory by filename
+    std::sort(files.begin(), files.end(),
+      [](const cf_file_t& a, const cf_file_t& b){
+        return strcmp(a.name, b.name) < 0;
+      });
+  }
+
+  // Handle input
+
+  if (this->menu.hit.up) {
+    this->menu.hit.up = false;
+    this->menu.selected_i -= this->menu.selected_i ? 1 : 0;
+  }
+
+  if (this->menu.hit.down) {
+    this->menu.hit.down = false;
+    this->menu.selected_i += this->menu.selected_i < files.size() - 1 ? 1 : 0;
+  }
+
+  if (this->menu.hit.left) {
+    this->menu.hit.left = false;
+    strcpy(this->menu.directory, files[0].path);
+    this->menu.selected_i = 0;
+  }
+
+  if (this->menu.hit.last_ascii) {
+    uint new_selection = std::distance(
+      files.begin(),
+      std::find_if(files.begin(), files.end(),
+        [=](const cf_file_t& f){
+          return f.name[0] == this->menu.hit.last_ascii
+              || f.name[0] == tolower(this->menu.hit.last_ascii);
+        })
+    );
+    if (new_selection < files.size())
+      this->menu.selected_i = new_selection;
+
+    this->menu.hit.last_ascii = '\0';
+  }
+}
+
+void SDL_GUI::output_menu() {
+  // Paint transparent bg
+  this->sdl.bg.x = this->sdl.bg.y = 0;
+  SDL_RenderGetLogicalSize(this->sdl.renderer, &this->sdl.bg.w, &this->sdl.bg.h);
+  SDL_SetRenderDrawColor(this->sdl.renderer, 0, 0, 0, 200);
+  SDL_RenderFillRect(this->sdl.renderer, &this->sdl.bg);
+
+  // Paint menu
+  for (uint i = 0; i < this->menu.files.size(); i++) {
+    const cf_file_t& file = this->menu.files[i];
+
+    u32 color;
+    if (this->menu.selected_i == i)        color = 0xff0000; // red   - selected
+    else if (strcmp("nes", file.ext) == 0) color = 0x00ff00; // green - .nes
+    else if (strcmp("zip", file.ext) == 0) color = 0x00ffff; // cyan  - .zip
+    else                                   color = 0xffffff; // white - folder
+
+    SDL2_inprint::incolor(color, /* unused */ 0);
+    SDL2_inprint::inprint(this->sdl.renderer, file.name,
+      10, this->sdl.bg.h / 2 + (i - this->menu.selected_i) * 12
+    );
+  }
+}
+
 int SDL_GUI::run() {
   fprintf(stderr, "[SDL2] Running SDL2 GUI\n");
-
-  // -------------------------- Construct Cartridge ------------------------- //
-
-  if (this->args.rom != "") {
-    int error = this->set_up_cartridge(this->args.rom.c_str());
-    if (error) return error;
-  }
-
-  // -------------------------- NES Initialization -------------------------- //
-
-  // pass controllers to this->fm2_record if needed
-  if (this->fm2_record.is_enabled()) {
-    this->fm2_record.set_joy(0, FM2_Controller::SI_GAMEPAD, &joy_1);
-    this->fm2_record.set_joy(1, FM2_Controller::SI_GAMEPAD, &joy_2);
-  }
-
-  // Check if there is fm2 to replay
-  if (this->fm2_replay.is_enabled()) {
-    // plug in fm2 controllers
-    this->nes.attach_joy(0, this->fm2_replay.get_joy(0));
-    this->nes.attach_joy(1, this->fm2_replay.get_joy(1));
-  } else {
-    // plug in physical nes controllers
-    this->nes.attach_joy(0, &joy_1);
-    this->nes.attach_joy(1, &joy_2);
-  }
-
-  // Slap a cartridge in!
-  this->nes.loadCartridge(this->cart->get_mapper());
-
-  // Power up the NES
-  this->nes.power_cycle();
 
   // ------------------------------ Main Loop! ------------------------------ //
   double past_fups [20] = {60.0}; // more samples == less value jitter
   uint past_fups_i = 0;
 
-  while (this->running) {
+  while (this->sdl_running) {
     typedef uint time_ms;
     time_ms frame_start_time = SDL_GetTicks();
     past_fups_i++;
@@ -395,43 +617,27 @@ int SDL_GUI::run() {
     // Check for new events
     SDL_Event event;
     while (SDL_PollEvent(&event) != 0) {
-      this->check_misc_actions(event);
-      this->update_joypads(event);
+      this->update_input_global(event);
+
+      if (!this->in_menu) {
+        this->update_input_nes_misc(event);
+        this->update_input_nes_joypads(event);
+      } else {
+        this->update_input_ui(event);
+      }
     }
 
-    // Calculate the number of frames to render
-    // (speedup values that are not clean multiples of 100 imply that some the
-    //  number of nes frames / real frame will vary)
-    uint numframes = 0;
-    speed_counter += speedup;
-    while (speed_counter > 0) {
-      speed_counter -= 100;
-      numframes++;
+    // Update the NES when not in menu
+    if (!this->in_menu)
+      this->step_nes();
+
+    // Render something
+    this->output_nes();
+    if (this->in_menu) {
+      this->output_menu();
     }
 
-    // Run ANESE core for some number of frames
-    for (uint i = 0; i < numframes; i++) {
-      if (fm2_record.is_enabled()) fm2_record.step_frame(); // log frame to fm2
-      if (fm2_replay.is_enabled()) fm2_replay.step_frame(); // set input from fm2
-
-      // run the NES for a frame
-      nes.step_frame();
-    }
-
-    if (nes.isRunning() == false) {
-      // this->running = true;
-    }
-
-    // output audio!
-    short* samples = nullptr;
-    uint   count = 0;
-    nes.getAudiobuff(samples, count);
-    if (count) this->sdl.sound_queue.write(samples, count);
-
-    // output video!
-    const u8* framebuffer = nes.getFramebuff();
-    SDL_UpdateTexture(this->sdl.nes_texture, nullptr, framebuffer, RES_X * 4);
-    SDL_RenderCopy(this->sdl.renderer, this->sdl.nes_texture, nullptr, &this->sdl.nes_screen);
+    // SHOW ME WHAT YOU GOT
     SDL_RenderPresent(this->sdl.renderer);
 
     // time how long all-that took :)
@@ -461,25 +667,7 @@ int SDL_GUI::run() {
 SDL_GUI::~SDL_GUI() {
   fprintf(stderr, "[SDL2] Stopping SDL2 GUI\n");
 
-  // Save Battey-Backed RAM
-  const Serializable::Chunk* sav = this->cart->get_mapper()->getBatterySave();
-  if (sav) {
-    const u8* data;
-    uint len;
-    Serializable::Chunk::collate(data, len, sav);
-
-    FILE* sav_file = fopen((args.rom + ".sav").c_str(), "wb");
-    if (!sav_file)
-      fprintf(stderr, "[Savegame][Save] Failed to open save file!\n");
-
-    fwrite(data, 1, len, sav_file);
-    fclose(sav_file);
-    fprintf(stderr, "[Savegame][Save] Game successfully saved!\n");
-
-    delete sav;
-  }
-
-  // NES Cleanup
+  this->unload_rom(this->cart);
   delete this->cart;
 
   // SDL Cleanup
@@ -488,6 +676,8 @@ SDL_GUI::~SDL_GUI() {
   SDL_DestroyRenderer(this->sdl.renderer);
   SDL_DestroyWindow(this->sdl.window);
   SDL_Quit();
+
+  SDL2_inprint::kill_inline_font();
 
   printf("\nANESE closed successfully\n");
 }

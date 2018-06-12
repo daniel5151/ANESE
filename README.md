@@ -37,7 +37,7 @@ nightly releases.
 [AppVeyor](https://ci.appveyor.com/project/daniel5151/anese)'s build artifacts
 page.
 
-**macOS:** Nightly ANESE.app bundles are uploaded from Travis to
+**macOS:** Travis uploads nightly ANESE.app bundles to
 [this GDrive folder](https://drive.google.com/drive/folders/1GWiinQ4tjDSZlhjReVMdElwK1b-Zvagf).
 
 ## Building
@@ -134,17 +134,17 @@ Any xbox-compatible controller should work.
 
 There are also a couple of emulator actions:
 
-Action             | Keys
--------------------|--------
-Exit               | Esc
-Reset              | Ctrl - R
-Power Cycle        | Ctrl - P
-Toggle CPU logging | Ctrl - C
-Speed++            | Ctrl - =
-Speed--            | Ctrl - -
-Fast-Forward       | Space
-Make Save-State    | Ctrl - (1-4)
-Load Save-State    | Ctrl - Shift - (1-4)
+Action             | Key                  | Controller
+-------------------|----------------------|-------------------------
+Pause / Open Menu  | Esc                  | Left Thumbstick Button
+Reset              | Ctrl - R             |
+Power Cycle        | Ctrl - P             |
+Toggle CPU logging | Ctrl - C             |
+Speed +25%         | Ctrl - =             |
+Speed -25%         | Ctrl - -             |
+Fast-Forward       | Space                | Right Thumbstick Button
+Make Save-State    | Ctrl - (1-4)         |
+Load Save-State    | Ctrl - Shift - (1-4) |
 
 (there are 4 save-state slots)
 
@@ -166,9 +166,11 @@ This is a rough list of things I would like to accomplish, with those closer to
 the top higher on my priority list:
 
 - [ ] _Implement_: My own APU (don't use Blarrg's)
-- [ ] _Refactor_: Push common mapper behavior to Base Mapper (eg: bank chunking)
+- [ ] _Implement_: Robust menu system
 - [x] _Refactor_: Modularize `main.cc` - push everything into `src/ui/`
+  - [ ] _Refactor_: Split `gui.cc` into more files!
 - [ ] _CMake_: Make building macOS bundles less brittle
+- [ ] _Refactor_: Push common mapper behavior to Base Mapper (eg: bank chunking)
 - [ ] _Implement_: LibRetro Core
 - [ ] _Implement_: Sub-instruction cycle accurate CPU
 - [ ] _Cleanup_: Unify naming conventions (either camelCase or snake_case)
@@ -226,7 +228,7 @@ the top higher on my priority list:
 - [x] Loading Files with picker
 - [x] Reset / Power-cycle
 - [x] Fast Forward
-- [ ] Run / Pause / Step
+- [x] Run / Pause
 - Saving
   - [x] Battery Backed RAM - Saves to `.sav`
   - [x] Save-states
@@ -235,8 +237,9 @@ the top higher on my priority list:
   - [ ] Remap controls
 - [x] Running NESTEST (behind a flag)
 - [x] Controller support - _currently very basic_
-- [ ] A proper GUI
-  - imgui maybe?
+- [ ] A SDL GUI
+  - [x] SDL-based ROM picker
+  - [ ] Options menu
 
 ### Tertiary Milestones (Fun Features!)
 
@@ -292,4 +295,5 @@ sneak a peek at how others did some things when I got very stuck.
   - [sdl2](https://www.libsdl.org/)
   - [args](https://github.com/Taywee/args)
   - [miniz](https://github.com/richgel999/miniz)
-  - [tinyfiledialogs](https://sourceforge.net/projects/tinyfiledialogs/)
+  - [cute_headers](https://github.com/RandyGaul/cute_headers/)
+  - [SDL_inprint](https://github.com/driedfruit/SDL_inprint/)

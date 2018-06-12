@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "nes/cartridge/cartridge.h"
 #include "nes/joy/controllers/standard.h"
@@ -11,6 +12,8 @@
 
 #include <SDL.h>
 #include "util/Sound_Queue.h"
+
+#include <cute_files.h>
 
 struct ANESE_Args {
   bool log_cpu;
@@ -28,17 +31,45 @@ private:
   // Command-line args
   ANESE_Args args;
 
-  // SDL Things
+  /*------------------------------  SDL Things  ------------------------------*/
+  bool sdl_running = true;
+
   struct {
     SDL_Renderer* renderer    = nullptr;
     SDL_Window*   window      = nullptr;
-    SDL_Texture*  nes_texture = nullptr;
-    SDL_Rect      nes_screen;
 
     SDL_GameController* controller = nullptr;
 
-    Sound_Queue sound_queue;
+    // NES render things
+    SDL_Texture* nes_texture = nullptr;
+    SDL_Rect     nes_screen;
+    Sound_Queue  nes_sound_queue;
+
+    // UI render things
+    SDL_Rect bg;
   } sdl;
+
+  /*------------------------------  UI Things  -------------------------------*/
+
+  char current_rom_file [256] = "\0";
+
+  bool in_menu = true;
+  struct {
+    std::vector<cf_file_t> files;
+    char directory [256] = ".";
+    bool should_update_dir = true;
+    uint selected_i = 0;
+    struct {
+      bool enter, up, down, left, right;
+      char last_ascii;
+    } hit = {0, 0, 0, 0, 0, 0};
+  } menu;
+
+  /*------------------------------  NES Things  ------------------------------*/
+  NES nes;
+  Cartridge* cart = nullptr;
+  JOY_Standard joy_1 = JOY_Standard("P1");
+  JOY_Standard joy_2 = JOY_Standard("P2");
 
   // Movie Controllers
   FM2_Replay fm2_replay;
@@ -51,28 +82,23 @@ private:
   uint speedup = 100;
   int  speed_counter = 0;
 
-  // NES Things
-  NES nes;
-  Cartridge* cart = nullptr;
-  JOY_Standard joy_1 = JOY_Standard("P1");
-  JOY_Standard joy_2 = JOY_Standard("P2");
-
-  // SDL_GUI is running?
-  bool running = true;
-
-  int init_error_val = 0;
-
 private:
-  int set_up_cartridge(const char* rompath);
+  int load_rom(const char* rompath);
+  int unload_rom(Cartridge* cart);
 
-  void update_joypads(const SDL_Event&);
-  void check_misc_actions(const SDL_Event& event);
+  void update_input_global(const SDL_Event&);
+  void update_input_nes_joypads(const SDL_Event&);
+  void update_input_nes_misc(const SDL_Event&);
+  void update_input_ui(const SDL_Event&);
+
+  void step_nes();
+
+  void output_nes();
+  void output_menu();
 
 public:
   ~SDL_GUI();
-  SDL_GUI(int argc, char* argv[]);
 
-  int init_error() { return this->init_error_val; }
-
+  int init(int argc, char* argv[]);
   int run();
 };

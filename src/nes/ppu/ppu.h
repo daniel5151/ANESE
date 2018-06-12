@@ -188,7 +188,7 @@ private:
   void nmiChange();
 
   // framebuffer
-  u8 framebuff [240 * 256 * 4];
+  u8 framebuff [240 * 256 * 4] = {0};
   void draw_dot(Color color, uint x, uint y);
 
   // scanline tracker

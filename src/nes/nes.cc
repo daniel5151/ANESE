@@ -49,7 +49,8 @@ bool NES::loadCartridge(Mapper* cart) {
 }
 
 void NES::removeCartridge() {
-  this->cart->set_interrupt_line(nullptr);
+  if (this->cart)
+    this->cart->set_interrupt_line(nullptr);
   this->cart = nullptr;
 
   this->cpu_mmu.removeCartridge();
