@@ -7,35 +7,22 @@
 
 namespace JOY_Standard_Button {
   enum Type : unsigned {
-    A = 0,
-    B,
-    Select,
-    Start,
-    Up,
-    Down,
-    Left,
-    Right,
+    A      = 0x01,
+    B      = 0x02,
+    Select = 0x04,
+    Start  = 0x08,
+    Up     = 0x10,
+    Down   = 0x20,
+    Left   = 0x40,
+    Right  = 0x80,
   };
 }
 
 class JOY_Standard final : public Memory, public Serializable {
 private:
   bool strobe = false;
-  uint curr_btn = 0; // from 0 - 7
-
-  union {
-    u8 step [8];
-    struct {
-      u8 A;
-      u8 B;
-      u8 Select;
-      u8 Start;
-      u8 Up;
-      u8 Down;
-      u8 Left;
-      u8 Right;
-    } btn;
-  } buttons;
+  u8 curr_btn = 0x01;
+  u8 buttons = 0;
 
   const char* label;
 
@@ -54,6 +41,6 @@ public:
   void write(u16 addr, u8 val) override;
   // </Memory>
 
-  void set_button(JOY_Standard_Button::Type btn, bool state);
+  void set_button(JOY_Standard_Button::Type btn, bool active);
   bool get_button(JOY_Standard_Button::Type btn) const;
 };

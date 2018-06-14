@@ -28,6 +28,8 @@ extern "C" {
 constexpr uint RES_X = 256;
 constexpr uint RES_Y = 240;
 
+constexpr uint SCREEN_SCALE = 2;
+
 int SDL_GUI::init(int argc, char* argv[]) {
   fprintf(stderr, "[SDL2] Starting SDL2 GUI\n");
   // --------------------------- Argument Parsing --------------------------- //
@@ -87,8 +89,8 @@ int SDL_GUI::init(int argc, char* argv[]) {
 
   // ------------------------------ Init SDL2 ------------------------------- //
 
-  const int window_w = RES_X * 2;
-  const int window_h = RES_Y * 2;
+  const int window_w = RES_X * SCREEN_SCALE;
+  const int window_h = RES_Y * SCREEN_SCALE;
 
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
 
@@ -177,7 +179,7 @@ int SDL_GUI::init(int argc, char* argv[]) {
   } else {
     // plug in physical nes controllers
     this->nes.attach_joy(0, &joy_1);
-    this->nes.attach_joy(1, &joy_2);
+    this->nes.attach_joy(1, &zap_2);
   }
 
   // Load ROM if one has been passed as param
@@ -333,6 +335,23 @@ void SDL_GUI::update_input_nes_joypads(const SDL_Event& event) {
     // case SDLK_LEFT:   this->joy_2.set_button(Left,   new_state); break;
     // case SDLK_RIGHT:  this->joy_2.set_button(Right,  new_state); break;
     // }
+  }
+
+  // Update from Mouse
+  if (event.type == SDL_MOUSEMOTION) {
+    // getting the light from the screen is a bit trickier...
+    const u8* screen = this->nes.getFramebuff();
+    const uint offset = (256 * 4 * (event.motion.y / SCREEN_SCALE))
+                      + (event.motion.x / SCREEN_SCALE) * 4;
+    const bool new_light = screen[offset+ 0]  // R
+                         | screen[offset+ 1]  // G
+                         | screen[offset+ 2]; // B
+    this->zap_2.set_light(new_light);
+  }
+
+  if (event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP) {
+    bool new_state = (event.type == SDL_MOUSEBUTTONDOWN) ? true : false;
+    this->zap_2.set_trigger(new_state);
   }
 }
 
@@ -597,7 +616,7 @@ void SDL_GUI::output_menu() {
 
     SDL2_inprint::incolor(color, /* unused */ 0);
     SDL2_inprint::inprint(this->sdl.renderer, file.name,
-      10, this->sdl.bg.h / 2 + (i - this->menu.selected_i) * 12
+      10, this->sdl.bg.h / SCREEN_SCALE + (i - this->menu.selected_i) * 12
     );
   }
 }

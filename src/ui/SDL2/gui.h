@@ -5,6 +5,7 @@
 
 #include "nes/cartridge/cartridge.h"
 #include "nes/joy/controllers/standard.h"
+#include "nes/joy/controllers/zapper.h"
 #include "nes/nes.h"
 
 #include "movies/fm2/record.h"
@@ -68,8 +69,10 @@ private:
   /*------------------------------  NES Things  ------------------------------*/
   NES nes;
   Cartridge* cart = nullptr;
+
   JOY_Standard joy_1 = JOY_Standard("P1");
   JOY_Standard joy_2 = JOY_Standard("P2");
+  JOY_Zapper   zap_2 = JOY_Zapper("Z2");
 
   // Movie Controllers
   FM2_Replay fm2_replay;
