@@ -16,21 +16,24 @@
 
 #include <cute_files.h>
 
-struct ANESE_Args {
-  bool log_cpu;
-  bool reset_sav;
-  bool ppu_timing_hack;
-
-  std::string record_fm2_path;
-  std::string replay_fm2_path;
-
-  std::string rom;
-};
+/**
+ * Implementations are strewn-across multiple files, as having everything in a
+ * single file became unwieldy.
+ */
 
 class SDL_GUI final {
 private:
   // Command-line args
-  ANESE_Args args;
+  struct {
+    bool log_cpu;
+    bool reset_sav;
+    bool ppu_timing_hack;
+
+    std::string record_fm2_path;
+    std::string replay_fm2_path;
+
+    std::string rom;
+  } args;
 
   /*------------------------------  SDL Things  ------------------------------*/
   bool sdl_running = true;
@@ -52,38 +55,48 @@ private:
 
   /*------------------------------  UI Things  -------------------------------*/
 
-  char current_rom_file [256] = "\0";
-
-  bool in_menu = true;
   struct {
-    std::vector<cf_file_t> files;
-    char directory [256] = ".";
-    bool should_update_dir = true;
-    uint selected_i = 0;
+    char current_rom_file [256] = "\0";
+
+    bool in_menu = true;
     struct {
-      bool enter, up, down, left, right;
-      char last_ascii;
-    } hit = {0, 0, 0, 0, 0, 0};
-  } menu;
+      std::vector<cf_file_t> files;
+      char directory [256] = ".";
+      bool should_update_dir = true;
+      uint selected_i = 0;
+      struct {
+        bool enter, up, down, left, right;
+        char last_ascii;
+      } hit = {0, 0, 0, 0, 0, 0};
+    } menu;
+  } ui;
+
+  uint RES_X = 256;
+  uint RES_Y = 240;
+
+  uint SCREEN_SCALE = 2;
 
   /*------------------------------  NES Things  ------------------------------*/
-  NES nes;
-  Cartridge* cart = nullptr;
 
-  JOY_Standard joy_1 = JOY_Standard("P1");
-  JOY_Standard joy_2 = JOY_Standard("P2");
-  JOY_Zapper   zap_2 = JOY_Zapper("Z2");
+  struct {
+    NES console;
+    Cartridge* cart = nullptr;
 
-  // Movie Controllers
-  FM2_Replay fm2_replay;
-  FM2_Record fm2_record;
+    JOY_Standard joy_1 = JOY_Standard("P1");
+    JOY_Standard joy_2 = JOY_Standard("P2");
+    JOY_Zapper   zap_2 = JOY_Zapper("Z2");
 
-  // Savestates
-  const Serializable::Chunk* savestate [4] = { nullptr };
+    // Movie Controllers
+    FM2_Replay fm2_replay;
+    FM2_Record fm2_record;
 
-  // Speed-Control
-  uint speedup = 100;
-  int  speed_counter = 0;
+    // Savestates
+    const Serializable::Chunk* savestate [4] = { nullptr };
+
+    // Speed-Control
+    uint speedup = 100;
+    int  speed_counter = 0;
+  } nes;
 
 private:
   int load_rom(const char* rompath);
