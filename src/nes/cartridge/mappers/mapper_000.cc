@@ -3,37 +3,9 @@
 #include <cassert>
 #include <cstdio>
 
-Mapper_000::Mapper_000(const ROM_File& rom_file) : Mapper(0, "NROM") {
-  this->mirror_mode = rom_file.meta.mirror_mode;
-
-  // ---- PRG ROM ---- //
-
-  if (rom_file.rom.prg.len == 0x8000) {
-    // There are two banks, 8k each
-    this->prg_lo = new ROM (0x4000, rom_file.rom.prg.data + 0x0000);
-    this->prg_hi = new ROM (0x4000, rom_file.rom.prg.data + 0x4000);
-  } else {
-    // prg_lo == prg_hi
-    this->prg_lo = new ROM (0x4000, rom_file.rom.prg.data + 0x0000);
-    this->prg_hi = new ROM (0x4000, rom_file.rom.prg.data + 0x0000);
-  }
-
-  // ---- CHR ROM ---- //
-
-  if (rom_file.rom.chr.len == 0)
-    fprintf(stderr, "[Mapper_000] No CHR ROM detected. Using 8K CHR RAM\n");
-
-  // If there is no chr_rom, then intitialize chr_ram
-  this->chr_mem = (rom_file.rom.chr.len == 0x2000)
-    ? (Memory*)new ROM (0x2000, rom_file.rom.chr.data)
-    : (Memory*)new RAM (0x2000);
-}
-
-Mapper_000::~Mapper_000() {
-  delete this->prg_lo;
-  delete this->prg_hi;
-  delete this->chr_mem;
-}
+Mapper_000::Mapper_000(const ROM_File& rom_file)
+: Mapper(0, "NROM", rom_file, 0x4000, 0x2000)
+{ this->mirror_mode = rom_file.meta.mirror_mode; }
 
 // reading has no side-effects
 u8 Mapper_000::read(u16 addr) { return this->peek(addr); }
@@ -56,4 +28,11 @@ void Mapper_000::write(u16 addr, u8 val) {
   if (in_range(addr, 0x0000, 0x1FFF)) {
     this->chr_mem->write(addr, val);
   }
+}
+
+void Mapper_000::update_banks() {
+  this->prg_lo = &this->get_prg_bank(0);
+  this->prg_hi = &this->get_prg_bank(1); // Same as bank 0 when only 16K PRG ROM
+
+  this->chr_mem = &this->get_chr_bank(0);
 }

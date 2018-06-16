@@ -9,19 +9,6 @@
 // https://wiki.nesdev.com/w/index.php/MMC3
 class Mapper_004 final : public Mapper {
 private:
-  // Banked ROMs
-  struct {
-    struct {
-      uint  len;
-      ROM** bank; // Only ever ROM
-    } prg;
-
-    struct {
-      uint     len;
-      Memory** bank; // Might be RAM (rarely on MMC3 though)
-    } chr;
-  } banks;
-
   // CPU Memory Space
 
   // 0x6000 ... 0x7FFF: 8 KB PRG RAM bank
@@ -149,18 +136,15 @@ private:
 
   void update_banks() override;
 
-  SERIALIZE_START(4 + this->banks.chr.len, "Mapper_004")
+  void power_cycle() override;
+  void reset() override;
+
+  SERIALIZE_PARENT(Mapper)
+  SERIALIZE_START(3, "Mapper_004")
     SERIALIZE_SERIALIZABLE(prg_ram)
     SERIALIZE_SERIALIZABLE_PTR(four_screen_ram)
-    SERIALIZE_CUSTOM() {
-      for (uint j = 0; j < this->banks.chr.len; j++) {
-        RAM* bank = dynamic_cast<RAM*>(this->banks.chr.bank[j]);
-        SERIALIZE_SERIALIZABLE_PTR(bank)
-      }
-    }
     SERIALIZE_POD(reg)
-    SERIALIZE_POD(fourscreen_mirroring)
-  SERIALIZE_END(4 + this->banks.chr.len)
+  SERIALIZE_END(3)
 
 public:
   Mapper_004(const ROM_File& rom_file);

@@ -68,6 +68,8 @@ void NES::power_cycle() {
   this->cpu.power_cycle();
   this->ppu.power_cycle();
 
+  if (this->cart) this->cart->power_cycle();
+
   this->cpu_wram.clear();
   this->ppu_pram.clear();
   this->ppu_vram.clear();
@@ -87,6 +89,8 @@ void NES::reset() {
   this->apu.reset();
   this->cpu.reset();
   this->ppu.reset();
+
+  if (this->cart) this->cart->reset();
 
   this->interrupts.clear();
   this->interrupts.request(Interrupts::RESET);

@@ -9,18 +9,11 @@
 // https://wiki.nesdev.com/w/index.php/AxROM
 class Mapper_007 final : public Mapper {
 private:
-  // const INES& rom_file; // inherited from Mapper
-
-  // Banked ROMs
-  struct {
-    struct {
-      uint  len;
-      ROM** bank;
-    } prg;
-  } banks;
-
   // CPU Memory Space
-  ROM* prg_rom; // 0x8000 ... 0xFFFF - 32 KB switchable PRG ROM bank
+  // 0x8000 ... 0xFFFF - 32 KB switchable PRG ROM bank
+  // Split into two ROM* to handle case where only 16 KB of ROM exists
+  ROM* prg_lo; // 0x8000 ... 0xBFFF - 32 KB switchable PRG ROM bank
+  ROM* prg_hi; // 0xC000 ... 0xFFFF - 32 KB switchable PRG ROM bank
 
   // PPU Memory Space
   Memory* chr_mem; // 0x0000 ... 0x1FFF
@@ -42,14 +35,15 @@ private:
 
   void update_banks() override;
 
-  SERIALIZE_START(2, "Mapper_007")
+  void reset() override;
+
+  SERIALIZE_PARENT(Mapper)
+  SERIALIZE_START(1, "Mapper_007")
     SERIALIZE_POD(reg)
-    SERIALIZE_SERIALIZABLE_PTR(dynamic_cast<RAM*>(chr_mem))
-  SERIALIZE_END(2)
+  SERIALIZE_END(1)
 
 public:
   Mapper_007(const ROM_File& rom_file);
-  ~Mapper_007();
 
   // <Memory>
   u8 peek(u16 addr) const override;

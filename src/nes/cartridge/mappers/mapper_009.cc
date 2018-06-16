@@ -4,63 +4,10 @@
 #include <cstdio>
 #include <cstring>
 
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UNTESTED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! //
-
 Mapper_009::Mapper_009(const ROM_File& rom_file)
-: Mapper(9, "MMC2")
+: Mapper(9, "MMC2", rom_file, 0x2000, 0x1000)
 , prg_ram(0x2000)
-{
-  // Clear registers
-  memset(&this->reg, 0, sizeof this->reg);
-  this->reg.latch[0] = 1;
-  this->reg.latch[1] = 1;
-
-  // ---- PRG ROM ---- //
-
-  // Split PRG ROM into 8K banks
-  this->banks.prg.len = rom_file.rom.prg.len / 0x2000;
-  this->banks.prg.bank = new ROM* [this->banks.prg.len];
-
-  fprintf(stderr, "[Mapper_009] 8K PRG ROM Banks: %u\n", this->banks.prg.len);
-
-  const u8* prg_data_p = rom_file.rom.prg.data;
-  for (uint i = 0; i < this->banks.prg.len; i++) {
-    this->banks.prg.bank[i] = new ROM (0x2000, prg_data_p, "Mapper_009 PRG");
-    prg_data_p += 0x2000;
-  }
-
-  // ---- CHR ROM ---- //
-  // Never CHR RAM
-  if (rom_file.rom.chr.len == 0) {
-    fprintf(stderr, "[Mapper_009] No CHR ROM, this shouldn't happen!\n");
-    assert(false);
-  }
-
-  // Split CHR ROM into 4K banks
-  this->banks.chr.len = rom_file.rom.chr.len / 0x1000;
-  this->banks.chr.bank = new ROM* [this->banks.chr.len];
-
-  fprintf(stderr, "[Mapper_009] 4K CHR ROM Banks: %u\n", this->banks.chr.len);
-
-  const u8* chr_data_p = rom_file.rom.chr.data;
-  for (uint i = 0; i < this->banks.chr.len; i++) {
-    this->banks.chr.bank[i] = new ROM (0x1000, chr_data_p, "Mapper_009 CHR");
-    chr_data_p += 0x1000;
-  }
-
-  this->update_banks();
-}
-
-Mapper_009::~Mapper_009() {
-  for (uint i = 0; i < this->banks.prg.len; i++)
-    delete this->banks.prg.bank[i];
-  delete[] this->banks.prg.bank;
-
-  for (uint i = 0; i < this->banks.chr.len; i++)
-    delete this->banks.chr.bank[i];
-  delete[] this->banks.chr.bank;
-}
-
+{}
 
 u8 Mapper_009::read(u16 addr) {
   // Interestingly enough, MMC2 has bank-switching behavior on certain reads!
@@ -119,23 +66,27 @@ void Mapper_009::write(u16 addr, u8 val) {
 void Mapper_009::update_banks() {
   // Update PRG Banks
   // Swappable first PRG ROM bank
-  const uint prg_len = this->banks.prg.len;
-  this->prg_rom[0] = this->banks.prg.bank[this->reg.prg.bank % prg_len];
+  this->prg_rom[0] = &this->get_prg_bank(this->reg.prg.bank);
   // Fix last-3 PRG ROM banks
-  this->prg_rom[1] = this->banks.prg.bank[prg_len - 3];
-  this->prg_rom[2] = this->banks.prg.bank[prg_len - 2];
-  this->prg_rom[3] = this->banks.prg.bank[prg_len - 1];
+  this->prg_rom[1] = &this->get_prg_bank(this->get_prg_bank_len() - 3);
+  this->prg_rom[2] = &this->get_prg_bank(this->get_prg_bank_len() - 2);
+  this->prg_rom[3] = &this->get_prg_bank(this->get_prg_bank_len() - 1);
 
   // Update CHR Banks
-  const uint chr_len = this->banks.chr.len;
-  this->chr_rom.lo[0] = this->banks.chr.bank[this->reg.chr.lo[0].bank % chr_len];
-  this->chr_rom.lo[1] = this->banks.chr.bank[this->reg.chr.lo[1].bank % chr_len];
-  this->chr_rom.hi[0] = this->banks.chr.bank[this->reg.chr.hi[0].bank % chr_len];
-  this->chr_rom.hi[1] = this->banks.chr.bank[this->reg.chr.hi[1].bank % chr_len];
+  this->chr_rom.lo[0] = &this->get_chr_bank(this->reg.chr.lo[0].bank);
+  this->chr_rom.lo[1] = &this->get_chr_bank(this->reg.chr.lo[1].bank);
+  this->chr_rom.hi[0] = &this->get_chr_bank(this->reg.chr.hi[0].bank);
+  this->chr_rom.hi[1] = &this->get_chr_bank(this->reg.chr.hi[1].bank);
 }
 
 Mirroring::Type Mapper_009::mirroring() const {
   return this->reg.mirroring
     ? Mirroring::Horizontal
     : Mirroring::Vertical;
+}
+
+void Mapper_009::reset() {
+  memset(&this->reg, 0, sizeof this->reg);
+  this->reg.latch[0] = 1;
+  this->reg.latch[1] = 1;
 }

@@ -6,20 +6,10 @@
 #include "common/util.h"
 #include "../mapper.h"
 
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UNTESTED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! //
-
 // https://wiki.nesdev.com/w/index.php/MMC2
 // Only used for Mike Tyson's Punchout
 class Mapper_009 final : public Mapper {
 private:
-  // Banked ROMs
-  struct {
-    struct {
-      uint  len;
-      ROM** bank;
-    } prg, chr;
-  } banks;
-
   // CPU Memory Space
   // 0x6000 ... 0x7FFF - Fixed RAM
   RAM  prg_ram;
@@ -29,8 +19,8 @@ private:
 
   // PPU Memory Space
   struct {
-    ROM* lo [2]; // 0x0000 ... 0x0FFF - Switchable b/w 2 4k banks
-    ROM* hi [2]; // 0x1000 ... 0x1FFF - Switchable b/w 2 4k banks
+    Memory* lo [2]; // 0x0000 ... 0x0FFF - Switchable b/w 2 4k banks
+    Memory* hi [2]; // 0x1000 ... 0x1FFF - Switchable b/w 2 4k banks
   } chr_rom;
 
   struct { // Registers
@@ -74,6 +64,9 @@ private:
 
   void update_banks() override;
 
+  void reset() override;
+
+  SERIALIZE_PARENT(Mapper)
   SERIALIZE_START(2, "Mapper_009")
     SERIALIZE_SERIALIZABLE(prg_ram)
     SERIALIZE_POD(reg)
@@ -81,7 +74,6 @@ private:
 
 public:
   Mapper_009(const ROM_File& rom_file);
-  ~Mapper_009();
 
   // <Memory>
   u8 read(u16 addr) override;

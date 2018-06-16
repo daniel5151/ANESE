@@ -9,20 +9,12 @@
 // https://wiki.nesdev.com/w/index.php/UxROM
 class Mapper_002 final : public Mapper {
 private:
-  // Banked ROMs
-  struct {
-    struct {
-      uint  len;
-      ROM** bank;
-    } prg;
-  } banks;
-
   // CPU Memory Space
   ROM* prg_lo;     // 0x8000 ... 0xBFFF - Switchable
   ROM* prg_hi;     // 0xC000 ... 0xFFFF - Fixed
 
   // PPU Memory Space
-  Memory* chr_mem; // 0x0000 ... 0x1FFF - Switchable
+  Memory* chr_mem; // 0x0000 ... 0x1FFF
 
   struct { // Registers
     // Bank select - 0x8000 ... 0xFFFF
@@ -40,13 +32,13 @@ private:
     // To make use of all 8-bits for a 4 MB PRG ROM, an NES 2.0 header must be
     // used (iNES can only effectively go to 2 MB).
     //
+    // ANESE will just give it the entire 8 bits...
+    //
     // The original UxROM boards used by Nintendo were subject to bus conflicts,
     // and the relevant games all work around this in software. Some emulators
     // (notably FCEUX) will have bus conflicts by default, but others have none.
     // NES 2.0 submappers were assigned to accurately specify whether the game
     // should be emulated with bus conflicts.
-    //
-    // ANESE will just give it the entire 8 bits...
     u8 bank_select;
   } reg;
 
@@ -54,15 +46,16 @@ private:
 
   void update_banks() override;
 
-  SERIALIZE_START(3, "Mapper_002")
+  SERIALIZE_PARENT(Mapper)
+  SERIALIZE_START(2, "Mapper_002")
     SERIALIZE_POD(mirror_mode)
     SERIALIZE_POD(reg)
-    SERIALIZE_SERIALIZABLE_PTR(dynamic_cast<RAM*>(chr_mem))
-  SERIALIZE_END(3)
+  SERIALIZE_END(2)
+
+  void reset() override;
 
 public:
   Mapper_002(const ROM_File& rom_file);
-  ~Mapper_002();
 
   // <Memory>
   u8 peek(u16 addr) const override;

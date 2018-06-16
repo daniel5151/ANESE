@@ -5,81 +5,9 @@
 #include <cstring>
 
 Mapper_001::Mapper_001(const ROM_File& rom_file)
-: Mapper(1, "MMC1")
+: Mapper(1, "MMC1", rom_file, 0x4000, 0x1000)
 , prg_ram(0x2000)
-{
-  // Clear registers
-  memset(&this->reg, 0, sizeof this->reg);
-  this->reg.sr = 0x10;
-
-  // This isn't documented anywhere, but seems to be needed...
-  this->reg.control.prg_bank_mode = 3;
-
-  // Check iNES header for initial mirroring mode
-  switch(rom_file.meta.mirror_mode) {
-  case Mirroring::SingleScreenLo: this->reg.control.mirroring = 0; break;
-  case Mirroring::SingleScreenHi: this->reg.control.mirroring = 1; break;
-  case Mirroring::Vertical:       this->reg.control.mirroring = 2; break;
-  case Mirroring::Horizontal:     this->reg.control.mirroring = 3; break;
-  default:
-    fprintf(stderr, "[Mapper_001] Invalid initial mirroring mode!\n");
-    assert(false);
-    break;
-  }
-
-  // ---- PRG ROM ---- //
-
-  // Split PRG ROM into 16K banks
-  this->banks.prg.len = rom_file.rom.prg.len / 0x4000;
-  this->banks.prg.bank = new ROM* [this->banks.prg.len];
-
-  fprintf(stderr, "[Mapper_001] 16K PRG ROM Banks: %u\n", this->banks.prg.len);
-
-  const u8* prg_data_p = rom_file.rom.prg.data;
-  for (uint i = 0; i < this->banks.prg.len; i++) {
-    this->banks.prg.bank[i] = new ROM (0x4000, prg_data_p, "Mapper_001 PRG");
-    prg_data_p += 0x4000;
-  }
-
-  // ---- CHR ROM ---- //
-
-  if (rom_file.rom.chr.len != 0) {
-    // Split CHR ROM into 4K banks
-    this->banks.chr.len = rom_file.rom.chr.len / 0x1000;
-    this->banks.chr.bank = new Memory* [this->banks.chr.len];
-
-    fprintf(stderr, "[Mapper_001] 4K  CHR ROM Banks: %u\n", this->banks.chr.len);
-
-    const u8* chr_data_p = rom_file.rom.chr.data;
-    for (uint i = 0; i < this->banks.chr.len; i++) {
-      this->banks.chr.bank[i] = new ROM (0x1000, chr_data_p, "Mapper_001 CHR");
-      chr_data_p += 0x1000;
-    }
-  } else {
-    // use CHR RAM
-    fprintf(stderr, "[Mapper_001] No CHR ROM detected. Using 8K CHR RAM\n");
-
-    this->banks.chr.len = 2;
-    this->banks.chr.bank = new Memory* [2];
-    this->banks.chr.bank[0] = new RAM (0x1000, "Mapper_001 CHR RAM Lo");
-    this->banks.chr.bank[1] = new RAM (0x1000, "Mapper_001 CHR RAM Hi");
-  }
-
-  this->update_banks();
-
-  // ---- Emulation Vars ---- //
-  this->write_just_happened = 0;
-}
-
-Mapper_001::~Mapper_001() {
-  for (uint i = 0; i < this->banks.prg.len; i++)
-    delete this->banks.prg.bank[i];
-  delete[] this->banks.prg.bank;
-
-  for (uint i = 0; i < this->banks.chr.len; i++)
-    delete this->banks.chr.bank[i];
-  delete[] this->banks.chr.bank;
-}
+{ this->initial_mirror_mode = rom_file.meta.mirror_mode; }
 
 // reading has no side-effects
 u8 Mapper_001::peek(u16 addr) const {
@@ -163,22 +91,21 @@ void Mapper_001::write(u16 addr, u8 val) {
 
 void Mapper_001::update_banks() {
   // Update PRG Banks
-  const uint prgbank = this->reg.prg.bank % this->banks.prg.len;
   switch(u8(this->reg.control.prg_bank_mode)) {
   case 0: case 1: {
     // switch 32 KB at $8000, ignoring low bit of bank number
-    this->prg_lo = this->banks.prg.bank[prgbank & 0xFE];
-    this->prg_hi = this->banks.prg.bank[prgbank | 0x01];
+    this->prg_lo = &this->get_prg_bank(this->reg.prg.bank & 0xFE);
+    this->prg_hi = &this->get_prg_bank(this->reg.prg.bank | 0x01);
   } break;
   case 2: {
     // fix first bank at $8000 and switch 16 KB bank at $C000;
-    this->prg_lo = this->banks.prg.bank[0];
-    this->prg_hi = this->banks.prg.bank[prgbank];
+    this->prg_lo = &this->get_prg_bank(0);
+    this->prg_hi = &this->get_prg_bank(this->reg.prg.bank);
   } break;
   case 3: {
     // fix last bank at $C000 and switch 16 KB bank at $8000
-    this->prg_lo = this->banks.prg.bank[prgbank];
-    this->prg_hi = this->banks.prg.bank[this->banks.prg.len - 1];
+    this->prg_lo = &this->get_prg_bank(this->reg.prg.bank);
+    this->prg_hi = &this->get_prg_bank(this->get_prg_bank_len() - 1);
   } break;
   default:
     // This should never happen. 2 bits == 4 possible states.
@@ -189,16 +116,14 @@ void Mapper_001::update_banks() {
   }
 
   // Update CHR Banks
-  const uint bank0 = this->reg.chr0.bank % this->banks.chr.len;
-  const uint bank1 = this->reg.chr1.bank % this->banks.chr.len;
   if (this->reg.control.chr_bank_mode == 0) {
     // switch 8 KB at a time (ignoring low bit)
-    this->chr_lo = this->banks.chr.bank[bank0 & 0xFE];
-    this->chr_hi = this->banks.chr.bank[bank0 | 0x01];
+    this->chr_lo = &this->get_chr_bank(this->reg.chr0.bank & 0xFE);
+    this->chr_hi = &this->get_chr_bank(this->reg.chr0.bank | 0x01);
   } else {
     // switch two separate 4 KB banks
-    this->chr_lo = this->banks.chr.bank[bank0];
-    this->chr_hi = this->banks.chr.bank[bank1];
+    this->chr_lo = &this->get_chr_bank(this->reg.chr0.bank);
+    this->chr_hi = &this->get_chr_bank(this->reg.chr1.bank);
   }
 }
 
@@ -221,3 +146,29 @@ void Mapper_001::cycle() {
   if (this->write_just_happened)
     this->write_just_happened--;
 }
+
+void Mapper_001::power_cycle() {
+  this->write_just_happened = 0;
+  Mapper::power_cycle();
+}
+
+void Mapper_001::reset() {
+  memset(&this->reg, 0, sizeof this->reg);
+  this->reg.sr = 0x10;
+
+  // This isn't documented anywhere, but seems to be needed...
+  this->reg.control.prg_bank_mode = 3;
+
+  // Set back to initial mirroring mode
+  switch(this->initial_mirror_mode) {
+  case Mirroring::SingleScreenLo: this->reg.control.mirroring = 0; break;
+  case Mirroring::SingleScreenHi: this->reg.control.mirroring = 1; break;
+  case Mirroring::Vertical:       this->reg.control.mirroring = 2; break;
+  case Mirroring::Horizontal:     this->reg.control.mirroring = 3; break;
+  default:
+    fprintf(stderr, "[Mapper_001] Invalid initial mirroring mode!\n");
+    assert(false);
+    break;
+  }
+}
+

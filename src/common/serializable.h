@@ -7,9 +7,9 @@
 #include <cstdio>
 
 // A DIY data-serialization system.
-// Incredibly hacky, and a true abuse of C++'s typesystem (or lack thereof).
-// But hey, it works!
-
+// Incredibly hacky, super brittle, and a true abuse of C++'s typesystem.
+// Beautiful.
+//
 // Caveats:
 // --------
 // 1) The chunks are _not_ tagged, so serialization order must be preserved!
@@ -20,22 +20,18 @@
 // 3) Circular dependencies break everything (i.e: bad things will happen when
 //     serialize() gets called on A, thus calling serialize() on member B, who
 //     holds a referance to A... You'll blow the stack, and that's bad)
-// 4) `Serializable` Inheritence is not handled _nicely_, with one having to
+// 4) `Serializable` inheritence is not handled _nicely_, with one having to
 //    manually override de/serialize functions with calls to the parent funcs,
 //    performing the chunk-manipulation manually.
-// 5) Fields have a maximum length of UINT32_MAX (uint is typedef for uint32_t)
-//    (this probably won't be an issue though haha)
-
+//
 // Dangerous Shenanigans that should be AVOIDED
 // --------------------------------------------
-// - Defining something to be serialized with 0 fields is undefined behavior,
-//    and will probably break things.
 // - Calling de/serialize in the constructor/destructor can be dangeous, as some
 //    fields (notably SERIALIZE_ARRAY_VARIABLE and SERIALIZE_SERIALIZABLE(_PTR))
 //    may not be instatiated yet.
 //   Tread carefully.
-
-// Usage:
+//
+// Basic Usage:
 // ------
 // Say we have the following class:
 // ```
@@ -94,9 +90,19 @@
 //
 // Advanced:
 // ---------
-// If a class need to preform some actions post / pre de/serialize, you can
-// override the serilization methods and add custom behavior, being careful to
-// call the parent de/serialize function appropriately!
+// - If a class need to preform some actions post / pre de/serialize, you can
+//   override the serilization methods and add custom behavior.
+//     - **Be Careful:** when overriding de/serialize functions, make sure to
+//       call the parent class's de/serialize functions, or else the class will
+//       not properly serialize!
+// - If you inherit from an object that is already Serializable, make sure that
+//   you add the SERIALIZE_PARENT(BaseClass) macro before SERIALIZE_START.
+//   This tells Serializable to also serialize whatever state the parent had
+//     - _Caveat:_ There is no support for multiple inheritence at the moment
+// - Since everything is just regular ol C++ under the hood, you can implement
+//   custom serialization routines (outside of the predefined macros). When
+//   doing so, express intent by wrapping the custom implementation in a
+//   SERIALIZE_CUSTOM() {} block
 //
 // That's it!
 // Have fun!
@@ -168,38 +174,62 @@ protected:
     data = nothing;
     len = 1;
   }
+
+  // This potentially gets _hidden_ (not overwritten) through macros
+  void _get_parent_serializable_state(const _field_data*& data, uint& len) const {
+    data = nullptr;
+    len = 0;
+  }
 };
 
-// The macros themselves
+/*============================================
+=            Serialization Macros            =
+============================================*/
+
+/*---------------------------  Boilerplate Macros  ---------------------------*/
+
+#define SERIALIZE_PARENT(BaseClass)                                            \
+  void _get_parent_serializable_state(                                         \
+    const Serializable::_field_data*& data, uint& len                          \
+  ) const { this->BaseClass::_get_serializable_state(data, len); }
 
 #define SERIALIZE_START(n, label)                                              \
   void _get_serializable_state(                                                \
-    const Serializable::_field_data*& data,                                    \
-    uint& len                                                                  \
+    const Serializable::_field_data*& data, uint& len                          \
   ) const override {                                                           \
+    const char* chunk_label = (label);                                         \
     if ((n) <= 0) {                                                            \
-      fprintf(stderr, "[Serializable] Error: Cannot have %d fields\n", (n));   \
+      fprintf(stderr, "[Serializable][%s] Error: Cannot have %d fields\n",     \
+        chunk_label, (n));                                                     \
       assert(false);                                                           \
     }                                                                          \
-    /* MSVC is a lil bitch, and has a compiler error when performing */        \
-    /* aggregate instantiation with the new[] operator on user-defined types */\
-    /* Instead, we have to do this less elegant method... */                   \
-    Serializable::_field_data* new_state                                       \
-      = new Serializable::_field_data [(n)];                                   \
+    /* If SERIALIZE_PARENT() was called, this should return be non-null */     \
+    const Serializable::_field_data* parent_data = nullptr;                    \
+    uint parent_len = 0;                                                       \
+    this->_get_parent_serializable_state(parent_data, parent_len);             \
+                                                                               \
+    len = (n) + parent_len;                                                    \
     uint i = 0;                                                                \
-    const char* chunk_label = (label);                                         \
-    /* ... SERIALIZE_BLAHBLAHBLAH() ... */
+    Serializable::_field_data* new_state                                       \
+      = new Serializable::_field_data [len];                                   \
+                                                                               \
+    for (;i < parent_len;i++)                                                  \
+      new_state[i] = parent_data[i];                                           \
+    delete[] parent_data;                                                      \
+    /* ... calls to SERIALIZE_XXX() ... */
 
 #define SERIALIZE_END(n)                                                       \
     data = new_state;                                                          \
-    len = (n);                                                                 \
     /* sanity check */                                                         \
     if (len != i) {                                                            \
-      fprintf(stderr, "[Serializable] Error: Mismatch between #fields declared"\
-                      " and #fields defined!\n");                              \
+      fprintf(stderr, "[Serializable][%s] Mismatch between #fields declared"   \
+                      " and #fields defined! %u != %u\n",                      \
+                      chunk_label, len - parent_len, i - parent_len);          \
       assert(false);                                                           \
     }                                                                          \
   };
+
+/*-----------------------  Serialize Datatypes Macros  -----------------------*/
 
 #ifdef _WIN32
   const char slash = '\\';
@@ -231,8 +261,8 @@ protected:
     0, 0                                                             \
   };                                                                 \
   if (new_state[i-1].thing == nullptr)                               \
-    fprintf(stderr, "[Serializable] Warning: could not cast `" #item \
-                    "` down to Serializable!\n");
+    fprintf(stderr, "[Serializable][%s] Warning: could not cast `" #item \
+                    "` down to Serializable!\n", chunk_label);
 
 #define SERIALIZE_SERIALIZABLE_PTR(thingptr)                         \
   new_state[i++] = {                                                 \
@@ -242,4 +272,4 @@ protected:
     0, 0                                                             \
   };
 
-#define SERIALIZE_CUSTOM() // literally just for intent
+#define SERIALIZE_CUSTOM() // doesn't do anything except express intent

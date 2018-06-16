@@ -5,49 +5,8 @@
 #include <cstring>
 
 Mapper_002::Mapper_002(const ROM_File& rom_file)
-: Mapper(2, "UxROM")
-{
-  // Clear registers
-  memset(&this->reg, 0, sizeof this->reg);
-
-  this->mirror_mode = rom_file.meta.mirror_mode;
-
-  // ---- PRG ROM ---- //
-
-  // Split PRG ROM into 16K banks
-  this->banks.prg.len = rom_file.rom.prg.len / 0x4000;
-  this->banks.prg.bank = new ROM* [this->banks.prg.len];
-
-  fprintf(stderr, "[Mapper_002] 16K PRG ROM Banks: %u\n", this->banks.prg.len);
-
-  const u8* prg_data_p = rom_file.rom.prg.data;
-  for (uint i = 0; i < this->banks.prg.len; i++) {
-    this->banks.prg.bank[i] = new ROM (0x4000, prg_data_p, "Mapper_002 PRG");
-    prg_data_p += 0x4000;
-  }
-
-  // Set default banks
-  this->prg_lo = this->banks.prg.bank[0];
-  this->prg_hi = this->banks.prg.bank[this->banks.prg.len - 1]; // FIXED ROM
-
-  // ---- CHR ROM ---- //
-
-  if (rom_file.rom.chr.len == 0)
-    fprintf(stderr, "[Mapper_002] No CHR ROM detected. Using 8K CHR RAM\n");
-
-  // If there is no chr_rom, then intitialize chr_ram
-  this->chr_mem = (rom_file.rom.chr.len == 0x2000)
-    ? (Memory*)new ROM (0x2000, rom_file.rom.chr.data)
-    : (Memory*)new RAM (0x2000);
-}
-
-Mapper_002::~Mapper_002() {
-  for (uint i = 0; i < this->banks.prg.len; i++)
-    delete this->banks.prg.bank[i];
-  delete[] this->banks.prg.bank;
-
-  delete this->chr_mem;
-}
+: Mapper(2, "UxROM", rom_file, 0x4000, 0x2000)
+{ this->mirror_mode = rom_file.meta.mirror_mode; }
 
 u8 Mapper_002::peek(u16 addr) const {
   // Wired to the PPU MMU
@@ -80,5 +39,12 @@ void Mapper_002::write(u16 addr, u8 val) {
 }
 
 void Mapper_002::update_banks() {
-  this->prg_lo = this->banks.prg.bank[this->reg.bank_select % this->banks.prg.len];
+  this->prg_lo = &this->get_prg_bank(this->reg.bank_select);
+  this->prg_hi = &this->get_prg_bank(this->get_prg_bank_len() - 1); // Fixed
+
+  this->chr_mem = &this->get_chr_bank(0);
+}
+
+void Mapper_002::reset() {
+  memset(&this->reg, 0, sizeof this->reg);
 }

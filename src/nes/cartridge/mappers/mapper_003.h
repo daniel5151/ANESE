@@ -9,14 +9,6 @@
 // https://wiki.nesdev.com/w/index.php/INES_Mapper_003
 class Mapper_003 final : public Mapper {
 private:
-  // Banked ROMs
-  struct {
-    struct {
-      uint     len;
-      Memory** bank;
-    } chr;
-  } banks;
-
   // CPU Memory Space
   ROM* prg_lo;     // 0x8000 ... 0xBFFF - Fixed
   ROM* prg_hi;     // 0xC000 ... 0xFFFF - Fixed
@@ -42,15 +34,16 @@ private:
 
   void update_banks() override;
 
-  SERIALIZE_START(3, "Mapper_003")
+  void reset() override;
+
+  SERIALIZE_PARENT(Mapper)
+  SERIALIZE_START(2, "Mapper_003")
     SERIALIZE_POD(mirror_mode)
     SERIALIZE_POD(reg)
-    SERIALIZE_SERIALIZABLE_PTR(dynamic_cast<RAM*>(chr_mem))
-  SERIALIZE_END(3)
+  SERIALIZE_END(2)
 
 public:
   Mapper_003(const ROM_File& rom_file);
-  ~Mapper_003();
 
   // <Memory>
   u8 peek(u16 addr) const override;

@@ -11,22 +11,26 @@
 class Mapper_000 final : public Mapper {
 private:
   // CPU Memory Space
-  ROM* prg_lo;     // 0x8000 ... 0xBFFF - Fixed
-  ROM* prg_hi;     // 0xC000 ... 0xFFFF - Fixed
+  ROM* prg_lo; // 0x8000 ... 0xBFFF - Fixed
+  ROM* prg_hi; // 0xC000 ... 0xFFFF - Fixed
 
   // PPU Memory Space
   Memory* chr_mem; // 0x0000 ... 0x1FFF - Fixed
 
   Mirroring::Type mirror_mode;
 
-  SERIALIZE_START(2, "Mapper_000")
+  SERIALIZE_PARENT(Mapper)
+  SERIALIZE_START(1, "Mapper_000")
     SERIALIZE_POD(mirror_mode)
-    SERIALIZE_SERIALIZABLE_PTR(dynamic_cast<RAM*>(chr_mem))
-  SERIALIZE_END(2)
+  SERIALIZE_END(1)
+
+  void update_banks() override;
+
+  // Nothing to reset...
+  void reset() override {}
 
 public:
   Mapper_000(const ROM_File& rom_file);
-  ~Mapper_000();
 
   // <Memory>
   u8 read(u16 addr)       override;

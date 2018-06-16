@@ -60,7 +60,7 @@ int SDL_GUI::init(int argc, char* argv[]) {
     parser.ParseCLI(argc, argv);
   } catch (args::Help) {
     std::cout << parser;
-    return 0;
+    return 1;
   } catch (args::ParseError& e) {
     std::cerr << e.what() << std::endl;
     std::cerr << parser;

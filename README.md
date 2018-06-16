@@ -168,9 +168,9 @@ the top higher on my priority list:
 - [ ] _Implement_: My own APU (don't use Blarrg's)
 - [ ] _Implement_: Robust menu system
 - [x] _Refactor_: Modularize `main.cc` - push everything into `src/ui/`
-  - [ ] _Refactor_: Split `gui.cc` into more files!
+  - [x] _Refactor_: Split `gui.cc` into more files!
 - [ ] _CMake_: Make building macOS bundles less brittle
-- [ ] _Refactor_: Push common mapper behavior to Base Mapper (eg: bank chunking)
+- [x] _Refactor_: Push common mapper behavior to Base Mapper (eg: bank chunking)
 - [ ] _Implement_: LibRetro Core
 - [ ] _Implement_: Sub-instruction cycle accurate CPU
 - [ ] _Cleanup_: Unify naming conventions (either camelCase or snake_case)

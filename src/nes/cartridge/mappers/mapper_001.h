@@ -9,19 +9,6 @@
 // https://wiki.nesdev.com/w/index.php/MMC1
 class Mapper_001 final : public Mapper {
 private:
-  // Banked ROMs
-  struct {
-    struct {
-      uint  len;
-      ROM** bank; // Only ever ROM
-    } prg;
-
-    struct {
-      uint     len;
-      Memory** bank; // Might be RAM
-    } chr;
-  } banks;
-
   // CPU Memory Space
   RAM  prg_ram; // 0x6000 ... 0x7FFF - Fixed RAM (can be disabled though)
   ROM* prg_lo;  // 0x8000 ... 0xBFFF - Switchable
@@ -92,25 +79,24 @@ private:
 
   // ---- Emulation Vars and Helpers ---- //
 
+  Mirroring::Type initial_mirror_mode;
+
   uint write_just_happened;
 
-  SERIALIZE_START(3 + this->banks.chr.len, "Mapper_001")
+  SERIALIZE_PARENT(Mapper)
+  SERIALIZE_START(3, "Mapper_001")
     SERIALIZE_SERIALIZABLE(prg_ram)
-    SERIALIZE_CUSTOM() {
-      for (uint j = 0; j < this->banks.chr.len; j++) {
-        RAM* bank = dynamic_cast<RAM*>(this->banks.chr.bank[j]);
-        SERIALIZE_SERIALIZABLE_PTR(bank)
-      }
-    }
     SERIALIZE_POD(reg)
     SERIALIZE_POD(write_just_happened)
-  SERIALIZE_END(3 + this->banks.chr.len)
+  SERIALIZE_END(3)
 
   void update_banks() override;
 
+  void power_cycle() override;
+  void reset() override;
+
 public:
   Mapper_001(const ROM_File& rom_file);
-  ~Mapper_001();
 
   // <Memory>
   u8 peek(u16 addr) const override;

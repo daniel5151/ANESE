@@ -2,6 +2,8 @@
 
 // #define fprintf(...) // disable spam
 
+/*----------  Serializable Chunk Implementation  ----------*/
+
 Serializable::Chunk::~Chunk() {
   delete this->data;
   delete this->next;
@@ -87,6 +89,8 @@ const Serializable::Chunk* Serializable::Chunk::parse(const u8* data, uint len) 
 
   return head;
 }
+
+/*--------------------------  De/Serialize Methods  --------------------------*/
 
 static char indent_buf [256] = {0};
 static uint indent_i = 0;

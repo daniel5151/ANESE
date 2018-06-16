@@ -5,70 +5,19 @@
 #include <cstring>
 
 Mapper_004::Mapper_004(const ROM_File& rom_file)
-: Mapper(4, "MMC3")
+: Mapper(4, "MMC3", rom_file, 0x2000, 0x400)
 , prg_ram(0x2000)
 {
-  // Clear registers
-  memset(&this->reg, 0, sizeof this->reg);
-
   this->fourscreen_mirroring = rom_file.meta.mirror_mode == Mirroring::FourScreen;
+
   if (this->fourscreen_mirroring) {
     this->four_screen_ram = new RAM (0x1000, "Mapper_004 FourScreen RAM");
   } else {
     this->four_screen_ram = nullptr;
   }
-
-  // Split up PRG ROM
-
-  // Split PRG ROM into 8K banks
-  this->banks.prg.len = rom_file.rom.prg.len / 0x2000;
-  this->banks.prg.bank = new ROM* [this->banks.prg.len];
-
-  fprintf(stderr, "[Mapper_004] 8K PRG ROM Banks: %u\n", this->banks.prg.len);
-
-  const u8* prg_data_p = rom_file.rom.prg.data;
-  for (uint i = 0; i < this->banks.prg.len; i++) {
-    this->banks.prg.bank[i] = new ROM (0x2000, prg_data_p, "Mapper_004 PRG");
-    prg_data_p += 0x2000;
-  }
-
-  // Split up CHR ROM
-
-  if (rom_file.rom.chr.len != 0) {
-    // Split CHR ROM into 1K banks
-    this->banks.chr.len = rom_file.rom.chr.len / 0x400;
-    this->banks.chr.bank = new Memory* [this->banks.chr.len];
-
-    fprintf(stderr, "[Mapper_004] 1K CHR ROM Banks: %u\n", this->banks.chr.len);
-
-    const u8* chr_data_p = rom_file.rom.chr.data;
-    for (uint i = 0; i < this->banks.chr.len; i++) {
-      this->banks.chr.bank[i] = new ROM (0x400, chr_data_p, "Mapper_004 CHR");
-      chr_data_p += 0x400;
-    }
-  } else {
-    // use CHR RAM
-    fprintf(stderr, "[Mapper_004] No CHR ROM detected. Using 8K CHR RAM\n");
-
-    this->banks.chr.len = 8;
-    this->banks.chr.bank = new Memory* [8];
-    for (uint i = 0; i < 8; i++) {
-      this->banks.chr.bank[i] = new RAM (0x400, "Mapper_004 CHR RAM");
-    }
-  }
-
-  this->update_banks();
 }
 
 Mapper_004::~Mapper_004() {
-  for (uint i = 0; i < this->banks.prg.len; i++)
-    delete this->banks.prg.bank[i];
-  delete[] this->banks.prg.bank;
-
-  for (uint i = 0; i < this->banks.chr.len; i++)
-    delete this->banks.chr.bank[i];
-  delete[] this->banks.chr.bank;
-
   if (this->four_screen_ram)
     delete four_screen_ram;
 }
@@ -177,23 +126,23 @@ void Mapper_004::write(u16 addr, u8 val) {
 void Mapper_004::update_banks() {
   // https://wiki.nesdev.com/w/index.php/MMC3#PRG_Banks
   #define PBANK(i, val) \
-    this->prg_bank[i] = this->banks.prg.bank[val % this->banks.prg.len];
+    this->prg_bank[i] = &this->get_prg_bank(val);
   if (this->reg.bank_select.prg_rom_mode == 0) {
     PBANK(0, this->reg.bank_values[6]);
     PBANK(1, this->reg.bank_values[7]);
-    PBANK(2, this->banks.prg.len - 2);
-    PBANK(3, this->banks.prg.len - 1);
+    PBANK(2, this->get_prg_bank_len() - 2);
+    PBANK(3, this->get_prg_bank_len() - 1);
   } else {
-    PBANK(0, this->banks.prg.len - 2);
+    PBANK(0, this->get_prg_bank_len() - 2);
     PBANK(1, this->reg.bank_values[7]);
     PBANK(2, this->reg.bank_values[6]);
-    PBANK(3, this->banks.prg.len - 1);
+    PBANK(3, this->get_prg_bank_len() - 1);
   }
   #undef PBANK
 
   // https://wiki.nesdev.com/w/index.php/MMC3#CHR_Banks
   #define CBANK(i, val) \
-    this->chr_bank[i] = this->banks.chr.bank[val % this->banks.chr.len];
+    this->chr_bank[i] = &this->get_chr_bank(val);
   if (this->reg.bank_select.chr_inversion == 0) {
     CBANK(0, this->reg.bank_values[0] & 0xFE);
     CBANK(1, this->reg.bank_values[0] | 0x01);
@@ -223,4 +172,13 @@ Mirroring::Type Mapper_004::mirroring() const {
   return this->reg.mirroring.mode
     ? Mirroring::Horizontal
     : Mirroring::Vertical;
+}
+
+void Mapper_004::power_cycle() {
+  this->last_A12 = false;
+  Mapper::power_cycle();
+}
+
+void Mapper_004::reset() {
+  memset(&this->reg, 0, sizeof this->reg);
 }
