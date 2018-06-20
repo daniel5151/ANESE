@@ -84,12 +84,8 @@ add_library(SDL_inprint STATIC thirdparty/SDL_inprint/inprint2.c)
 add_subdirectory(thirdparty/miniz)
 include_directories(thirdparty/miniz)
 
-# ---- args ---- #
-add_subdirectory(thirdparty/args)
-include_directories(thirdparty/args)
-
-# ---- cute_headers ---- #
-include_directories(thirdparty/cute_headers)
+# ---- header only libs ---- #
+include_directories(thirdparty/headeronly)
 
 # ---- nes_snd_emu ---- #
 include_directories(SYSTEM thirdparty/nes_snd_emu/nes_apu)
@@ -107,7 +103,6 @@ target_include_directories(nes_snd_emu PUBLIC thirdparty/nes_snd_emu)
 target_link_libraries(anese
   ${SDL2_LIBRARY}
   SDL_inprint
-  args
   miniz
   nes_snd_emu
 )

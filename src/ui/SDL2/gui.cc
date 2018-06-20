@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <iostream>
 
-#include <args.hxx>
+#include <clara.hpp>
 
 namespace SDL2_inprint {
 extern "C" {
@@ -22,63 +22,49 @@ extern "C" {
 #include "fs/load.h"
 
 int SDL_GUI::init(int argc, char* argv[]) {
-  fprintf(stderr, "[SDL2] Starting SDL2 GUI\n");
   // --------------------------- Argument Parsing --------------------------- //
 
-  // use the `args` library to parse arguments
-  args::ArgumentParser parser("ANESE - A Nintendo Entertainment System Emulator", "");
-  args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
+  bool show_help = false;
+  auto cli
+    = clara::Help(show_help)
+    | clara::Opt(this->args.log_cpu)
+        ["--log-cpu"]
+        ("Output CPU execution over STDOUT")
+    | clara::Opt(this->args.reset_sav)
+        ["--reset-sav"]
+        ("Ignore and overwrite existing sav files for all ROMs")
+    | clara::Opt(this->args.ppu_timing_hack)
+        ["--alt-nmi-timing"]
+        ("Enable NMI timing fix \n"
+         "(fixes some games, eg: Bad Dudes, Solomon's Key)")
+    | clara::Opt(this->args.record_fm2_path, "path")
+        ["--record-fm2"]
+        ("Record a movie in the fm2 format")
+    | clara::Opt(this->args.replay_fm2_path, "path")
+        ["--replay-fm2"]
+        ("Replay a movie in the fm2 format")
+    | clara::Arg(this->args.rom, "rom")
+        ("an iNES rom");
 
-  // Debug
-  args::Flag log_cpu(parser, "log-cpu",
-    "Output CPU execution over STDOUT",
-    {'c', "log-cpu"});
-
-  args::Flag reset_sav(parser, "reset-sav",
-    "Overwrite any existing save files",
-    {"reset-sav"});
-
-  // Hacks
-  args::Flag ppu_timing_hack(parser, "alt-nmi-timing",
-    "Enable NMI timing fix \n"
-    "(needed to boot some games, eg: Bad Dudes, Solomon's Key)",
-    {"alt-nmi-timing"});
-
-  // Movies
-  args::ValueFlag<std::string> record_fm2_path(parser, "path",
-    "Record a movie in the fm2 format",
-    {"record-fm2"});
-  args::ValueFlag<std::string> replay_fm2_path(parser, "path",
-    "Replay a movie in the fm2 format",
-    {"replay-fm2"});
-
-  // Essential
-  args::Positional<std::string> rom(parser, "rom",
-    "Path to a iNES rom");
-
-  try {
-    parser.ParseCLI(argc, argv);
-  } catch (args::Help) {
-    std::cout << parser;
-    return 1;
-  } catch (args::ParseError& e) {
-    std::cerr << e.what() << std::endl;
-    std::cerr << parser;
-    return 1;
-  } catch (args::ValidationError& e) {
-    std::cerr << e.what() << std::endl;
-    std::cerr << parser;
-    return 1;
+  auto result = cli.parse(clara::Args(argc, argv));
+  if(!result) {
+    std::cout << "Error: " << result.errorMessage() << "\n";
+    std::cout << cli;
+    exit(1);
   }
 
-  this->args.log_cpu = log_cpu;
-  this->args.reset_sav = reset_sav;
-  this->args.ppu_timing_hack = ppu_timing_hack;
-  this->args.record_fm2_path = args::get(record_fm2_path);
-  this->args.replay_fm2_path = args::get(replay_fm2_path);
-  this->args.rom = args::get(rom);
+  if (show_help) {
+    std::cout << cli;
+    exit(1);
+  }
+
+  // ---------------------------- Debug Switches ---------------------------- //
+
+  if (this->args.log_cpu)         { DEBUG_VARS::Get()->print_nestest = true; }
+  if (this->args.ppu_timing_hack) { DEBUG_VARS::Get()->fogleman_hack = true; }
 
   // ------------------------------ Init SDL2 ------------------------------- //
+  fprintf(stderr, "[SDL2] Initializing SDL2 GUI\n");
 
   const int window_w = RES_X * SCREEN_SCALE;
   const int window_h = RES_Y * SCREEN_SCALE;
@@ -135,11 +121,6 @@ int SDL_GUI::init(int argc, char* argv[]) {
   SDL2_inprint::inrenderer(this->sdl.renderer);
   SDL2_inprint::prepare_inline_font();
 
-  // ---------------------------- Debug Switches ---------------------------- //
-
-  if (this->args.log_cpu)         { DEBUG_VARS::Get()->print_nestest = true; }
-  if (this->args.ppu_timing_hack) { DEBUG_VARS::Get()->fogleman_hack = true; }
-
   // ---------------------------- Movie Support ----------------------------- //
 
   if (this->args.replay_fm2_path != "") {
@@ -185,6 +166,10 @@ int SDL_GUI::init(int argc, char* argv[]) {
 
 int SDL_GUI::load_rom(const char* rompath) {
   delete this->nes.cart;
+  for (uint i = 0; i < 4; i++) {
+    delete this->nes.savestate[i];
+    this->nes.savestate[i] = nullptr;
+  }
 
   fprintf(stderr, "[Load] Loading '%s'\n", rompath);
   Cartridge* cart = new Cartridge (load_rom_file(rompath));

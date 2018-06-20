@@ -293,7 +293,7 @@ sneak a peek at how others did some things when I got very stuck.
   sound as good as it does :smile:
 - These awesome libraries make ANESE a lot nicer to use:
   - [sdl2](https://www.libsdl.org/)
-  - [args](https://github.com/Taywee/args)
+  - [clara](https://github.com/catchorg/Clara)
   - [miniz](https://github.com/richgel999/miniz)
   - [cute_headers](https://github.com/RandyGaul/cute_headers/)
   - [SDL_inprint](https://github.com/driedfruit/SDL_inprint/)

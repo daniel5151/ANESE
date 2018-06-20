@@ -184,9 +184,6 @@ uint CPU::step() {
     }
   }
 
-  // Depending on what addrm this instruction uses, this will either be a u8
-  // or a u16. Thus, we use a u16 to get the value from the fn, and let
-  // individual instructions cast it to u8 when they need to.
   u16 addr = this->get_operand_addr(opcode);
 
   using namespace Instructions::Instr;
