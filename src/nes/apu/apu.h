@@ -9,7 +9,7 @@
 #include "common/serializable.h"
 
 // NES APU
-// Part of the NES RP2A03
+// https://wiki.nesdev.com/w/index.php/APU#Mixer
 class APU final : public Memory, public Serializable {
 private:
   /*----------  Hardware  ----------*/
@@ -21,83 +21,44 @@ private:
     bool enabled;
     bool loop;
     bool start;
-    u8   period;
-    u8   val;
+    u8   timer_period;
+    u8   timer_val;
     u8   decay;
 
     void clock();
   };
 
   struct Channels {
-    // -- Channel Control Registers -- //
-
     // 0x4000 - 0x4003 - Pulse 1 channel
     // 0x4004 - 0x4007 - Pulse 2 channel
     struct Pulse {
       bool enabled;
 
-      union {
-        u8 byte_0;
-        BitField<6, 2> duty;
-        BitField<5>    halt;
-        BitField<4>    constant_vol;
-        BitField<0, 4> envelope_vol;
-      };
-      union {
-        u8 byte_1;
-        BitField<7>    sweep_enabled;
-        BitField<4, 3> period;
-        BitField<3>    negative;
-        BitField<0, 3> shift_count;
-      };
-      union {
-        u8 byte_2;
-        BitField<0, 8> timer_lo;
-      };
-      union {
-        u8 byte_3;
-        BitField<3, 5> length_counter;
-        BitField<0, 3> timer_hi;
-      };
+      /* ... stub ... */
     } pulse1, pulse2;
 
     // 0x4008 - 0x400B - Triangle channel
     struct Triangle {
       bool enabled;
 
-      union {
-        u8 byte_0;
-        BitField<7>    halt;
-        BitField<0, 7> len_counter_reload_val;
-      };
-      union {
-        u8 byte_2;
-        BitField<0, 8> timer_lo;
-      };
-      union {
-        u8 byte_3;
-        BitField<3, 5> length_counter;
-        BitField<0, 3> timer_hi;
-      };
+      /* ... stub ... */
     } tri;
 
     // 0x400C - 0x400F - Noise channel
     struct Noise {
       bool enabled; // Set though 0x4015
 
-      Envelope envelope; // 0x400C:0-4 (period) and 0x400C:5 (enable)
-      u16  timer_period; // 0x400E:0-3 (through table lookup)
-      bool mode;         // 0x400E:7
-      u8   len_count;    // 0x400F:3-7
-      bool len_count_enable; // 0x400C:5
+      Envelope envelope;  // 0x400C:0-4 (period) and 0x400C:5   (enable)
+      bool len_count_on;  // 0x400C:5   (enable)
+      u8   len_count_val; // 0x400F:3-7 (set via table)
+      bool mode;          // 0x400E:7
+      u16  timer_period;  // 0x400E:0-3 (set via table)
 
       // Internals
       u16 sr;
       u16 timer_val;
 
       void clock_timer();
-
-      u8 out_volume;
       u16 output() const;
     } noise;
 
@@ -105,26 +66,7 @@ private:
     struct DMC {
       bool enabled;
 
-      union {
-        u8 byte_0;
-        BitField<7>    irq_enabled;
-        BitField<6>    loop;
-      //BitField<4, 2> unused;
-        BitField<0, 4> freq_index;
-      };
-      union {
-        u8 byte_1;
-      //BitField<7>    unused;
-        BitField<0, 7> direct_load;
-      };
-      union {
-        u8 byte_2;
-        BitField<0, 8> sample_addr;
-      };
-      union {
-        u8 byte_3;
-        BitField<0, 8> sample_len;
-      };
+      /* ... stub ... */
     } dmc;
   } chan;
 
@@ -160,6 +102,8 @@ private:
     short data [4096] = {0};
   } audiobuff;
 
+  uint clock_rate = 1789773;
+
   SERIALIZE_START(4, "APU")
     SERIALIZE_POD(chan)
     SERIALIZE_POD(frame_counter)
@@ -172,6 +116,16 @@ private:
   void clock_envelopes();
   void clock_timers();
   void clock_length_counters();
+
+  static const class AudioLUT {
+  private:
+    short pulse_table [31];
+    short tnd_table  [203];
+
+  public:
+    AudioLUT();
+    short sample(u8 pulse1, u8 pulse2, u8 triangle, u8 noise, u8 dmc) const;
+  } audioLUT;
 
 public:
   ~APU();
@@ -189,11 +143,6 @@ public:
 
   void cycle();
 
-  // Stub functionallity
   void getAudiobuff(short*& samples, uint& len);
-  // {
-  //   samples = nullptr;
-  //   len = 0;
-  // }
-  void set_speed(double speed) { (void)speed; }
+  void set_speed(double speed);
 };

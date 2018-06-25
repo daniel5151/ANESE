@@ -3,18 +3,52 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <climits>
+
+/*------------------------------  Lookup Tables  -----------------------------*/
+const APU::AudioLUT APU::audioLUT;
+
+// https://wiki.nesdev.com/w/index.php/APU_Mixer#Emulation
+APU::AudioLUT::AudioLUT() {
+  for (uint i = 0; i < 31; i++)
+    this->pulse_table[i] = ((95.52 / (8128.0 / i + 100)) - 0.5) * SHRT_MAX;
+
+  for (uint i = 0; i < 203; i++)
+    this->tnd_table[i] = ((163.67 / (24329.0 / i + 100)) - 0.5) * SHRT_MAX;
+}
+
+// https://wiki.nesdev.com/w/index.php/APU_Mixer#Emulation
+short APU::AudioLUT::sample(u8 pulse1, u8 pulse2, u8 tri, u8 noise, u8 dmc) const {
+  return pulse_table[pulse1 + pulse2] + tnd_table[3 * tri + 2 * noise + dmc];
+}
+
+// https://wiki.nesdev.com/w/index.php/APU_Length_Counter
+static constexpr u8 LEN_COUNTER_TABLE [] = {
+  10,254, 20,  2, 40,  4, 80,  6, 160,  8, 60, 10, 14, 12, 26, 14,
+  12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30
+};
+
+// https://wiki.nesdev.com/w/index.php/APU_Noise
+static constexpr u16 NOISE_PERIOD_TABLE [] {
+  4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068
+};
+
+/*-----------------------------------  APU  ----------------------------------*/
 
 APU::~APU() {}
 
 APU::APU(Memory& mem, InterruptLines& interrupt)
 : interrupt(interrupt)
 , mem(mem)
-{ this->power_cycle(); }
+{
+  this->power_cycle();
+}
 
 // https://wiki.nesdev.com/w/index.php/CPU_power_up_state
 void APU::power_cycle() {
   memset(&this->chan, 0, sizeof this->chan);
 
+  // https://wiki.nesdev.com/w/index.php/APU_Noise
   this->chan.noise.sr = 1;
 
   this->reset();
@@ -41,14 +75,14 @@ u8 APU::peek(u16 addr) const {
     // Construct a return val
     APU::StateReg state {0};
 
-    state.dmc_irq   = this->chan.dmc.irq_enabled;
+    // state.dmc_irq   = this->chan.dmc.irq_enabled;
     state.frame_irq = !this->frame_counter.inhibit_irq;
 
-    state.pulse1 = this->chan.pulse1.length_counter > 0;
-    state.pulse2 = this->chan.pulse2.length_counter > 0;
-    state.tri    = this->chan.tri.length_counter    > 0;
-    state.noise  = this->chan.noise.len_count       > 0;
-    state.dmc    = this->chan.dmc.sample_len        > 0;
+    // state.pulse1 = this->chan.pulse1.len_count.val > 0;
+    // state.pulse2 = this->chan.pulse2.len_count.val > 0;
+    // state.tri    = this->chan.tri.len_count.val    > 0;
+    state.noise  = this->chan.noise.len_count_val  > 0;
+    // state.dmc    = this->chan.dmc.sample_len        > 0;
 
     return state.val;
   }
@@ -56,15 +90,6 @@ u8 APU::peek(u16 addr) const {
   fprintf(stderr, "[APU] Peek from Write-Only register: 0x%04X\n", addr);
   return 0x00;
 }
-
-static constexpr u8 LEN_COUNTER_TABLE [] = {
-  10,254, 20,  2, 40,  4, 80,  6, 160,  8, 60, 10, 14, 12, 26, 14,
-  12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30
-};
-
-static constexpr u16 NOISE_PERIOD_TABLE [] {
-  4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068
-};
 
 void APU::write(u16 addr, u8 val) {
   // if (addr == 0x4017) {
@@ -76,71 +101,63 @@ void APU::write(u16 addr, u8 val) {
 
   // Pulse 1
   switch (addr) {
-  case 0x4000: this->chan.pulse1.byte_0 = val; break;
-  case 0x4001: this->chan.pulse1.byte_1 = val; break;
-  case 0x4002: this->chan.pulse1.byte_2 = val; break;
-  case 0x4003: {
-    this->chan.pulse1.length_counter = LEN_COUNTER_TABLE[(val & 0xF8) >> 3];
-    this->chan.pulse1.timer_hi = (val & 0x07);
-  } break; // does additional stuff
+  case 0x4000: /* stuff */ break;
+  case 0x4001: /* stuff */ break;
+  case 0x4002: /* stuff */ break;
+  case 0x4003: /* stuff */ break;
 
   // Pulse 2
-  case 0x4004: this->chan.pulse2.byte_0 = val; break;
-  case 0x4005: this->chan.pulse2.byte_1 = val; break;
-  case 0x4006: this->chan.pulse2.byte_2 = val; break;
-  case 0x4007: {
-    this->chan.pulse2.length_counter = LEN_COUNTER_TABLE[(val & 0xF8) >> 3];
-    this->chan.pulse2.timer_hi = (val & 0x07);
-  } break; // does additional stuff
+  case 0x4004: /* stuff */ break;
+  case 0x4005: /* stuff */ break;
+  case 0x4006: /* stuff */ break;
+  case 0x4007: /* stuff */ break;
 
   // Triangle
-  case 0x4008: this->chan.tri.byte_0 = val; break;
-  case 0x400A: this->chan.tri.byte_2 = val; break;
-  case 0x400B: {
-    this->chan.tri.length_counter = LEN_COUNTER_TABLE[(val & 0xF8) >> 3];
-    this->chan.tri.timer_hi = (val & 0x07);
-  } break; // does additional stuff
+  case 0x4008: /* stuff */ break;
+  case 0x400A: /* stuff */ break;
+  case 0x400B: /* stuff */ break;
 
   // Noise
   case 0x400C: {
-    this->chan.noise.envelope.loop    = (val & 0x20);
+    this->chan.noise.envelope.timer_period = (val & 0x0F);
     this->chan.noise.envelope.enabled = !(val & 0x10);
-    this->chan.noise.envelope.period  = (val & 0x0F);
+    this->chan.noise.envelope.loop    = (val & 0x20);
     this->chan.noise.envelope.start   = true;
-    this->chan.noise.len_count_enable = !(val & 0x20);
+    this->chan.noise.len_count_on     = !(val & 0x20);
   } break;
   case 0x400E: {
     this->chan.noise.mode = (val & 0x80);
     this->chan.noise.timer_period = NOISE_PERIOD_TABLE[(val & 0x0F)];
   } break;
   case 0x400F: {
-    this->chan.noise.len_count = LEN_COUNTER_TABLE[(val & 0xF8) >> 3];
+    this->chan.noise.len_count_val = LEN_COUNTER_TABLE[(val & 0xF8) >> 3];
     this->chan.noise.envelope.start = true;
   } break; // does additional stuff
 
   // DMC
-  case 0x4010: this->chan.dmc.byte_0 = val; break;
-  case 0x4011: this->chan.dmc.byte_1 = val; break;
-  case 0x4012: this->chan.dmc.byte_2 = val; break;
-  case 0x4013: this->chan.dmc.byte_3 = val; break;
+  case 0x4010: /* stuff */ break;
+  case 0x4011: /* stuff */ break;
+  case 0x4012: /* stuff */ break;
+  case 0x4013: /* stuff */ break;
 
   case 0x4015: {
     // Read flags, and enable / disable things accordingly
     APU::StateReg state {val};
 
-    if (!(this->chan.pulse1.enabled = state.pulse1))
-      this->chan.pulse1.length_counter = 0;
+    // if (!(this->chan.pulse1.enabled = state.pulse1))
+    //   this->chan.pulse1.len_count.val = 0;
 
-    if (!(this->chan.pulse2.enabled = state.pulse2))
-      this->chan.pulse2.length_counter = 0;
+    // if (!(this->chan.pulse2.enabled = state.pulse2))
+    //   this->chan.pulse2.len_count.val = 0;
 
-    if (!(this->chan.tri.enabled = state.tri))
-      this->chan.tri.length_counter = 0;
+    // if (!(this->chan.tri.enabled = state.tri))
+    //   this->chan.tri.len_count.val = 0;
 
     if (!(this->chan.noise.enabled = state.noise))
-      this->chan.noise.len_count = 0;
+      this->chan.noise.len_count_val = 0;
 
-    this->chan.dmc.enabled = state.dmc;
+    // if (!(this->chan.dmc.enabled = state.dmc))
+    //   this->chan.dmc.something = 0;
 
   } break;
 
@@ -174,17 +191,17 @@ void APU::clock_envelopes() {
 }
 
 void APU::clock_length_counters() {
-  if (this->chan.pulse1.length_counter && !this->chan.pulse1.halt)
-    this->chan.pulse1.length_counter--;
+  // if (this->chan.pulse1.len_count.val && !this->chan.pulse1.halt)
+  //   this->chan.pulse1.len_count.val--;
 
-  if (this->chan.pulse2.length_counter && !this->chan.pulse2.halt)
-    this->chan.pulse2.length_counter--;
+  // if (this->chan.pulse2.len_count.val && !this->chan.pulse2.halt)
+  //   this->chan.pulse2.len_count.val--;
 
-  if (this->chan.tri.length_counter && !this->chan.tri.halt)
-    this->chan.tri.length_counter--;
+  // if (this->chan.tri.len_count.val && !this->chan.tri.halt)
+  //   this->chan.tri.len_count.val--;
 
-  if (this->chan.noise.len_count && !this->chan.noise.len_count_enable)
-    this->chan.noise.len_count--;
+  if (this->chan.noise.len_count_val && !this->chan.noise.len_count_on)
+    this->chan.noise.len_count_val--;
 }
 
 void APU::Channels::Noise::clock_timer() {
@@ -206,33 +223,31 @@ void APU::Channels::Noise::clock_timer() {
 void APU::Envelope::clock() {
   if (this->start) {
     this->decay = 15;
-    this->val = this->period;
+    this->timer_val = this->timer_period;
     this->start = false;
     return;
   }
 
-  if (this->val) this->val--;
+  if (this->timer_val) { this->timer_val--; }
   else {
     /**/ if (this->decay) this->decay--;
     else if (this->loop)  this->decay = 15;
 
-    this->val = this->period;
+    this->timer_val = this->timer_period;
   }
 }
 
 u16 APU::Channels::Noise::output() const {
   if (
-    !this->enabled   ||
-    !this->len_count ||
+    !this->enabled       ||
+    !this->len_count_val ||
     this->sr & 1
   ) return 0;
 
   return this->envelope.enabled
-    ? this->envelope.val
-    : this->envelope.period;
+    ? this->envelope.decay
+    : this->envelope.timer_period;
 }
-
-#include <cmath>
 
 // mode 0:    mode 1:       function
 // ---------  -----------  -----------------------------
@@ -283,16 +298,28 @@ void APU::cycle() {
     this->seq_step++;
   }
 
-  // 28000*sin(440*pos*2*3.141592653589/44100)
-
+  // Sample APU
   constexpr uint SAMPLE_RATE = 44100;
-  if (this->cycles % (1789773 / SAMPLE_RATE)) {
-    // fprintf(stderr, "%u\n", this->chan.noise.output());
-    audiobuff.data[audiobuff.i++ % 4096] = 28000*sin(440*(this->cycles % 4096)*2*M_PI/SAMPLE_RATE);
+  if (this->cycles % (this->clock_rate / SAMPLE_RATE) == 0) {
+    short sample = APU::audioLUT.sample(
+      0,
+      0,
+      0,
+      this->chan.noise.output(),
+      0
+    );
+    audiobuff.data[audiobuff.i] = sample;
+    if (audiobuff.i < 4096) audiobuff.i++;
   }
 }
 
 void APU::getAudiobuff(short*& samples, uint& len) {
-  samples = nullptr;
-  len = 0;
+  // fprintf(stderr, "%u\n", this->audiobuff.i);
+  samples = this->audiobuff.data;
+  len = this->audiobuff.i;
+  this->audiobuff.i = 0;
+}
+
+void APU::set_speed(double speed) {
+  this->clock_rate = 1789773 * speed;
 }
