@@ -207,222 +207,220 @@ uint CPU::step() {
     this->reg.pc += offset;                                            \
 
   switch (opcode.instr) {
-    case JMP: { this->reg.pc = addr;
-              } break;
-    case LDX: { this->reg.x = this->mem[addr];
-                set_zn(this->reg.x);
-              } break;
-    case STX: { this->mem[addr] = this->reg.x;
-              } break;
-    case JSR: { this->s_push16(this->reg.pc - 1);
-                this->reg.pc = addr;
-              } break;
-    case NOP: { // me_irl
-              } break;
-    case SEC: { this->reg.p.c = 1;
-              } break;
-    case CLC: { this->reg.p.c = 0;
-              } break;
-    case CLI: { this->reg.p.i = 0;
-              } break;
-    case BCS: { branch(this->reg.p.c);
-              } break;
-    case BCC: { branch(!this->reg.p.c);
-              } break;
-    case BEQ: { branch(this->reg.p.z);
-              } break;
-    case BNE: { branch(!this->reg.p.z);
-              } break;
-    case LDA: { this->reg.a = this->mem[addr];
-                set_zn(this->reg.a);
-              } break;
-    case STA: { this->mem[addr] = this->reg.a;
-              } break;
-    case BIT: { u8 mem = this->mem[addr];
-                this->reg.p.z = (this->reg.a & mem) == 0;
-                this->reg.p.v = nth_bit(mem, 6);
-                this->reg.p.n = nth_bit(mem, 7);
-              } break;
-    case BVS: { branch(this->reg.p.v);
-              } break;
-    case BVC: { branch(!this->reg.p.v);
-              } break;
-    case BPL: { branch(!this->reg.p.n);
-              } break;
-    case RTS: { this->reg.pc = this->s_pull16() + 1;
-              } break;
-    case AND: { this->reg.a &= this->mem[addr];
-                set_zn(this->reg.a);
-              } break;
-    case SEI: { this->reg.p.i = 1;
-              } break;
-    case SED: { this->reg.p.d = 1;
-              } break;
-    case PHP: { this->s_push(this->reg.p.raw | 0x30);
-              } break;
-    case PLA: { this->reg.a = this->s_pull();
-                set_zn(this->reg.a);
-              } break;
-    case CMP: { u8 val = this->mem[addr];
-                this->reg.p.c = this->reg.a >= val;
-                set_zn(this->reg.a - val);
-              } break;
-    case CLD: { this->reg.p.d = 0;
-              } break;
-    case PHA: { this->s_push(this->reg.a);
-              } break;
-    case PLP: { this->reg.p.raw = this->s_pull() | 0x20; // NESTEST
-              } break;
-    case BMI: { branch(this->reg.p.n);
-              } break;
-    case ORA: { this->reg.a |= this->mem[addr];
-                set_zn(this->reg.a);
-              } break;
-    case CLV: { this->reg.p.v = 0;
-              } break;
-    case EOR: { this->reg.a ^= this->mem[addr];
-                set_zn(this->reg.a);
-              } break;
-    // Fuck ADC
-    case ADC: { u8  val = this->mem[addr];
-                u16 sum = this->reg.a + val + this->reg.p.c;
-                this->reg.p.c = sum > 0xFF;
-                this->reg.p.z = u8(sum) == 0;
-                // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
-                this->reg.p.v = ~(this->reg.a ^ val)
-                              &  (this->reg.a ^ sum)
-                              & 0x80;
-                this->reg.p.n = nth_bit(u8(sum), 7);
-                this->reg.a = u8(sum);
-              } break;
-    // Fuck SBC
-    case SBC: { u8  val = this->mem[addr];
-                u16 sum = this->reg.a + ~val + this->reg.p.c;
-                this->reg.p.c = !(sum > 0xFF);
-                this->reg.p.z = u8(sum) == 0;
-                // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
-                this->reg.p.v = ~(this->reg.a ^ ~val)
-                              &  (this->reg.a ^ sum)
-                              & 0x80;
-                this->reg.p.n = nth_bit(u8(sum), 7);
-                this->reg.a = u8(sum);
-              } break;
-    case LDY: { this->reg.y = this->mem[addr];
-                set_zn(this->reg.y);
-              } break;
-    case CPY: { u8 val = this->mem[addr];
-                this->reg.p.c = this->reg.y >= val;
-                set_zn(this->reg.y - val);
-              } break;
-    case CPX: { u8 val = this->mem[addr];
-                this->reg.p.c = this->reg.x >= val;
-                set_zn(this->reg.x - val);
-              } break;
-    case INY: { this->reg.y++;
-                set_zn(this->reg.y);
-              } break;
-    case INX: { this->reg.x++;
-                set_zn(this->reg.x);
-              } break;
-    case DEY: { this->reg.y--;
-                set_zn(this->reg.y);
-              } break;
-    case DEX: { this->reg.x--;
-                set_zn(this->reg.x);
-              } break;
-    case STY: { this->mem[addr] = this->reg.y;
-              } break;
-    case TAY: { this->reg.y = this->reg.a;
-                set_zn(this->reg.y);
-              } break;
-    case TAX: { this->reg.x = this->reg.a;
-                set_zn(this->reg.x);
-              } break;
-    case TYA: { this->reg.a = this->reg.y;
-                set_zn(this->reg.a);
-              } break;
-    case TXA: { this->reg.a = this->reg.x;
-                set_zn(this->reg.a);
-              } break;
-    case TSX: { this->reg.x = this->reg.s;
-                set_zn(this->reg.x);
-              } break;
-    case TXS: { this->reg.s = this->reg.x;
-              } break;
-    case RTI: { this->reg.p.raw = this->s_pull() | 0x20; // NESTEST
-                this->reg.pc = this->s_pull16();
-              } break;
-    case BRK: { // ignores interrupt disable bit, and forces an interrupt
-                this->service_interrupt(Interrupts::Type::IRQ, true);
-              } break;
-    case LSR: { if (opcode.addrm == Instructions::AddrM::acc) {
-                  this->reg.p.c = nth_bit(this->reg.a, 0);
-                  this->reg.a >>= 1;
+      case ADC: { u8  val = this->mem[addr];
+                  u16 sum = this->reg.a + val + this->reg.p.c;
+                  this->reg.p.c = sum > 0xFF;
+                  this->reg.p.z = u8(sum) == 0;
+                  // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
+                  this->reg.p.v = ~(this->reg.a ^ val)
+                                &  (this->reg.a ^ sum)
+                                & 0x80;
+                  this->reg.p.n = nth_bit(u8(sum), 7);
+                  this->reg.a = u8(sum);
+                } break;
+      case AND: { this->reg.a &= this->mem[addr];
                   set_zn(this->reg.a);
-                } else {
-                  u8 val = this->mem[addr];
+                } break;
+      case ASL: { if (opcode.addrm == Instructions::AddrM::acc) {
+                    this->reg.p.c = nth_bit(this->reg.a, 7);
+                    this->reg.a <<= 1;
+                    set_zn(this->reg.a);
+                  } else {
+                    u8 val = this->mem[addr];
+                    this->mem[addr] = val; // dummy-write
+                    this->reg.p.c = nth_bit(val, 7);
+                    val <<= 1;
+                    set_zn(val);
+                    this->mem[addr] = val;
+                  }
+                } break;
+      case BCC: { branch(!this->reg.p.c);
+                } break;
+      case BCS: { branch(this->reg.p.c);
+                } break;
+      case BEQ: { branch(this->reg.p.z);
+                } break;
+      case BIT: { u8 mem = this->mem[addr];
+                  this->reg.p.z = (this->reg.a & mem) == 0;
+                  this->reg.p.v = nth_bit(mem, 6);
+                  this->reg.p.n = nth_bit(mem, 7);
+                } break;
+      case BMI: { branch(this->reg.p.n);
+                } break;
+      case BNE: { branch(!this->reg.p.z);
+                } break;
+      case BPL: { branch(!this->reg.p.n);
+                } break;
+      case BRK: { // ignores interrupt disable bit, and forces an interrupt
+                  this->service_interrupt(Interrupts::Type::IRQ, true);
+                } break;
+      case BVC: { branch(!this->reg.p.v);
+                } break;
+      case BVS: { branch(this->reg.p.v);
+                } break;
+      case CLC: { this->reg.p.c = 0;
+                } break;
+      case CLD: { this->reg.p.d = 0;
+                } break;
+      case CLI: { this->reg.p.i = 0;
+                } break;
+      case CLV: { this->reg.p.v = 0;
+                } break;
+      case CMP: { u8 val = this->mem[addr];
+                  this->reg.p.c = this->reg.a >= val;
+                  set_zn(this->reg.a - val);
+                } break;
+      case CPX: { u8 val = this->mem[addr];
+                  this->reg.p.c = this->reg.x >= val;
+                  set_zn(this->reg.x - val);
+                } break;
+      case CPY: { u8 val = this->mem[addr];
+                  this->reg.p.c = this->reg.y >= val;
+                  set_zn(this->reg.y - val);
+                } break;
+      case DEC: { u8 val = this->mem[addr];
                   this->mem[addr] = val; // dummy-write
-                  this->reg.p.c = nth_bit(val, 0);
-                  val >>= 1;
+                  val--;
                   set_zn(val);
                   this->mem[addr] = val;
-                }
-              } break;
-    case ASL: { if (opcode.addrm == Instructions::AddrM::acc) {
-                  this->reg.p.c = nth_bit(this->reg.a, 7);
-                  this->reg.a <<= 1;
+                } break;
+      case DEX: { this->reg.x--;
+                  set_zn(this->reg.x);
+                } break;
+      case DEY: { this->reg.y--;
+                  set_zn(this->reg.y);
+                } break;
+      case EOR: { this->reg.a ^= this->mem[addr];
                   set_zn(this->reg.a);
-                } else {
-                  u8 val = this->mem[addr];
+                } break;
+      case INC: { u8 val = this->mem[addr];
                   this->mem[addr] = val; // dummy-write
-                  this->reg.p.c = nth_bit(val, 7);
-                  val <<= 1;
+                  val++;
                   set_zn(val);
                   this->mem[addr] = val;
-                }
-              } break;
-    case ROR: { if (opcode.addrm == Instructions::AddrM::acc) {
-                  bool old_bit_0 = nth_bit(this->reg.a, 0);
-                  this->reg.a = (this->reg.a >> 1) | (this->reg.p.c << 7);
-                  this->reg.p.c = old_bit_0;
+                } break;
+      case INX: { this->reg.x++;
+                  set_zn(this->reg.x);
+                } break;
+      case INY: { this->reg.y++;
+                  set_zn(this->reg.y);
+                } break;
+      case JMP: { this->reg.pc = addr;
+                } break;
+      case JSR: { this->s_push16(this->reg.pc - 1);
+                  this->reg.pc = addr;
+                } break;
+      case LDA: { this->reg.a = this->mem[addr];
                   set_zn(this->reg.a);
-                } else {
-                  u8 val = this->mem[addr];
-                  this->mem[addr] = val; // dummy-write
-                  bool old_bit_0 = nth_bit(val, 0);
-                  val = (val >> 1) | (this->reg.p.c << 7);
-                  this->reg.p.c = old_bit_0;
-                  set_zn(val);
-                  this->mem[addr] = val;
-                }
-              } break;
-    case ROL: { if (opcode.addrm == Instructions::AddrM::acc) {
-                  bool old_bit_0 = nth_bit(this->reg.a, 7);
-                  this->reg.a = (this->reg.a << 1) | u8(this->reg.p.c);
-                  this->reg.p.c = old_bit_0;
+                } break;
+      case LDX: { this->reg.x = this->mem[addr];
+                  set_zn(this->reg.x);
+                } break;
+      case LDY: { this->reg.y = this->mem[addr];
+                  set_zn(this->reg.y);
+                } break;
+      case LSR: { if (opcode.addrm == Instructions::AddrM::acc) {
+                    this->reg.p.c = nth_bit(this->reg.a, 0);
+                    this->reg.a >>= 1;
+                    set_zn(this->reg.a);
+                  } else {
+                    u8 val = this->mem[addr];
+                    this->mem[addr] = val; // dummy-write
+                    this->reg.p.c = nth_bit(val, 0);
+                    val >>= 1;
+                    set_zn(val);
+                    this->mem[addr] = val;
+                  }
+                } break;
+      case NOP: { // me_irl
+                } break;
+      case ORA: { this->reg.a |= this->mem[addr];
                   set_zn(this->reg.a);
-                } else {
-                  u8 val = this->mem[addr];
-                  this->mem[addr] = val; // dummy-write
-                  bool old_bit_0 = nth_bit(val, 7);
-                  val = (val << 1) | u8(this->reg.p.c);
-                  this->reg.p.c = old_bit_0;
-                  set_zn(val);
-                  this->mem[addr] = val;
-                }
-              } break;
-    case INC: { u8 val = this->mem[addr];
-                this->mem[addr] = val; // dummy-write
-                val++;
-                set_zn(val);
-                this->mem[addr] = val;
-              } break;
-    case DEC: { u8 val = this->mem[addr];
-                this->mem[addr] = val; // dummy-write
-                val--;
-                set_zn(val);
-                this->mem[addr] = val;
-              } break;
+                } break;
+      case PHA: { this->s_push(this->reg.a);
+                } break;
+      case PHP: { this->s_push(this->reg.p.raw | 0x30);
+                } break;
+      case PLA: { this->reg.a = this->s_pull();
+                  set_zn(this->reg.a);
+                } break;
+      case PLP: { this->reg.p.raw = this->s_pull() | 0x20; // NESTEST
+                } break;
+      case ROL: { if (opcode.addrm == Instructions::AddrM::acc) {
+                    bool old_bit_0 = nth_bit(this->reg.a, 7);
+                    this->reg.a = (this->reg.a << 1) | u8(this->reg.p.c);
+                    this->reg.p.c = old_bit_0;
+                    set_zn(this->reg.a);
+                  } else {
+                    u8 val = this->mem[addr];
+                    this->mem[addr] = val; // dummy-write
+                    bool old_bit_0 = nth_bit(val, 7);
+                    val = (val << 1) | u8(this->reg.p.c);
+                    this->reg.p.c = old_bit_0;
+                    set_zn(val);
+                    this->mem[addr] = val;
+                  }
+                } break;
+      case ROR: { if (opcode.addrm == Instructions::AddrM::acc) {
+                    bool old_bit_0 = nth_bit(this->reg.a, 0);
+                    this->reg.a = (this->reg.a >> 1) | (this->reg.p.c << 7);
+                    this->reg.p.c = old_bit_0;
+                    set_zn(this->reg.a);
+                  } else {
+                    u8 val = this->mem[addr];
+                    this->mem[addr] = val; // dummy-write
+                    bool old_bit_0 = nth_bit(val, 0);
+                    val = (val >> 1) | (this->reg.p.c << 7);
+                    this->reg.p.c = old_bit_0;
+                    set_zn(val);
+                    this->mem[addr] = val;
+                  }
+                } break;
+      case RTI: { this->reg.p.raw = this->s_pull() | 0x20; // NESTEST
+                  this->reg.pc = this->s_pull16();
+                } break;
+      case RTS: { this->reg.pc = this->s_pull16() + 1;
+                } break;
+      case SBC: { u8  val = this->mem[addr];
+                  u16 sum = this->reg.a + ~val + this->reg.p.c;
+                  this->reg.p.c = !(sum > 0xFF);
+                  this->reg.p.z = u8(sum) == 0;
+                  // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
+                  this->reg.p.v = ~(this->reg.a ^ ~val)
+                                &  (this->reg.a ^ sum)
+                                & 0x80;
+                  this->reg.p.n = nth_bit(u8(sum), 7);
+                  this->reg.a = u8(sum);
+                } break;
+      case SEC: { this->reg.p.c = 1;
+                } break;
+      case SED: { this->reg.p.d = 1;
+                } break;
+      case SEI: { this->reg.p.i = 1;
+                } break;
+      case STA: { this->mem[addr] = this->reg.a;
+                } break;
+      case STX: { this->mem[addr] = this->reg.x;
+                } break;
+      case STY: { this->mem[addr] = this->reg.y;
+                } break;
+      case TAX: { this->reg.x = this->reg.a;
+                  set_zn(this->reg.x);
+                } break;
+      case TAY: { this->reg.y = this->reg.a;
+                  set_zn(this->reg.y);
+                } break;
+      case TSX: { this->reg.x = this->reg.s;
+                  set_zn(this->reg.x);
+                } break;
+      case TXA: { this->reg.a = this->reg.x;
+                  set_zn(this->reg.a);
+                } break;
+      case TXS: { this->reg.s = this->reg.x;
+                } break;
+      case TYA: { this->reg.a = this->reg.y;
+                  set_zn(this->reg.a);
+                } break;
     default:
       fprintf(stderr,
         "[CPU] [%u] Unimplemented Instruction! 0x%02X\n",

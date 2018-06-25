@@ -9,6 +9,7 @@ roms/retail/*
 /build*
 /anese.dSYM
 *.aps
+*.sav
 
 # macOS bundle stuff
 /resources/ANESE.app/Contents/MacOS/anese

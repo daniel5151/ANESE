@@ -32,7 +32,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 # Setup compiler flags for different platforms
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -std=c++11")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -fno-exceptions -fno-rtti -std=c++11")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -g -fsanitize=undefined")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3 -g")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
@@ -87,24 +87,11 @@ include_directories(thirdparty/miniz)
 # ---- header only libs ---- #
 include_directories(thirdparty/headeronly)
 
-# ---- nes_snd_emu ---- #
-include_directories(SYSTEM thirdparty/nes_snd_emu/nes_apu)
-file(GLOB_RECURSE NES_SND_EMU_FILES
-  thirdparty/nes_snd_emu/*.cpp
-  thirdparty/nes_snd_emu/*.h)
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-  set_source_files_properties(${NES_SND_EMU_FILES} PROPERTIES
-    COMPILE_FLAGS "-Wno-everything") # it was written in 2005!
-endif()
-add_library(nes_snd_emu STATIC ${NES_SND_EMU_FILES})
-target_include_directories(nes_snd_emu PUBLIC thirdparty/nes_snd_emu)
-
 # Finally, link up!
 target_link_libraries(anese
   ${SDL2_LIBRARY}
   SDL_inprint
   miniz
-  nes_snd_emu
 )
 
 if (APPLE)
