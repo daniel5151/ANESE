@@ -20,9 +20,9 @@ private:
   struct Envelope {
     bool enabled;
     bool loop;
-    bool start;
-    u8   timer_period;
-    u8   timer_val;
+    bool reset;
+    u8   period;
+    u8   step;
     u8   decay;
 
     void clock();
@@ -32,9 +32,35 @@ private:
     // 0x4000 - 0x4003 - Pulse 1 channel
     // 0x4004 - 0x4007 - Pulse 2 channel
     struct Pulse {
-      bool enabled;
+      bool enabled;       // 0x4015:0 and 0x4015:1
 
-      /* ... stub ... */
+      Envelope envelope;  // 0x4000:0-4 (period) and
+                          // 0x400C:5   (enable)
+      bool len_count_on;  // 0x4000:5
+      u8   duty_cycle;    // 0x4000:6-7 (index into table)
+      union {             // 0x4001
+        u8 val;
+        BitField<7>    enabled;
+        BitField<4, 3> period;
+        BitField<3>    negate;
+        BitField<0, 3> shift;
+      } sweep;
+      u16 timer_period;   // 0x4002:0-8 (low bits) and
+                          // 0x4002:0-3 (high bits)
+      u8   len_count_val; // 0x4003:3-7 (set via table)
+
+      // Internals
+      bool sweep_reset;
+      bool seq_reset;
+      u8   duty_val;
+      u16  timer_val;
+
+      void sweep_clock();
+      void timer_clock();
+
+      u8 output() const;
+
+      bool isPulse2; // pulse2 has different negate-flag behavior
     } pulse1, pulse2;
 
     // 0x4008 - 0x400B - Triangle channel
@@ -46,20 +72,22 @@ private:
 
     // 0x400C - 0x400F - Noise channel
     struct Noise {
-      bool enabled; // Set though 0x4015
+      bool enabled;       // 0x4015:3
 
-      Envelope envelope;  // 0x400C:0-4 (period) and 0x400C:5   (enable)
+      Envelope envelope;  // 0x400C:0-4 (period) and
+                          // 0x400C:5   (enable)
       bool len_count_on;  // 0x400C:5   (enable)
-      u8   len_count_val; // 0x400F:3-7 (set via table)
       bool mode;          // 0x400E:7
       u16  timer_period;  // 0x400E:0-3 (set via table)
+      u8   len_count_val; // 0x400F:3-7 (set via table)
 
       // Internals
       u16 sr;
       u16 timer_val;
 
-      void clock_timer();
-      u16 output() const;
+      void timer_clock();
+
+      u8 output() const;
     } noise;
 
     // 0x4010 - 0x4014 - DMC channel
@@ -114,6 +142,7 @@ private:
   /*----------  Helpers  ----------*/
 
   void clock_envelopes();
+  void clock_sweeps();
   void clock_timers();
   void clock_length_counters();
 
