@@ -42,8 +42,13 @@ static constexpr bool DUTY_CYCLE_TABLE [][8] = {
   {1, 0, 0, 1, 1, 1, 1, 1}
 };
 
+static constexpr u8 TRIANGLE_TABLE [] = {
+  15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,
+   0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15
+};
+
 // https://wiki.nesdev.com/w/index.php/APU_Noise
-static constexpr u16 NOISE_PERIOD_TABLE [] {
+static constexpr u16 NOISE_PERIOD_TABLE [] = {
   4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068
 };
 
@@ -95,7 +100,7 @@ u8 APU::peek(u16 addr) const {
 
     state.pulse1 = this->chan.pulse1.len_count_val > 0;
     state.pulse2 = this->chan.pulse2.len_count_val > 0;
-    // state.tri    = this->chan.tri.len_count_val    > 0;
+    state.tri    = this->chan.tri.len_count_val    > 0;
     state.noise  = this->chan.noise.len_count_val  > 0;
     // state.dmc    = this->chan.dmc.sample_len        > 0;
 
@@ -141,11 +146,18 @@ void APU::write(u16 addr, u8 val) {
 #undef pulse_impl
 
   // Triangle
-  case 0x4008:  { /* stuff */
+  case 0x4008:  { this->chan.tri.len_count_on     = !(val & 0x80);
+                  this->chan.tri.lin_count_period =  (val & 0x7F);
                 } break;
-  case 0x400A:  { /* stuff */
+  case 0x400A:  { const u16 prev = this->chan.tri.timer_period & 0xFF00;
+                  this->chan.tri.timer_period = prev | val;
                 } break;
-  case 0x400B:  { /* stuff */
+  case 0x400B:  { const u16 prev = this->chan.tri.timer_period & 0x00FF;
+                  this->chan.tri.timer_period = prev | ((val & 0x07) << 8);
+                  const u16 len_count = LEN_COUNTER_TABLE[(val & 0xF8) >> 3];
+                  this->chan.tri.len_count_val = len_count;
+                  this->chan.tri.timer_val = this->chan.tri.timer_period;
+                  this->chan.tri.lin_count_reset = true;
                 } break;
 
   // Noise
@@ -179,8 +191,8 @@ void APU::write(u16 addr, u8 val) {
                     this->chan.pulse1.len_count_val = 0;
                   if (!(this->chan.pulse2.enabled = state.pulse2))
                     this->chan.pulse2.len_count_val = 0;
-                  // if (!(this->chan.tri.enabled = state.tri))
-                  //   this->chan.tri.len_count_val = 0;
+                  if (!(this->chan.tri.enabled = state.tri))
+                    this->chan.tri.len_count_val = 0;
                   if (!(this->chan.noise.enabled = state.noise))
                     this->chan.noise.len_count_val = 0;
                   // if (!(this->chan.dmc.enabled = state.dmc))
@@ -235,11 +247,6 @@ void APU::Channels::Pulse::timer_clock() {
 }
 
 void APU::Channels::Pulse::sweep_clock() {
-  // helper routine
-  const auto do_sweep = [this](){
-
-  };
-
   if (this->sweep_reset) {
     this->sweep.val = this->sweep.period + 1;
     this->sweep_reset = false;
@@ -281,6 +288,35 @@ u8 APU::Channels::Pulse::output() const {
     : this->envelope.period;
 }
 
+/*--------  Triangle  --------*/
+// https://wiki.nesdev.com/w/index.php/APU_Triangle
+
+void APU::Channels::Triangle::timer_clock() {
+  if (this->timer_val) { this->timer_val--; }
+  else {
+    this->timer_val = this->timer_period;
+    // Clock sequencer (duty step)
+    this->duty_val = (this->duty_val + 1) % 32;
+  }
+}
+
+void APU::Channels::Triangle::lin_count_clock() {
+  /**/ if (this->lin_count_reset) this->lin_count_val = this->lin_count_period;
+  else if (this->lin_count_val)   this->lin_count_val--;
+
+  if (this->len_count_on) // doubles as control flag
+    this->lin_count_reset = false;
+}
+
+u8 APU::Channels::Triangle::output() const {
+  if ( !this->enabled
+    || !this->len_count_val
+    || !this->lin_count_val
+  ) return 0;
+
+  return TRIANGLE_TABLE[this->duty_val];
+}
+
 /*--------  Noise  --------*/
 // https://wiki.nesdev.com/w/index.php/APU_Noise
 
@@ -316,6 +352,7 @@ void APU::clock_envelopes() {
   this->chan.pulse1.envelope.clock();
   this->chan.pulse2.envelope.clock();
   this->chan.noise.envelope.clock();
+  this->chan.tri.lin_count_clock();
 }
 
 void APU::clock_sweeps() {
@@ -335,6 +372,7 @@ void APU::clock_timers() {
     this->chan.pulse1.timer_clock();
     this->chan.pulse2.timer_clock();
     this->chan.noise.timer_clock();
+    this->chan.tri.timer_clock();
   }
 }
 
@@ -408,7 +446,7 @@ void APU::cycle() {
     short sample = APU::audioLUT.sample(
       this->chan.pulse1.output(),
       this->chan.pulse2.output(),
-      0,
+      this->chan.tri.output(),
       this->chan.noise.output(),
       0
     );

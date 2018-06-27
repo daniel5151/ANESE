@@ -46,7 +46,7 @@ private:
         BitField<0, 3> shift;
       } sweep;
       u16 timer_period;   // 0x4002:0-8 (low bits) and
-                          // 0x4002:0-3 (high bits)
+                          // 0x4003:0-3 (high bits)
       u8   len_count_val; // 0x4003:3-7 (set via table)
 
       // Internals
@@ -67,7 +67,22 @@ private:
     struct Triangle {
       bool enabled;
 
-      /* ... stub ... */
+      bool len_count_on;     // 0x4008:7 // Doubles as lin_count control flag!
+      u8   lin_count_period; // 0x4008:0-6
+      u16  timer_period;     // 0x400A:0-8 (low bits) and
+                             // 0x400B:0-3 (high bits)
+      u8   len_count_val;    // 0x400B:3-7 (set via table)
+
+      // Internals
+      bool lin_count_reset;
+      u8   lin_count_val;
+      u8   duty_val;
+      u16  timer_val;
+
+      void timer_clock();
+      void lin_count_clock();
+
+      u8 output() const;
     } tri;
 
     // 0x400C - 0x400F - Noise channel
@@ -93,7 +108,6 @@ private:
     // 0x4010 - 0x4014 - DMC channel
     struct DMC {
       bool enabled;
-
       /* ... stub ... */
     } dmc;
   } chan;
@@ -130,7 +144,7 @@ private:
     short data [4096] = {0};
   } audiobuff;
 
-  uint clock_rate = 1789773;
+  uint clock_rate = 1789773; // changes when speed changes
 
   SERIALIZE_START(4, "APU")
     SERIALIZE_POD(chan)
