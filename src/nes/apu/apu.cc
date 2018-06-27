@@ -5,7 +5,7 @@
 #include <cstring>
 #include <climits>
 
-constexpr short VOLUME = (SHRT_MAX / 2);
+#include "filters.h"
 
 /*------------------------------  Lookup Tables  -----------------------------*/
 const APU::AudioLUT APU::audioLUT;
@@ -16,15 +16,12 @@ const APU::AudioLUT APU::audioLUT;
 
 // This sets up the main sample-lookup tables
 APU::AudioLUT::AudioLUT() {
-  for (uint i = 0; i < 31; i++)
-    this->pulse_table[i] = (95.52 / (8128.0 / i + 100)) * VOLUME;
-
-  for (uint i = 0; i < 203; i++)
-    this->tnd_table[i] = (163.67 / (24329.0 / i + 100)) * VOLUME;
+  for (uint i = 0; i < 31;  i++) this->pulse_table[i] = 95.52  / (8128.0  / i + 100);
+  for (uint i = 0; i < 203; i++) this->tnd_table[i]   = 163.67 / (24329.0 / i + 100);
 }
 
 // This queries the tables (given outputs from each channel)
-short APU::AudioLUT::sample(u8 pulse1, u8 pulse2, u8 tri, u8 noise, u8 dmc) const {
+double APU::AudioLUT::sample(u8 pulse1, u8 pulse2, u8 tri, u8 noise, u8 dmc) const {
   return pulse_table[pulse1 + pulse2] + tnd_table[3 * tri + 2 * noise + dmc];
 }
 
@@ -381,8 +378,8 @@ void APU::clock_length_counters() {
     this->chan.pulse1.len_count_val--;
   if (this->chan.pulse2.len_count_on && this->chan.pulse2.len_count_val)
     this->chan.pulse2.len_count_val--;
-  // if (this->chan.tri.len_count_on && this->chan.tri.len_count_val)
-  //   this->chan.tri.len_count_val--;
+  if (this->chan.tri.len_count_on && this->chan.tri.len_count_val)
+    this->chan.tri.len_count_val--;
   if (this->chan.noise.len_count_on && this->chan.noise.len_count_val)
     this->chan.noise.len_count_val--;
 }
@@ -443,16 +440,25 @@ void APU::cycle() {
   // Sample APU
   constexpr uint SAMPLE_RATE = 44100;
   if (this->cycles % (this->clock_rate / SAMPLE_RATE) == 0) {
-    short sample = APU::audioLUT.sample(
+    double sample = APU::audioLUT.sample(
       this->chan.pulse1.output(),
       this->chan.pulse2.output(),
       this->chan.tri.output(),
       this->chan.noise.output(),
       0
     );
-    // TODO: Run it through filters...
 
-    audiobuff.data[audiobuff.i] = sample;
+    static HiPassFilter hipass1 (90,    SAMPLE_RATE);
+    static HiPassFilter hipass2 (440,   SAMPLE_RATE);
+    static LoPassFilter lopass  (14000, SAMPLE_RATE);
+
+    sample = hipass2.process(sample);
+    sample = hipass1.process(sample);
+    sample = lopass.process(sample);
+
+    constexpr short VOLUME = (SHRT_MAX / 2);
+
+    audiobuff.data[audiobuff.i] = sample * VOLUME;
     if (audiobuff.i < 4096) audiobuff.i++;
   }
 }

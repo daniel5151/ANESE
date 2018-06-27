@@ -162,12 +162,11 @@ private:
 
   static const class AudioLUT {
   private:
-    short pulse_table [31];
-    short tnd_table  [203];
-
+    double pulse_table [31];
+    double tnd_table  [203];
   public:
     AudioLUT();
-    short sample(u8 pulse1, u8 pulse2, u8 triangle, u8 noise, u8 dmc) const;
+    double sample(u8 pulse1, u8 pulse2, u8 triangle, u8 noise, u8 dmc) const;
   } audioLUT;
 
 public:
