@@ -13,6 +13,7 @@ protected:
 public:
   virtual double process(double sample) = 0;
 
+  virtual ~FirstOrderFilter() = default;
   FirstOrderFilter(hertz f, hertz sample_rate)
   : RC { 1.0 / (2 * 3.1415928535 * double(f)) }
   , dt { 1.0 / double(sample_rate) }
@@ -25,6 +26,7 @@ private:
   const double a;
   struct { double x, y; } prev;
 public:
+  virtual ~LoPassFilter() = default;
   LoPassFilter(hertz f, hertz sample_rate)
   : FirstOrderFilter(f, sample_rate)
   , a { this->dt / (this->RC + this->dt) }
@@ -43,6 +45,7 @@ private:
   const double a;
   struct { double x, y; } prev;
 public:
+  virtual ~HiPassFilter() = default;
   HiPassFilter(hertz f, hertz sample_rate)
   : FirstOrderFilter(f, sample_rate)
   , a { this->RC / (this->RC + this->dt) }

@@ -15,23 +15,24 @@
 **ANESE** (**A**nother **NES** **E**mulator) is a Nintendo Entertainment System
 Emulator being written for fun and learning.
 
-While accuracy is a long-term goal, ANESE's primary goal is to play some of the
-more popular titles. As of now, most basic Mappers have been implemented, so
-popular titles should be working! :smile:
+While accuracy and performance are long-term goals, ANESE's primary focus is
+getting some of the more popular titles up and running. Most basic Mappers have
+been implemented, so many popular titles should be working! :smile:
 
 ANESE is built with _cross-platform_ in mind, and is regularly built on all
 major platforms (macOS, Windows, and Linux). ANESE doesn't use any
 vendor-specific language extensions, and is compiled with strict compiler flags.
 It is also linted (fairly) regularly.
 
-ANESE strives for clean and _interesting_ C++11 code, with an emphasis on
-readability and maintainability. With that said, performance is important, but
-it's not ANESE's primary focus.
+Lastly, ANESE strives to keep a clean and _interesting_ C++11 codebase,
+emphasizing _readability_, _maintainability_, and _approachability_. The code
+is heavily commented, providing sources and insights for much of the logic.
 
 ## Downloads
 
-Right now, there are no official releases of ANESE, but there are ways to get
-nightly releases.
+At the moment, there are no official releases of ANESE, but there are ways to
+get nightly releases. These are compiled directly from the latest ANESE commit,
+so there may be bugs.
 
 **Windows:** You can download nightly versions of ANESE from
 [AppVeyor](https://ci.appveyor.com/project/daniel5151/anese)'s build artifacts
@@ -82,7 +83,7 @@ msbuild anese.sln /p:Configuration=Release
 ```
 
 If you're interested in looking under the hood of the PPU, you can pass the
-`-DDEBUG_PPU` flag to cmake and have ANESE show PPU debug windows.
+`-DDEBUG_PPU` flag to cmake and have ANESE display PPU debug windows.
 
 ## Running
 
@@ -150,6 +151,11 @@ Load Save-State    | Ctrl - Shift - (1-4) |
 
 ## DISCLAIMERS
 
+- ANESE is not the best emulator out there, far from it! Expect bugs!
+- My APU uses a naive sampling algorithm with a basic lookup table grafted from
+the nesdev wiki. The `blargg-apu` branch has an older version of ANESE that uses
+Blargg's awesome `nes_snd_emu` library for the APU, and while my integration was
+a bit unstable at times, it did sound a lot better when it did work.
 - The CPU is _instruction-cycle_ accurate, but not _sub-instruction cycle_
 accurate. While this inaccuracy doesn't affect most games, there are some that
 that rely on sub-instruction level timings (eg: Solomon's Key).
@@ -157,7 +163,7 @@ that rely on sub-instruction level timings (eg: Solomon's Key).
 
 ## TODO
 
-This is a rough list of things I would like to accomplish, with those closer to
+This is a list of things I would like to try to accomplish, with those closer to
 the top higher on my priority list:
 
 - [x] _Implement_: My own APU (don't use Blarrg's)

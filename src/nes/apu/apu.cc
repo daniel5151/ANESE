@@ -9,17 +9,15 @@
 
 // https://wiki.nesdev.com/w/index.php/APU_Mixer#Emulation
 
-const APU::AudioLUT APU::audioLUT;
-
 // Instead of doing custom waveform synthesis and mixing for each channel, these
 // lookup-tables do the trick (or at least close enough for me)
-APU::AudioLUT::AudioLUT() {
+APU::Mixer::Mixer() {
   for (uint i = 0; i < 31;  i++) this->pulse_table[i] = 95.52  / (8128.0  / float(i) + 100);
   for (uint i = 0; i < 203; i++) this->tnd_table[i]   = 163.67 / (24329.0 / float(i) + 100);
 }
 
 // This queries the tables (given outputs from each channel)
-float APU::AudioLUT::sample(u8 pulse1, u8 pulse2, u8 tri, u8 noise, u8 dmc) const {
+float APU::Mixer::sample(u8 pulse1, u8 pulse2, u8 tri, u8 noise, u8 dmc) const {
   return pulse_table[pulse1 + pulse2] + tnd_table[3 * tri + 2 * noise + dmc];
 }
 
@@ -54,9 +52,7 @@ static constexpr uint DMC_PERIOD_TABLE [] = {
 /*---------------------------------  APU I/O  --------------------------------*/
 
 APU::~APU() {
-  delete this->filters.hipass1;
-  delete this->filters.hipass2;
-  delete this->filters.lopass;
+  for (FirstOrderFilter* filter : this->filters) delete filter;
 }
 
 APU::APU(Memory& mem, InterruptLines& interrupt, uint sample_rate)
@@ -68,9 +64,9 @@ APU::APU(Memory& mem, InterruptLines& interrupt, uint sample_rate)
   this->power_cycle();
 
   // Setup filters
-  this->filters.hipass1 = new HiPassFilter (90,    sample_rate);
-  this->filters.hipass2 = new HiPassFilter (440,   sample_rate);
-  this->filters.lopass  = new LoPassFilter (14000, sample_rate);
+  this->filters[0] = new HiPassFilter (90,    sample_rate);
+  this->filters[1] = new HiPassFilter (440,   sample_rate);
+  this->filters[2] = new LoPassFilter (14000, sample_rate);
 }
 
 // https://wiki.nesdev.com/w/index.php/CPU_power_up_state
@@ -107,10 +103,10 @@ u8 APU::peek(u16 addr) const {
     state.dmc_irq   = !this->chan.dmc.inhibit_irq;
     state.frame_irq = !this->frame_counter.inhibit_irq;
 
-    state.pulse1 = this->chan.pulse1.len_count_val > 0;
-    state.pulse2 = this->chan.pulse2.len_count_val > 0;
-    state.tri    = this->chan.tri.len_count_val    > 0;
-    state.noise  = this->chan.noise.len_count_val  > 0;
+    state.pulse1 = this->chan.pulse1.len_count.val > 0;
+    state.pulse2 = this->chan.pulse2.len_count.val > 0;
+    state.tri    = this->chan.tri.len_count.val    > 0;
+    state.noise  = this->chan.noise.len_count.val  > 0;
     state.dmc    = this->chan.dmc.read_remaining   > 0;
 
     return state.val;
@@ -133,7 +129,7 @@ void APU::write(u16 addr, u8 val) {
   switch (addr) {
 #define pulse_impl(pulse, baddr) /* pulse1 and pulse2 are near identical... */ \
   case baddr+0: { this->chan.pulse.duty_cycle       =   (val & 0xC0) >> 6;     \
-                  this->chan.pulse.len_count_on     =  !(val & 0x20);          \
+                  this->chan.pulse.len_count.on     =  !(val & 0x20);          \
                   this->chan.noise.envelope.loop    = !!(val & 0x20);          \
                   this->chan.pulse.envelope.enabled =  !(val & 0x10);          \
                   this->chan.pulse.envelope.period  =   (val & 0x0F);          \
@@ -148,7 +144,7 @@ void APU::write(u16 addr, u8 val) {
   case baddr+3: { const u16 prev = this->chan.pulse.timer_period & 0x00FF;     \
                   this->chan.pulse.timer_period = prev | ((val & 0x07) << 8);  \
                   const u16 len_count = LEN_COUNTER_TABLE[(val & 0xF8) >> 3];  \
-                  this->chan.pulse.len_count_val = len_count;                  \
+                  this->chan.pulse.len_count.val = len_count;                  \
                   this->chan.pulse.envelope.reset = true;                      \
                   this->chan.pulse.duty_val = 0;                               \
                 } break;
@@ -157,8 +153,9 @@ void APU::write(u16 addr, u8 val) {
 #undef pulse_impl
 
   // Triangle
-  case 0x4008:  { this->chan.tri.len_count_on     = !(val & 0x80);
-                  this->chan.tri.lin_count_period =  (val & 0x7F);
+  case 0x4008:  { this->chan.tri.len_count.on     =  !(val & 0x80);
+                  this->chan.tri.lin_count_on     =  !(val & 0x80);
+                  this->chan.tri.lin_count_period =   (val & 0x7F);
                 } break;
   case 0x400A:  { const u16 prev = this->chan.tri.timer_period & 0xFF00;
                   this->chan.tri.timer_period = prev | val;
@@ -166,13 +163,13 @@ void APU::write(u16 addr, u8 val) {
   case 0x400B:  { const u16 prev = this->chan.tri.timer_period & 0x00FF;
                   this->chan.tri.timer_period = prev | ((val & 0x07) << 8);
                   const u16 len_count = LEN_COUNTER_TABLE[(val & 0xF8) >> 3];
-                  this->chan.tri.len_count_val = len_count;
+                  this->chan.tri.len_count.val = len_count;
                   this->chan.tri.timer_val = this->chan.tri.timer_period;
                   this->chan.tri.lin_count_reset = true;
                 } break;
 
   // Noise
-  case 0x400C:  { this->chan.noise.len_count_on     =  !(val & 0x20);
+  case 0x400C:  { this->chan.noise.len_count.on     =  !(val & 0x20);
                   this->chan.noise.envelope.loop    = !!(val & 0x20);
                   this->chan.noise.envelope.enabled =  !(val & 0x10);
                   this->chan.noise.envelope.period  =   (val & 0x0F);
@@ -182,7 +179,7 @@ void APU::write(u16 addr, u8 val) {
                   this->chan.noise.timer_period = NOISE_PERIOD_TABLE[val & 0x0F];
                 } break;
   case 0x400F:  { const u16 len_count = LEN_COUNTER_TABLE[(val & 0xF8) >> 3];
-                  this->chan.noise.len_count_val = len_count;
+                  this->chan.noise.len_count.val = len_count;
                   this->chan.noise.envelope.reset = true;
                 } break;
 
@@ -208,18 +205,23 @@ void APU::write(u16 addr, u8 val) {
                   this->chan.tri.enabled    = state.tri;
                   this->chan.noise.enabled  = state.noise;
                   this->chan.dmc.enabled    = state.dmc;
-                  if (!state.pulse1) this->chan.pulse1.len_count_val = 0;
-                  if (!state.pulse2) this->chan.pulse2.len_count_val = 0;
-                  if (!state.tri)    this->chan.tri.len_count_val    = 0;
-                  if (!state.noise)  this->chan.noise.len_count_val  = 0;
+                  if (!state.pulse1) this->chan.pulse1.len_count.val = 0;
+                  if (!state.pulse2) this->chan.pulse2.len_count.val = 0;
+                  if (!state.tri)    this->chan.tri.len_count.val    = 0;
+                  if (!state.noise)  this->chan.noise.len_count.val  = 0;
                   // If the DMC bit is clear, the DMC bytes remaining will be
                   //  set to 0 and the DMC will silence when it empties.
+                  if (!state.dmc) this->chan.dmc.read_remaining = 0;
                   // If the DMC bit is set, the DMC sample will be restarted
                   //  only if its bytes remaining is 0.
-                  if (!state.dmc) this->chan.dmc.read_remaining = 0;
                   else if (!this->chan.dmc.read_remaining) {
                     this->chan.dmc.read_addr = this->chan.dmc.sample_addr;
                     this->chan.dmc.read_remaining = this->chan.dmc.sample_len;
+                    // If there are bits remaining in the sample buffer, they
+                    //  will finish playing before the new sample is fetched.
+                    if (!this->chan.dmc.output_sr) {
+                      this->chan.dmc.dmc_transfer(this->mem, this->interrupt);
+                    } else { /* dmc starts later, once buffer empties */ }
                   }
                 } break;
 
@@ -243,7 +245,7 @@ void APU::write(u16 addr, u8 val) {
 
 void APU::Envelope::clock() {
   if (this->reset) {
-    this->decay = 15;
+    this->val = 15;
 
     this->step = this->period;
     this->reset = false;
@@ -254,9 +256,15 @@ void APU::Envelope::clock() {
   else {
     this->step = this->period;
 
-    /**/ if (this->decay) this->decay--;
-    else if (this->loop)  this->decay = 15;
+    /**/ if (this->val)  this->val--;
+    else if (this->loop) this->val = 15;
   }
+}
+
+/*----------  Length Counter Common  ----------*/
+
+void APU::LenCount::clock() {
+  if (this->on && this->val) { this->val--; }
 }
 
 /*--------  Pulse  --------*/
@@ -302,13 +310,13 @@ u8 APU::Channels::Pulse::output() const {
   if ( !this->enabled
     || !active
     // || sweep-adder overflow?
-    || !this->len_count_val
+    || !this->len_count.val
     || this->timer_val < 8
     || this->timer_period > 0x7FF
   ) return 0;
 
   return this->envelope.enabled
-    ? this->envelope.decay
+    ? this->envelope.val
     : this->envelope.period;
 }
 
@@ -328,13 +336,13 @@ void APU::Channels::Triangle::lin_count_clock() {
   /**/ if (this->lin_count_reset) this->lin_count_val = this->lin_count_period;
   else if (this->lin_count_val)   this->lin_count_val--;
 
-  if (this->len_count_on) // doubles as control flag
+  if (this->lin_count_on)
     this->lin_count_reset = false;
 }
 
 u8 APU::Channels::Triangle::output() const {
   if ( !this->enabled
-    || !this->len_count_val
+    || !this->len_count.val
     || !this->lin_count_val
   ) return 0;
 
@@ -361,68 +369,81 @@ void APU::Channels::Noise::timer_clock() {
 
 u8 APU::Channels::Noise::output() const {
   if ( !this->enabled
-    || !this->len_count_val
+    || !this->len_count.val
     || this->sr & 1
   ) return 0;
 
   return this->envelope.enabled
-    ? this->envelope.decay
+    ? this->envelope.val
     : this->envelope.period;
 }
 
 /*--------  DMC  --------*/
 // https://wiki.nesdev.com/w/index.php/APU_DMC
 
+void APU::Channels::DMC::dmc_transfer(Memory& mem, InterruptLines& interrupt) {
+  if (this->read_buffer_empty && this->read_remaining) {
+    // 1) The CPU is stalled for up to 4 CPU cycles to allow the longest
+    //    possible write (the return address and write after an IRQ) to
+    //    finish. If OAM DMA is in progress, it is paused for two cycles.
+    this->dmc_stall = true;
+    // 2) The sample buffer is filled with the next sample byte read from
+    //    the current address
+    this->read_buffer = mem[this->read_addr];
+    this->read_buffer_empty = false;
+    // 3) The address is incremented.
+    //    If it exceeds $FFFF, it wraps to $8000
+    if (++this->read_addr == 0x0000) this->read_addr = 0x8000;
+    // 4) The bytes remaining counter is decremented;
+    //    If it becomes zero and the loop flag is set, the sample is
+    //    restarted; otherwise, if the bytes remaining counter becomes zero
+    //    and the IRQ enabled flag is set, the interrupt flag is set.
+    if (--this->read_remaining == 0) {
+      if (this->loop) {
+        this->read_addr = this->sample_addr;
+        this->read_remaining = this->sample_len;
+      } else if (!this->inhibit_irq) {
+        // this->inhibit_irq = true;
+        interrupt.request(Interrupts::IRQ);
+      }
+    }
+  }
+}
+
 void APU::Channels::DMC::timer_clock(Memory& mem, InterruptLines& interrupt) {
   if (this->timer_val) { this->timer_val--; return; }
   this->timer_val = this->timer_period;
 
   // When the timer outputs a clock, the following actions occur in order:
-  // 1) The output level changes based on bit 0 of the shift register:
-  //     If the bit is 1, add 2; otherwise, subtract 2.
-  //    If adding or subtracting 2 would cause the output level to leave the
-  //     0-127 range, leave the output level unchanged.
-  if (this->output_sr & 1) this->output_val += (this->output_val <= 125) * 2;
-  else                     this->output_val -= (this->output_val >=   2) * 2;
-  // 2) The right shift register is clocked.
-  this->output_sr >>= 1;
-  // 3) The bits-remaining counter is updated (regardless of whether a sample is
-  //     currently playing)
-  //     When this counter reaches zero, we say that the output cycle ends.
+
+  // 1) If the silence flag is clear, the output level changes based on bit 0 of
+  //     the shift register; If the bit is 1, add 2; otherwise, subtract 2.
+  if (!this->output_silence) {
+    // If adding or subtracting 2 would cause the output level to leave the
+    //  0-127 range, leave the output level unchanged.
+    if (this->output_sr & 1) this->output_val += (this->output_val <= 125) * 2;
+    else                     this->output_val -= (this->output_val >=   2) * 2;
+    // 2) The right shift register is clocked
+    this->output_sr >>= 1;
+  }
+
+  // 3) The bits-remaining counter is updated.
+  //    When this counter reaches zero, we say that the output cycle ends.
+  if (this->output_bits_remaining) { this->output_bits_remaining--; }
   // When an output cycle ends, a new cycle is started as follows:
   //  1) The bits-remaining counter is loaded with 8.
   //  2) The sample buffer is emptied into the shift register, and is refilled
   //      if needed.
-  if (this->output_bits_remaining) { this->output_bits_remaining--; }
-  else {
+  if (!this->output_bits_remaining) {
     this->output_bits_remaining = 8;
-    this->output_sr = this->read_buffer;
-    this->read_buffer = 0;
-    // Perform memory read
-    if (this->read_remaining) {
-      // 1) The CPU is stalled for up to 4 CPU cycles to allow the longest
-      //    possible write (the return address and write after an IRQ) to
-      //    finish. If OAM DMA is in progress, it is paused for two cycles.
-      this->dmc_stall = true;
-      // 2) The sample buffer is filled with the next sample byte read from
-      //    the current address
-      this->read_buffer = mem[this->read_addr];
-      // 3) The address is incremented.
-      //    If it exceeds $FFFF, it wraps to $8000
-      if (++this->read_addr == 0x0000) this->read_addr = 0x8000;
-      // 4) The bytes remaining counter is decremented;
-      //    If it becomes zero and the loop flag is set, the sample is
-      //    restarted; otherwise, if the bytes remaining counter becomes zero
-      //    and the IRQ enabled flag is set, the interrupt flag is set.
-      if (--this->read_remaining == 0) {
-        if (this->loop) {
-          this->read_addr = this->sample_addr;
-          this->read_remaining = this->sample_len;
-        } else if (!this->inhibit_irq) {
-          this->inhibit_irq = true;
-          interrupt.request(Interrupts::IRQ);
-        }
-      }
+    if (this->read_buffer_empty) {
+      this->output_silence = true;
+    } else {
+      this->output_silence = false;
+      this->output_sr = this->read_buffer;
+      this->read_buffer_empty = true;
+      // Perform memory read
+      this->dmc_transfer(mem, interrupt);
     }
   }
 }
@@ -436,11 +457,24 @@ u8 APU::Channels::DMC::output() const {
 
 /*----------------------------  APU Functionality  ---------------------------*/
 
-void APU::clock_envelopes() {
-  this->chan.pulse1.envelope.clock();
-  this->chan.pulse2.envelope.clock();
-  this->chan.noise.envelope.clock();
-  this->chan.tri.lin_count_clock();
+void APU::clock_timers() {
+  // The triangle channel's timer is clocked on every CPU cycle, but the pulse,
+  //  noise, and DMC timers are clocked only on every second CPU cycle
+  //  (and thus produce only even periods).
+  this->chan.tri.timer_clock();
+  if (this->cycles % 2) {
+    this->chan.pulse1.timer_clock();
+    this->chan.pulse2.timer_clock();
+    this->chan.noise.timer_clock();
+    this->chan.dmc.timer_clock(this->mem, this->interrupt); // ugly param pass
+  }
+}
+
+void APU::clock_length_counters() {
+  this->chan.pulse1.len_count.clock();
+  this->chan.pulse2.len_count.clock();
+  this->chan.noise.len_count.clock();
+  this->chan.tri.len_count.clock();
 }
 
 void APU::clock_sweeps() {
@@ -448,31 +482,11 @@ void APU::clock_sweeps() {
   this->chan.pulse2.sweep_clock();
 }
 
-void APU::clock_timers() {
-  // A timer is used in each of the five channels to control the sound frequency.
-  // It contains a divider which is clocked by the CPU clock.
-  // The triangle channel's timer is clocked on every CPU cycle, but the pulse,
-  //  noise, and DMC timers are clocked only on every second CPU cycle
-  //  (and thus produce only even periods).
-
-  this->chan.tri.timer_clock();
-  if (this->cycles % 2) {
-    this->chan.pulse1.timer_clock();
-    this->chan.pulse2.timer_clock();
-    this->chan.noise.timer_clock();
-    this->chan.dmc.timer_clock(this->mem, this->interrupt); // ugly
-  }
-}
-
-void APU::clock_length_counters() {
-  if (this->chan.pulse1.len_count_on && this->chan.pulse1.len_count_val)
-    this->chan.pulse1.len_count_val--;
-  if (this->chan.pulse2.len_count_on && this->chan.pulse2.len_count_val)
-    this->chan.pulse2.len_count_val--;
-  if (this->chan.tri.len_count_on && this->chan.tri.len_count_val)
-    this->chan.tri.len_count_val--;
-  if (this->chan.noise.len_count_on && this->chan.noise.len_count_val)
-    this->chan.noise.len_count_val--;
+void APU::clock_envelopes() {
+  this->chan.pulse1.envelope.clock();
+  this->chan.pulse2.envelope.clock();
+  this->chan.noise.envelope.clock();
+  this->chan.tri.lin_count_clock();
 }
 
 // mode 0:    mode 1:       function
@@ -486,9 +500,7 @@ void APU::cycle() {
   this->clock_timers();
 
   // The APU is cycled at 240Hz.
-  // The CPU runs at 1789773 Hz
-  // Thus, only step frame counter CPUSPEED / 240 cycles
-  if (this->cycles % (1789773 / 240) == 0) {
+  if (this->cycles % (this->clock_rate / 240) == 0) {
     if (this->frame_counter.five_frame_seq) {
       switch(this->seq_step % 5) {
       case 0: { this->clock_envelopes();
@@ -520,7 +532,7 @@ void APU::cycle() {
                 this->clock_length_counters();
                 this->clock_sweeps();
                 if (this->frame_counter.inhibit_irq == false) {
-                  // this->interrupt.request(Interrupts::IRQ);
+                  this->interrupt.request(Interrupts::IRQ);
                 }
               } break;
       }
@@ -530,7 +542,8 @@ void APU::cycle() {
 
   // Sample APU
   if (this->cycles % (this->clock_rate / this->sample_rate) == 0) {
-    float sample = APU::audioLUT.sample(
+    // Get the sample from the mixer
+    float sample = this->mixer.sample(
       this->chan.pulse1.output(),
       this->chan.pulse2.output(),
       this->chan.tri.output(),
@@ -539,10 +552,10 @@ void APU::cycle() {
     );
 
     // Run though filter chain
-    sample = this->filters.lopass->process(sample);
-    sample = this->filters.hipass2->process(sample);
-    sample = this->filters.hipass1->process(sample);
+    for (FirstOrderFilter* filter : this->filters)
+      sample = filter->process(sample);
 
+    // Send it off the the audio-buffer!
     audiobuff.data[audiobuff.i] = sample;
     if (audiobuff.i < 4096) audiobuff.i++;
   }

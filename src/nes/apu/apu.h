@@ -14,42 +14,67 @@
 // https://wiki.nesdev.com/w/index.php/APU#Mixer
 class APU final : public Memory, public Serializable {
 private:
+  /*----------  Common Hardware Types  ----------*/
+
+  // Used on Pulse 1, Pulse 2, and Noise
+  struct Envelope {
+    // Set via registers
+    bool enabled;
+    u8   period;
+    bool loop;
+
+    // Internals
+    bool reset;
+    u8   step;
+    u8   val;
+
+    void clock();
+  };
+
+  // Used on Pulse 1, Pulse 2, Triangle, and Noise
+  struct LenCount {
+    // Set via registers
+    bool on;
+    u8   val; // auto-decrements
+
+    void clock();
+  };
+
   /*----------  Hardware  ----------*/
 
   InterruptLines& interrupt;
   Memory& mem;
 
-  struct Envelope {
-    bool enabled;
-    bool loop;
-    bool reset;
-    u8   period;
-    u8   step;
-    u8   decay;
-
-    void clock();
-  };
-
   struct Channels {
     // 0x4000 - 0x4003 - Pulse 1 channel
     // 0x4004 - 0x4007 - Pulse 2 channel
     struct Pulse {
-      bool enabled;       // 0x4015:0 and 0x4015:1
+      // 0x4015:0 / 0x4015:1
+      bool enabled;
 
-      Envelope envelope;  // 0x4000:0-4 (period) and
-                          // 0x400C:5   (enable)
-      bool len_count_on;  // 0x4000:5
-      u8   duty_cycle;    // 0x4000:6-7 (index into table)
-      union {             // 0x4001
+      // 0x4000:0-4 - period
+      // 0x4000:5   - enable
+      Envelope envelope;
+
+      // 0x4000:5   - on
+      // 0x4003:3-7 - val (set via table)
+      LenCount len_count;
+
+      // 0x4000:6-7 (index into duty-table)
+      u8 duty_cycle;
+
+      // 0x4001:0-7
+      union {
         u8 _val;
         BitField<7>    enabled;
         BitField<4, 3> period;
         BitField<3>    negate;
         BitField<0, 3> shift;
       } sweep;
-      u16 timer_period;   // 0x4002:0-8 (low bits) and
-                          // 0x4003:0-3 (high bits)
-      u8   len_count_val; // 0x4003:3-7 (set via table)
+
+      // 0x4002:0-8 - low bits
+      // 0x4003:0-3 - high bits
+      u16 timer_period;
 
       // Internals
       bool sweep_reset;
@@ -69,11 +94,14 @@ private:
     struct Triangle {
       bool enabled;
 
-      bool len_count_on;     // 0x4008:7 // Doubles as lin_count control flag!
+      // 0x4008:7   - on
+      // 0x400B:3-7 - val (set via table)
+      LenCount len_count;
+
+      bool lin_count_on;     // 0x4008:7
       u8   lin_count_period; // 0x4008:0-6
       u16  timer_period;     // 0x400A:0-8 (low bits) and
                              // 0x400B:0-3 (high bits)
-      u8   len_count_val;    // 0x400B:3-7 (set via table)
 
       // Internals
       bool lin_count_reset;
@@ -89,14 +117,19 @@ private:
 
     // 0x400C - 0x400F - Noise channel
     struct Noise {
-      bool enabled;       // 0x4015:3
+      // 0x4015:3
+      bool enabled;
 
-      Envelope envelope;  // 0x400C:0-4 (period) and
-                          // 0x400C:5   (enable)
-      bool len_count_on;  // 0x400C:5   (enable)
+      // 0x400C:0-4 - period
+      // 0x400C:5   - enable
+      Envelope envelope;
+
+      // 0x400C:5   - on
+      // 0x400F:3-7 - val (set via table)
+      LenCount len_count;
+
       bool mode;          // 0x400E:7
       u16  timer_period;  // 0x400E:0-3 (set via table)
-      u8   len_count_val; // 0x400F:3-7 (set via table)
 
       // Internals
       u16 sr;
@@ -121,6 +154,7 @@ private:
       // Internals
       u16  timer_val;
       u8   read_buffer;
+      bool read_buffer_empty;
       u16  read_addr;
       uint read_remaining;
       u8   output_sr;
@@ -131,6 +165,8 @@ private:
       bool dmc_stall;
 
       void timer_clock(Memory& mem, InterruptLines& interrupt);
+
+      void dmc_transfer(Memory& mem, InterruptLines& interrupt);
 
       u8 output() const;
     } dmc;
@@ -162,11 +198,7 @@ private:
 
   const uint sample_rate;
 
-  struct {
-    HiPassFilter* hipass1;
-    HiPassFilter* hipass2;
-    LoPassFilter* lopass;
-  } filters;
+  FirstOrderFilter* filters [3]; // Hi/Lo pass filter chain
 
   uint cycles;   // Total Cycles elapsed
   uint seq_step; // Frame Sequence Step
@@ -176,7 +208,7 @@ private:
     float data [4096] = {0};
   } audiobuff;
 
-  uint clock_rate = 1789773; // changes when speed changes
+  uint clock_rate = 1789773; // changes when speeding up / slowing down NES
 
   SERIALIZE_START(4, "APU")
     SERIALIZE_POD(chan)
@@ -192,14 +224,14 @@ private:
   void clock_timers();
   void clock_length_counters();
 
-  static const class AudioLUT {
+  class Mixer {
   private:
     float pulse_table [31];
     float tnd_table  [203];
   public:
-    AudioLUT();
+    Mixer();
     float sample(u8 pulse1, u8 pulse2, u8 triangle, u8 noise, u8 dmc) const;
-  } audioLUT;
+  } mixer;
 
 public:
   ~APU();

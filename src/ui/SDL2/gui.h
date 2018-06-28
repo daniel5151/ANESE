@@ -35,6 +35,7 @@ private:
     std::string rom;
   } args;
 
+  // 44100 makes pulses sound awful with my naiive sampling method
   static constexpr uint SAMPLE_RATE = 96000;
 
   /*------------------------------  SDL Things  ------------------------------*/
@@ -49,8 +50,8 @@ private:
     // NES render things
     SDL_Texture*      nes_texture = nullptr;
     SDL_Rect          nes_screen;
-    SDL_AudioDeviceID nes_audiodev;
-    Sound_Queue  nes_sound_queue;
+    // SDL_AudioDeviceID nes_audiodev;
+    Sound_Queue nes_sound_queue;
 
     // UI render things
     SDL_Rect bg;
@@ -74,8 +75,8 @@ private:
     } menu;
   } ui;
 
-  uint RES_X = 256;
-  uint RES_Y = 240;
+  const uint RES_X = 256;
+  const uint RES_Y = 240;
 
   uint SCREEN_SCALE = 2;
 

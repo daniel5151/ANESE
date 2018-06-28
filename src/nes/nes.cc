@@ -109,7 +109,7 @@ void NES::cycle() {
     this->apu.cycle();
 
   if (this->apu.stall_cpu())
-    cpu_cycles += 4; // not entirely accurate... could be less
+    cpu_cycles += 4; // not entirely accurate... depends on other factors
 
   // Run PPU + Cartridge 3x per cpu_cycle
   for (uint i = 0; i < cpu_cycles * 3; i++) {
