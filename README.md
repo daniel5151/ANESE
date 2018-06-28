@@ -154,19 +154,14 @@ Load Save-State    | Ctrl - Shift - (1-4) |
 accurate. While this inaccuracy doesn't affect most games, there are some that
 that rely on sub-instruction level timings (eg: Solomon's Key).
   - The `--alt-nmi-timing` flag might fix some of these games.
-- The APU is _not my code_. I wanted to get ANESE at least partially up and
-running before new-years 2018, so I'm using Blargg's venerable `nes_snd_emu`
-library to handle sound (for now). Once I polish up some of the other aspects
-of the emulator, I'll try to revisit my own APU implementation (which is
-currently a stub)
 
 ## TODO
 
 This is a rough list of things I would like to accomplish, with those closer to
 the top higher on my priority list:
 
-- [ ] _Implement_: My own APU (don't use Blarrg's)
-- [ ] _Implement_: Robust menu system
+- [x] _Implement_: My own APU (don't use Blarrg's)
+- [ ] _Implement_: More robust menu system
 - [x] _Refactor_: Modularize `main.cc` - push everything into `src/ui/`
   - [x] _Refactor_: Split `gui.cc` into more files!
 - [ ] _CMake_: Make building macOS bundles less brittle
@@ -207,20 +202,20 @@ the top higher on my priority list:
     - [x] Proper Background / Foreground blending
   - [x] Sprite Zero Hit
   - [ ] Misc PPU flags (emphasize RGB, Greyscale, etc...)
-- [ ] APU - ***Uses `nes_snd_emu` by Blargg - crashes sometimes***
+- [x] APU
   - [x] Implement Registers + Memory Map them
-  - [ ] Frame Timer IRQ
-  - [ ] Set Up Basic Sound Output Context (SDL)
-  - [ ] Channels
-    - [ ] PCM 1
-    - [ ] PCM 2
-    - [ ] Triangle
-    - [ ] Noise
-    - [ ] DMC
-  - [ ] DMC DMA
+  - [ ] Frame Timer IRQ - _kinda_
+  - [x] Set Up Basic Sound Output Context (SDL)
+  - [x] Channels
+    - [x] Pulse 1
+    - [x] Pulse 2
+    - [x] Triangle
+    - [x] Noise
+    - [x] DMC
+  - [x] DMC DMA
 - [ ] Joypads
   - [x] Basic Controller
-  - [ ] Zapper
+  - [ ] Zapper - _needs work_
   - [ ] NES Four Score
 
 ### Secondary Milestones
@@ -269,7 +264,7 @@ the top higher on my priority list:
 
 ### Accuracy & Compatibility
 
-- More Mappers!
+- More Mappers! Always more mappers!
 - CPU
   - [ ] Implement Unofficial Opcodes
   - [ ] Pass More Tests yo
@@ -286,14 +281,12 @@ the top higher on my priority list:
 - A big shout-out to [LaiNES](https://github.com/AndreaOrru/LaiNES) and
 [fogleman/nes](https://github.com/fogleman/nes), two solid NES emulators that I
 referenced while implementing some particularly tricky parts of the PPU). While
-I actively avoided looking at the source codes of other NES emulators
-as I set about writing my initial implementations of the CPU and PPU, I did
-sneak a peek at how others did some things when I got very stuck.
-- Blargg's [nes_snd_emu](http://www.slack.net/~ant/libs/audio.html) makes ANESE
-  sound as good as it does :smile:
+I actively avoided looking at the source codes of other NES emulators as I wrote
+my initial implementations of the CPU and PPU, I did occationally sneak a peek
+at how others did things when I got very stuck.
 - These awesome libraries make ANESE a lot nicer to use:
-  - [sdl2](https://www.libsdl.org/)
-  - [clara](https://github.com/catchorg/Clara)
-  - [miniz](https://github.com/richgel999/miniz)
-  - [cute_headers](https://github.com/RandyGaul/cute_headers/)
-  - [SDL_inprint](https://github.com/driedfruit/SDL_inprint/)
+  - [sdl2](https://www.libsdl.org/) - A/V and Input
+  - [SDL_inprint](https://github.com/driedfruit/SDL_inprint/) - SDL fonts, without SDL_ttf
+  - [clara](https://github.com/catchorg/Clara) - Argument Parsing
+  - [miniz](https://github.com/richgel999/miniz) - Zipped ROM support
+  - [cute_headers](https://github.com/RandyGaul/cute_headers/) - `cute_files.h` for cross-platform directory browsing
