@@ -39,9 +39,10 @@ void SDL_GUI::step_nes() {
  */
 void SDL_GUI::output_nes() {
   // output audio!
-  short* samples = nullptr;
+  float* samples = nullptr;
   uint   count = 0;
   this->nes.console.getAudiobuff(samples, count);
+  // SDL_QueueAudio(this->sdl.nes_audiodev, samples, count * sizeof(float));
   if (count) this->sdl.nes_sound_queue.write(samples, count);
 
   // output video!

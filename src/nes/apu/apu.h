@@ -8,6 +8,8 @@
 
 #include "common/serializable.h"
 
+#include "filters.h"
+
 // NES APU
 // https://wiki.nesdev.com/w/index.php/APU#Mixer
 class APU final : public Memory, public Serializable {
@@ -39,7 +41,7 @@ private:
       bool len_count_on;  // 0x4000:5
       u8   duty_cycle;    // 0x4000:6-7 (index into table)
       union {             // 0x4001
-        u8 val;
+        u8 _val;
         BitField<7>    enabled;
         BitField<4, 3> period;
         BitField<3>    negate;
@@ -51,7 +53,7 @@ private:
 
       // Internals
       bool sweep_reset;
-      bool seq_reset;
+      u8   sweep_val;
       u8   duty_val;
       u16  timer_val;
 
@@ -108,7 +110,29 @@ private:
     // 0x4010 - 0x4014 - DMC channel
     struct DMC {
       bool enabled;
-      /* ... stub ... */
+
+      bool inhibit_irq;   // 0x4010:7
+      bool loop;          // 0x4010:6
+      uint timer_period;  // 0x4010:0-3 (set via table)
+      u8   output_val;    // 0x4011:0-7
+      u16  sample_addr;   // 0x4012:0-7 (using formula)
+      u16  sample_len;    // 0x4013:0-7 (using formula)
+
+      // Internals
+      u16  timer_val;
+      u8   read_buffer;
+      u16  read_addr;
+      uint read_remaining;
+      u8   output_sr;
+      uint output_bits_remaining;
+      bool output_silence;
+
+      // Emulator
+      bool dmc_stall;
+
+      void timer_clock(Memory& mem, InterruptLines& interrupt);
+
+      u8 output() const;
     } dmc;
   } chan;
 
@@ -136,12 +160,20 @@ private:
 
   /*----------  Emulation Vars  ----------*/
 
+  const uint sample_rate;
+
+  struct {
+    HiPassFilter* hipass1;
+    HiPassFilter* hipass2;
+    LoPassFilter* lopass;
+  } filters;
+
   uint cycles;   // Total Cycles elapsed
   uint seq_step; // Frame Sequence Step
 
   struct {
     uint i = 0;
-    short data [4096] = {0};
+    float data [4096] = {0};
   } audiobuff;
 
   uint clock_rate = 1789773; // changes when speed changes
@@ -162,17 +194,17 @@ private:
 
   static const class AudioLUT {
   private:
-    double pulse_table [31];
-    double tnd_table  [203];
+    float pulse_table [31];
+    float tnd_table  [203];
   public:
     AudioLUT();
-    double sample(u8 pulse1, u8 pulse2, u8 triangle, u8 noise, u8 dmc) const;
+    float sample(u8 pulse1, u8 pulse2, u8 triangle, u8 noise, u8 dmc) const;
   } audioLUT;
 
 public:
   ~APU();
   APU() = delete;
-  APU(Memory& mem, InterruptLines& interrupt);
+  APU(Memory& mem, InterruptLines& interrupt, uint sample_rate);
 
   // <Memory>
   u8 read(u16 addr)            override;
@@ -184,7 +216,12 @@ public:
   void reset();
 
   void cycle();
+  bool stall_cpu() {
+    bool stall = this->chan.dmc.dmc_stall;
+    this->chan.dmc.dmc_stall = false;
+    return stall;
+  }
 
-  void getAudiobuff(short*& samples, uint& len);
-  void set_speed(double speed);
+  void getAudiobuff(float*& samples, uint& len);
+  void set_speed(float speed);
 };

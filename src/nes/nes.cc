@@ -4,7 +4,7 @@
 
 // The constructor creates the individual NES components, and "wires them up"
 // to one antother.
-NES::NES() :
+NES::NES(uint apu_sample_rate) :
 // RAM Modules
 cpu_wram(0x800, "WRAM"),
 ppu_vram(0x800, "CIRAM"),
@@ -13,7 +13,7 @@ ppu_pram(32, "Palette"),
 // (techincally UB since we pass references to objects that have not been
 // initialized yet...)
 cpu(this->cpu_mmu, this->interrupts),
-apu(this->cpu_mmu, this->interrupts),
+apu(this->cpu_mmu, this->interrupts, apu_sample_rate),
 ppu(
   this->ppu_mmu,
   this->dma,
@@ -104,8 +104,14 @@ void NES::cycle() {
   // Execute a CPU instruction
   uint cpu_cycles = this->cpu.step();
 
-  // Run PPU  + Cartridge 3x per cpu_cycle, and APU 1x per cpu_cycle
-  for (uint i = 0; i < cpu_cycles    ; i++) this->apu.cycle();
+  // Run APU 1x per cpu_cycle
+  for (uint i = 0; i < cpu_cycles; i++)
+    this->apu.cycle();
+
+  if (this->apu.stall_cpu())
+    cpu_cycles += 4; // not entirely accurate... could be less
+
+  // Run PPU + Cartridge 3x per cpu_cycle
   for (uint i = 0; i < cpu_cycles * 3; i++) {
     this->ppu.cycle();
     this->cart->cycle();
@@ -129,7 +135,7 @@ const u8* NES::getFramebuff() const {
   return this->ppu.getFramebuff();
 }
 
-void NES::getAudiobuff(short*& samples, uint& len) {
+void NES::getAudiobuff(float*& samples, uint& len) {
   this->apu.getAudiobuff(samples, len);
 }
 

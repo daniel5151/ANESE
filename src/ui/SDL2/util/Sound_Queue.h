@@ -22,7 +22,7 @@ public:
 	int sample_count() const;
 
 	// Write samples to buffer and block until enough space is available
-	typedef short sample_t;
+	typedef float sample_t;
 	void write( const sample_t*, int count );
 
 private:

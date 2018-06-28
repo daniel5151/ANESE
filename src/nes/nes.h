@@ -73,7 +73,7 @@ private:
   SERIALIZE_END(10)
 
 public:
-  NES();
+  NES(uint apu_sample_rate);
 
   /*-----------  Key Operation Functions  ------------*/
 
@@ -91,7 +91,7 @@ public:
                      // (calls cycle() internally)
 
   const u8* getFramebuff() const;
-  void getAudiobuff(short*& samples, uint& len);
+  void getAudiobuff(float*& samples, uint& len);
 
   bool isRunning() const;
 

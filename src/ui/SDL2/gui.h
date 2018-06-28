@@ -35,6 +35,8 @@ private:
     std::string rom;
   } args;
 
+  static constexpr uint SAMPLE_RATE = 96000;
+
   /*------------------------------  SDL Things  ------------------------------*/
   bool sdl_running = true;
 
@@ -45,8 +47,9 @@ private:
     SDL_GameController* controller = nullptr;
 
     // NES render things
-    SDL_Texture* nes_texture = nullptr;
-    SDL_Rect     nes_screen;
+    SDL_Texture*      nes_texture = nullptr;
+    SDL_Rect          nes_screen;
+    SDL_AudioDeviceID nes_audiodev;
     Sound_Queue  nes_sound_queue;
 
     // UI render things
@@ -79,12 +82,12 @@ private:
   /*------------------------------  NES Things  ------------------------------*/
 
   struct {
-    NES console;
+    NES console { SDL_GUI::SAMPLE_RATE };
     Cartridge* cart = nullptr;
 
-    JOY_Standard joy_1 = JOY_Standard("P1");
-    JOY_Standard joy_2 = JOY_Standard("P2");
-    JOY_Zapper   zap_2 = JOY_Zapper("Z2");
+    JOY_Standard joy_1 { "P1" };
+    JOY_Standard joy_2 { "P2" };
+    JOY_Zapper   zap_2 { "Z2" };
 
     // Movie Controllers
     FM2_Replay fm2_replay;

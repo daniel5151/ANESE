@@ -25,7 +25,7 @@ after_success:
     if [[ "$TRAVIS_OS_NAME" == "osx" && "$CXX" == "clang++" ]]
     then
       brew install gdrive
-      ARCHIVE="ANESE_macOS_`date +"%Y%m%d"`_`git rev-parse --short HEAD`.zip"
+      ARCHIVE="ANESE_macOS_`git rev-parse --abbrev-ref HEAD`_`date +"%Y%m%d"`_`git rev-parse --short HEAD`.zip"
       echo "Creating $ARCHIVE"
       cd $TRAVIS_BUILD_DIR/bin
       cp -R ../roms/demos ./

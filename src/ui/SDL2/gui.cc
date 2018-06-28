@@ -115,7 +115,16 @@ int SDL_GUI::init(int argc, char* argv[]) {
     }
   }
 
-  this->sdl.nes_sound_queue.init(44100);
+  // SDL_AudioSpec as, have;
+  // as.freq = SDL_GUI::SAMPLE_RATE;
+  // as.format = AUDIO_F32SYS;
+  // as.channels = 1;
+  // as.samples = 4096;
+  // as.callback = nullptr; // use SDL_QueueAudio
+  // this->sdl.nes_audiodev = SDL_OpenAudioDevice(NULL, 0, &as, &have, 0);
+  // SDL_PauseAudioDevice(this->sdl.nes_audiodev, 0);
+
+  this->sdl.nes_sound_queue.init(SDL_GUI::SAMPLE_RATE);
 
   // Setup SDL2_inprint font
   SDL2_inprint::inrenderer(this->sdl.renderer);
@@ -258,6 +267,7 @@ SDL_GUI::~SDL_GUI() {
   delete this->nes.cart;
 
   // SDL Cleanup
+  // SDL_CloseAudioDevice(this->sdl.nes_audiodev);
   SDL_GameControllerClose(this->sdl.controller);
   SDL_DestroyTexture(this->sdl.nes_texture);
   SDL_DestroyRenderer(this->sdl.renderer);
