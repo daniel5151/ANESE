@@ -22,7 +22,7 @@ static inline std::string get_file_ext(const char* filename) {
 /*----------  File Data Loaders  ----------*/
 
 // Loads file directly into memory
-bool load_file(const char* filepath, u8*& data, uint& data_len) {
+bool ANESE_fs::load::load_file(const char* filepath, u8*& data, uint& data_len) {
   if (!filepath) {
     fprintf(stderr, "[Load] filepath == nullptr in load_file!\n");
     assert(false);
@@ -119,7 +119,7 @@ static bool load_zipped_nes_file(const char* filepath, u8*& data, uint& data_len
 
 // Given a filepath, tries to open and parse it as a NES ROM.
 // Returns a valid ROM_File, or a nullptr if something went wrong
-ROM_File* load_rom_file(const char* filepath) {
+ROM_File* ANESE_fs::load::load_rom_file(const char* filepath) {
   if (!filepath) {
     fprintf(stderr, "[Load] filepath == nullptr in load_rom_file!\n");
     assert(false);

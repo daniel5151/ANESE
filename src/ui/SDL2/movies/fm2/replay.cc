@@ -7,9 +7,9 @@
 #include <cstring>
 
 FM2_Replay::~FM2_Replay() {
-  delete this->joy[0].memory;
-  delete this->joy[1].memory;
-  delete this->joy[2].memory;
+  delete this->joy[0]._mem;
+  delete this->joy[1]._mem;
+  delete this->joy[2]._mem;
 
   delete this->fm2;
 }
@@ -28,7 +28,7 @@ FM2_Replay::FM2_Replay() {
 bool FM2_Replay::init(const char* filename, bool lazy) {
   (void)lazy; // TODO: lazy-loading FM2
 
-  load_file(filename, this->fm2, this->fm2_len);
+  ANESE_fs::load::load_file(filename, this->fm2, this->fm2_len);
 
   bool did_parse = this->parse_fm2_header();
 
@@ -72,7 +72,7 @@ bool FM2_Replay::parse_fm2_header() {
 
 Memory* FM2_Replay::get_joy(uint port) const {
   assert(port < 2);
-  return this->joy[port].memory;
+  return this->joy[port]._mem;
 }
 
 bool FM2_Replay::is_enabled() const { return this->enabled; }

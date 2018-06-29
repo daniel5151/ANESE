@@ -16,8 +16,7 @@ private:
   struct {
     FM2_Controller::Type type;
     union {
-      Memory* memory;
-
+      Memory* _mem;
       JOY_Standard* standard;
     //JOY_Zapper*   zapper;
     };

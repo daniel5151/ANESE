@@ -46,7 +46,7 @@ bool FM2_Record::init(FILE* file, bool binary) {
 void FM2_Record::set_joy(uint port, FM2_Controller::Type type, Memory* joy) {
   assert(port < 3);
   this->joy[port].type = type;
-  this->joy[port].memory = joy;
+  this->joy[port]._mem = joy;
 }
 
 bool FM2_Record::is_enabled() const { return this->enabled; }

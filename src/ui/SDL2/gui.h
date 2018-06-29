@@ -15,7 +15,8 @@
 #include "util/Sound_Queue.h"
 
 #include <cute_files.h>
-#include <SimpleIni.h>
+
+#include "config.h"
 
 /**
  * Implementations are strewn-across multiple files, as having everything in a
@@ -39,14 +40,7 @@ private:
   } args;
 
   // Global config
-  CSimpleIniA config_ini;
-  struct {
-    // UI
-    uint window_scale;
-
-    // Paths
-    char roms_dir [256];
-  } config;
+  Config config;
 
   /*------------------------------  SDL Things  ------------------------------*/
   bool sdl_running = true;
@@ -54,31 +48,27 @@ private:
   // 44100 makes pulses sound awful with my naive sampling method
   static constexpr uint SAMPLE_RATE = 96000;
 
+  // NES screen-size constants
+  static constexpr uint RES_X = 256;
+  static constexpr uint RES_Y = 240;
+
+  static constexpr uint SCREEN_SCALE = 2; // internal screen scale
+
   struct {
-    SDL_Renderer* renderer    = nullptr;
-    SDL_Window*   window      = nullptr;
-
+    SDL_Renderer* renderer = nullptr;
+    SDL_Window*   window   = nullptr;
     SDL_GameController* controller = nullptr;
-
-    // NES render things
-    SDL_Texture*      nes_texture = nullptr;
-    SDL_Rect          nes_screen;
-    // SDL_AudioDeviceID nes_audiodev;
-    Sound_Queue nes_sound_queue;
-
-    // UI render things
-    SDL_Rect bg;
   } sdl;
 
   /*------------------------------  UI Things  -------------------------------*/
 
-  // NES screen-size constants
-  const uint RES_X = 256;
-  const uint RES_Y = 240;
-
-  const uint SCREEN_SCALE = 2; // internal screen scale
-
-  struct {
+  // implemented in ui_menu.cc
+  struct Menu {
+  private:
+    SDL_Rect bg;
+  protected:
+    SDL_GUI& gui;
+  public:
     char current_rom_file [256] = "\0";
     bool in_menu = true;
     struct {
@@ -87,16 +77,39 @@ private:
       bool should_update_dir = true;
       uint selected_i = 0;
       struct {
+        uint timeout = 0;
+        char buf [16] = "\0";
+        uint i = 0;
+      } quicknav;
+
+      struct {
         bool enter, up, down, left, right;
         char last_ascii;
       } hit = {0, 0, 0, 0, 0, 0};
     } menu;
-  } ui;
+
+    Menu(SDL_GUI& gui) : gui(gui) {}
+    ~Menu();
+
+    void init();
+    void input(const SDL_Event&);
+    void update();
+    void output();
+  } ui { *this };
 
   /*------------------------------  NES Things  ------------------------------*/
 
-  struct {
-    NES console { SDL_GUI::SAMPLE_RATE };
+  // implemented in ui_emu.cc
+  struct Emu {
+  private:
+    SDL_Texture*      nes_texture = nullptr;
+    SDL_Rect          nes_screen;
+    // SDL_AudioDeviceID nes_audiodev;
+    Sound_Queue nes_sound_queue;
+  protected:
+    SDL_GUI& gui;
+  public:
+    NES nes { SDL_GUI::SAMPLE_RATE };
     Cartridge* cart = nullptr;
 
     JOY_Standard joy_1 { "P1" };
@@ -113,21 +126,21 @@ private:
     // Speed-Control
     uint speedup = 100;
     int  speed_counter = 0;
-  } nes;
+
+    Emu(SDL_GUI& gui) : gui(gui) {}
+    ~Emu();
+
+    void init();
+    void input(const SDL_Event&);
+    void update();
+    void output();
+  } emu { *this };
 
 private:
   int load_rom(const char* rompath);
   int unload_rom(Cartridge* cart);
 
-  void update_input_global(const SDL_Event&);
-  void update_input_nes_joypads(const SDL_Event&);
-  void update_input_nes_misc(const SDL_Event&);
-  void update_input_ui(const SDL_Event&);
-
-  void step_nes();
-
-  void output_nes();
-  void output_menu();
+  void input_global(const SDL_Event&);
 
 public:
   ~SDL_GUI();
