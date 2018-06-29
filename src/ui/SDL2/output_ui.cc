@@ -1,10 +1,6 @@
 #include "gui.h"
 
-namespace SDL2_inprint {
-extern "C" {
 #include <SDL2_inprint.h>
-}
-}
 
 /**
  * @brief Render Menu

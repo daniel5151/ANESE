@@ -68,11 +68,13 @@ endif()
 
 # And now, for some shit-tier dependency management
 
+# ---- header only libs ---- #
+include_directories(thirdparty/headeronly)
+
+# ---- SDL2 ---- #
 # since there is no standard install directory for sdl2 on windows, change this
 # variable to point to _your_ SDL2 dev lib directory
 set(SDL2_MORE_INCLUDE_DIR "C:/sdl2")
-
-# ---- SDL2 ---- #
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIR})
 
@@ -80,17 +82,19 @@ include_directories(${SDL2_INCLUDE_DIR})
 include_directories(thirdparty/SDL_inprint)
 add_library(SDL_inprint STATIC thirdparty/SDL_inprint/inprint2.c)
 
+# ---- SimpleINI ---- #
+include_directories(thirdparty/SimpleINI)
+add_library(SimpleINI STATIC thirdparty/SimpleINI/ConvertUTF.c)
+
 # ---- miniz ---- #
 add_subdirectory(thirdparty/miniz)
 include_directories(thirdparty/miniz)
-
-# ---- header only libs ---- #
-include_directories(thirdparty/headeronly)
 
 # Finally, link up!
 target_link_libraries(anese
   ${SDL2_LIBRARY}
   SDL_inprint
+  SimpleINI
   miniz
 )
 

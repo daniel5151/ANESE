@@ -3,13 +3,10 @@
 #include <cstdio>
 #include <iostream>
 
+#include <cfgpath.h>
 #include <clara.hpp>
-
-namespace SDL2_inprint {
-extern "C" {
 #include <SDL2_inprint.h>
-}
-}
+#include <SimpleIni.h>
 
 #include "common/util.h"
 #include "common/serializable.h"
@@ -20,6 +17,7 @@ extern "C" {
 #include "nes/nes.h"
 
 #include "fs/load.h"
+#include "fs/util.h"
 
 int SDL_GUI::init(int argc, char* argv[]) {
   // --------------------------- Argument Parsing --------------------------- //
@@ -30,9 +28,9 @@ int SDL_GUI::init(int argc, char* argv[]) {
     | clara::Opt(this->args.log_cpu)
         ["--log-cpu"]
         ("Output CPU execution over STDOUT")
-    | clara::Opt(this->args.reset_sav)
-        ["--reset-sav"]
-        ("Ignore and overwrite existing sav files for all ROMs")
+    | clara::Opt(this->args.no_sav)
+        ["--no-sav"]
+        ("Don't load/create sav files")
     | clara::Opt(this->args.ppu_timing_hack)
         ["--alt-nmi-timing"]
         ("Enable NMI timing fix \n"
@@ -43,13 +41,16 @@ int SDL_GUI::init(int argc, char* argv[]) {
     | clara::Opt(this->args.replay_fm2_path, "path")
         ["--replay-fm2"]
         ("Replay a movie in the fm2 format")
+    | clara::Opt(this->args.config_file, "path")
+        ["--config"]
+        ("Use custom config file")
     | clara::Arg(this->args.rom, "rom")
         ("an iNES rom");
 
   auto result = cli.parse(clara::Args(argc, argv));
   if(!result) {
-    std::cout << "Error: " << result.errorMessage() << "\n";
-    std::cout << cli;
+    std::cerr << "Error: " << result.errorMessage() << "\n";
+    std::cerr << cli;
     exit(1);
   }
 
@@ -58,23 +59,47 @@ int SDL_GUI::init(int argc, char* argv[]) {
     exit(1);
   }
 
+  // -------------------------- Config File Parsing ------------------------- //
+
+  // Get cross-platform config path (if no custom path specified)
+  if (this->args.config_file == "") {
+    char config_f_path [256];
+    cfgpath::get_user_config_file(config_f_path, 256, "anese");
+    this->args.config_file = config_f_path;
+  }
+
+  // Try to load config, setting up a new one if none exists
+  this->config_ini.SetUnicode();
+  if (SI_Error err = this->config_ini.LoadFile(this->args.config_file.c_str())) {
+    std::cerr << "Warning: could not open config file!\n";
+    std::cerr << "Generating a new one...";
+    this->config_ini.SetLongValue("ui", "window_scale", 2);
+    this->config_ini.SetValue("paths", "roms_dir", ".");
+  }
+
+  // Load config vals
+  this->config.window_scale = this->config_ini.GetLongValue("ui", "window_scale");
+  strcpy(this->config.roms_dir, this->config_ini.GetValue("paths", "roms_dir"));
+
+  // Push config to relevant places
+  // TODO: put this somewhere else...
+  strcpy(this->ui.menu.directory, this->config.roms_dir);
+
   // ---------------------------- Debug Switches ---------------------------- //
 
   if (this->args.log_cpu)         { DEBUG_VARS::Get()->print_nestest = true; }
   if (this->args.ppu_timing_hack) { DEBUG_VARS::Get()->fogleman_hack = true; }
 
   // ------------------------------ Init SDL2 ------------------------------- //
-  fprintf(stderr, "[SDL2] Initializing SDL2 GUI\n");
 
-  const int window_w = RES_X * SCREEN_SCALE;
-  const int window_h = RES_Y * SCREEN_SCALE;
+  fprintf(stderr, "[SDL2] Initializing SDL2 GUI\n");
 
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
 
   this->sdl.window = SDL_CreateWindow(
     "anese",
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-    window_w, window_h,
+    RES_X * this->config.window_scale, RES_Y * this->config.window_scale,
     SDL_WINDOW_RESIZABLE
   );
 
@@ -93,13 +118,15 @@ int SDL_GUI::init(int argc, char* argv[]) {
   );
 
   // The rectangle that the nes screen texture is slapped onto
-  this->sdl.nes_screen.h = window_h;
-  this->sdl.nes_screen.w = window_w;
+  const int screen_w = RES_X * SCREEN_SCALE;
+  const int screen_h = RES_Y * SCREEN_SCALE;
+  this->sdl.nes_screen.h = screen_h;
+  this->sdl.nes_screen.w = screen_w;
   this->sdl.nes_screen.x = 0;
   this->sdl.nes_screen.y = 0;
 
   // Letterbox the screen in the window
-  SDL_RenderSetLogicalSize(this->sdl.renderer, window_w, window_h);
+  SDL_RenderSetLogicalSize(this->sdl.renderer, screen_w, screen_h);
   // Allow opacity when drawing menu
   SDL_SetRenderDrawBlendMode(this->sdl.renderer, SDL_BLENDMODE_BLEND);
 
@@ -181,7 +208,7 @@ int SDL_GUI::load_rom(const char* rompath) {
   }
 
   fprintf(stderr, "[Load] Loading '%s'\n", rompath);
-  Cartridge* cart = new Cartridge (load_rom_file(rompath));
+  Cartridge* cart = new Cartridge (load_rom_file(rompath)); // fs/load.h
 
   switch (cart->status()) {
   case Cartridge::Status::BAD_DATA:
@@ -203,7 +230,7 @@ int SDL_GUI::load_rom(const char* rompath) {
   // Try to load battery-backed save
   const Serializable::Chunk* sav = nullptr;
 
-  if (!this->args.reset_sav) {
+  if (!this->args.no_sav) {
     u8* data = nullptr;
     uint len = 0;
     load_file((std::string(rompath) + ".sav").c_str(), data, len);
@@ -231,7 +258,7 @@ int SDL_GUI::unload_rom(Cartridge* cart) {
 
   fprintf(stderr, "[UnLoad] Unloading cart...\n");
   // Save Battey-Backed RAM
-  if (cart != nullptr) {
+  if (cart != nullptr && !this->args.no_sav) {
     const Serializable::Chunk* sav = cart->get_mapper()->getBatterySave();
     if (sav) {
       const u8* data;
@@ -263,8 +290,18 @@ int SDL_GUI::unload_rom(Cartridge* cart) {
 SDL_GUI::~SDL_GUI() {
   fprintf(stderr, "[SDL2] Stopping SDL2 GUI\n");
 
+  // Cleanup ROM (unloading also creates savs)
   this->unload_rom(this->nes.cart);
   delete this->nes.cart;
+
+  // Update config
+  this->config_ini.SetLongValue("ui", "window_scale", this->config.window_scale);
+  char new_roms_dir [256];
+  fprintf(stderr, "%s\n", this->ui.menu.directory);
+  get_abs_path(this->ui.menu.directory, new_roms_dir, 256); // fs/util.h
+  this->config_ini.SetValue("paths", "roms_dir", new_roms_dir);
+
+  this->config_ini.SaveFile(this->args.config_file.c_str());
 
   // SDL Cleanup
   // SDL_CloseAudioDevice(this->sdl.nes_audiodev);

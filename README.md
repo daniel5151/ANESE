@@ -235,7 +235,9 @@ the top higher on my priority list:
   - [x] Save-states
     - [ ] Dump to file
 - [ ] Config File
-  - [ ] Remap controls
+  - [x] Preserve ROM path
+  - [x] Window size
+  - [ ] Controls
 - [x] Running NESTEST (behind a flag)
 - [x] Controller support - _currently very basic_
 - [ ] A SDL GUI
@@ -293,6 +295,8 @@ at how others did things when I got very stuck.
 - These awesome libraries make ANESE a lot nicer to use:
   - [sdl2](https://www.libsdl.org/) - A/V and Input
   - [SDL_inprint](https://github.com/driedfruit/SDL_inprint/) - SDL fonts, without SDL_ttf
-  - [clara](https://github.com/catchorg/Clara) - Argument Parsing
-  - [miniz](https://github.com/richgel999/miniz) - Zipped ROM support
-  - [cute_headers](https://github.com/RandyGaul/cute_headers/) - `cute_files.h` for cross-platform directory browsing
+  - [clara](https://github.com/catchorg/Clara) - argument Parsing
+  - [miniz](https://github.com/richgel999/miniz) - zipped ROM support
+  - [cute_headers](https://github.com/RandyGaul/cute_headers/) - cross-platform directory browsing
+  - [cfg_path](https://github.com/Malvineous/cfgpath) - cross-platform config file
+  - [simpleini](https://github.com/brofield/simpleini) - ini config parsing / saving

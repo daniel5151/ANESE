@@ -15,6 +15,7 @@
 #include "util/Sound_Queue.h"
 
 #include <cute_files.h>
+#include <SimpleIni.h>
 
 /**
  * Implementations are strewn-across multiple files, as having everything in a
@@ -26,20 +27,32 @@ private:
   // Command-line args
   struct {
     bool log_cpu;
-    bool reset_sav;
+    bool no_sav;
     bool ppu_timing_hack;
 
     std::string record_fm2_path;
     std::string replay_fm2_path;
 
+    std::string config_file;
+
     std::string rom;
   } args;
 
-  // 44100 makes pulses sound awful with my naiive sampling method
-  static constexpr uint SAMPLE_RATE = 96000;
+  // Global config
+  CSimpleIniA config_ini;
+  struct {
+    // UI
+    uint window_scale;
+
+    // Paths
+    char roms_dir [256];
+  } config;
 
   /*------------------------------  SDL Things  ------------------------------*/
   bool sdl_running = true;
+
+  // 44100 makes pulses sound awful with my naive sampling method
+  static constexpr uint SAMPLE_RATE = 96000;
 
   struct {
     SDL_Renderer* renderer    = nullptr;
@@ -59,9 +72,14 @@ private:
 
   /*------------------------------  UI Things  -------------------------------*/
 
+  // NES screen-size constants
+  const uint RES_X = 256;
+  const uint RES_Y = 240;
+
+  const uint SCREEN_SCALE = 2; // internal screen scale
+
   struct {
     char current_rom_file [256] = "\0";
-
     bool in_menu = true;
     struct {
       std::vector<cf_file_t> files;
@@ -74,11 +92,6 @@ private:
       } hit = {0, 0, 0, 0, 0, 0};
     } menu;
   } ui;
-
-  const uint RES_X = 256;
-  const uint RES_Y = 240;
-
-  uint SCREEN_SCALE = 2;
 
   /*------------------------------  NES Things  ------------------------------*/
 
