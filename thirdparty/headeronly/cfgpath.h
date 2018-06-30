@@ -43,7 +43,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-#define MAX_PATH 512  /* arbitrary value */
+#define MAX_PATH 260  /* matches windows */
 #define PATH_SEPARATOR_CHAR '/'
 #define PATH_SEPARATOR_STRING "/"
 #elif defined(WIN32)
@@ -124,10 +124,6 @@ static inline void get_user_config_file(char *out, unsigned int maxlen, const ch
   out += ext_len;
   *out = 0;
 #elif defined(WIN32)
-  if (maxlen < MAX_PATH) {
-    out[0] = 0;
-    return;
-  }
   if (!SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, out))) {
     out[0] = 0;
     return;
