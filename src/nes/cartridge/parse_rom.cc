@@ -169,4 +169,5 @@ ROM_File* parse_ROM(const u8* data, uint data_len) {
   case ROMFileFormat::NES2: return parse_iNES(data, data_len);
   case ROMFileFormat::INVALID: return nullptr;
   }
+  return nullptr;
 }

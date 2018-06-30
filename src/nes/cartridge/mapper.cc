@@ -86,7 +86,7 @@ Mapper::Mapper(
 {
   this->set_prg_banks(rom_file, prg_bank_size);
   this->set_chr_banks(rom_file, chr_bank_size);
-};
+}
 
 /*---------------------------------  Factory  --------------------------------*/
 

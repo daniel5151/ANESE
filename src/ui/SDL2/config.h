@@ -5,9 +5,9 @@
 #include "common/util.h"
 
 struct CLIArgs {
-  bool log_cpu;
-  bool no_sav;
-  bool ppu_timing_hack;
+  bool log_cpu = false;
+  bool no_sav  = false;
+  bool ppu_timing_hack = false;
 
   std::string record_fm2_path;
   std::string replay_fm2_path;
@@ -30,5 +30,9 @@ public:
   uint window_scale = 2;
 
   // Paths
-  char roms_dir [256] = ".";
+  char roms_dir [256] = { '.', '\0' };
+  // I _would_ write  `char roms_dir [256] = "."`, but I can;t.
+  // You know why?
+  // because g++4 has a compiler bug, and Travis fails on it.
+  // Weeeeeeeeeeeeeeeeee
 };

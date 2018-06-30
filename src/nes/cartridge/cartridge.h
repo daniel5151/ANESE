@@ -3,6 +3,8 @@
 #include "mapper.h"
 #include "rom_file.h"
 
+#undef NO_ERROR // TODO: track down nebulous Windows.h include that defines this
+
 // A thin class that owns a ROM_File and it's associated mapper
 class Cartridge {
 private:

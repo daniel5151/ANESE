@@ -5,6 +5,7 @@ Config::Config() { this->ini.SetUnicode(); }
 void Config::load(const char* filename) {
   // Try to load config, setting up a new one if none exists
   if (SI_Error err = this->ini.LoadFile(filename)) {
+    (void)err; // TODO: handle me?
     fprintf(stderr, "[Config] Could not open config file %s!\n", filename);
     fprintf(stderr, "[Config]  Will generate a new one.\n");
     this->save(filename);
@@ -20,6 +21,7 @@ void Config::save(const char* filename) {
   this->ini.SetValue    ("paths", "roms_dir",     this->roms_dir);
 
   if (SI_Error err = this->ini.SaveFile(filename)) {
+    (void)err; // TODO: handle me?
     fprintf(stderr, "[Config] Could not save config file %s!\n", filename);
   }
 }

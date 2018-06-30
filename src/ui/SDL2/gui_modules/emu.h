@@ -29,7 +29,7 @@ private:
 public:
   NES_Params params;
   NES nes;
-  char current_rom_file [256] = "\0";
+  char current_rom_file [256] = { 0 };
   Cartridge* cart = nullptr;
 
   JOY_Standard joy_1 { "P1" };

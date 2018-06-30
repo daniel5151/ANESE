@@ -89,7 +89,7 @@ void PPU::nmiChange() { // hack
 uint PPU::getNumFrames() const { return this->frames; }
 void PPU::getFramebuff(const u8*& framebuffer) const {
   framebuffer = this->framebuff;
-};
+}
 
 void PPU::draw_dot(Color color, uint x, uint y) {
   assert(x < 256 && y < 240);

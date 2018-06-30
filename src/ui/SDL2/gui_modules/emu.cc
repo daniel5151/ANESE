@@ -5,7 +5,7 @@
 
 EmuModule::EmuModule(const SDLCommon& sdl_common, const CLIArgs& cli_args, Config& config)
 : GUIModule(sdl_common, cli_args, config)
-, params { this->sdl_common.SAMPLE_RATE, 100, 0, 0 }
+, params { this->sdl_common.SAMPLE_RATE, 100, false, false }
 , nes { this->params }
 {
   /*----------  SDL init  ----------*/

@@ -42,7 +42,7 @@ Mirroring::Type Mapper_007::mirroring() const {
   return (this->reg.bank_select.vram_page == 0)
     ? Mirroring::SingleScreenLo
     : Mirroring::SingleScreenHi;
-};
+}
 
 void Mapper_007::update_banks() {
   this->prg_lo = &this->get_prg_bank(this->reg.bank_select.prg_bank * 2 + 0);

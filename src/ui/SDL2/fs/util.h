@@ -1,7 +1,9 @@
 #pragma once
 
 #ifdef WIN32
+  #define NOMINMAX // breaks args library, #thankswindows
   #include <Windows.h>
+  #undef NO_ERROR // breaks my own code, #thankswindows
 #else
   #include <stdlib.h>
 #endif
@@ -14,7 +16,7 @@ static inline void get_abs_path(const char* path, char* out, unsigned int n) {
   GetFullPathName(path, n, out, nullptr);
 #else
   (void)n;
-  realpath(path, out);
+  (void)realpath(path, out);
 #endif
 }
 
