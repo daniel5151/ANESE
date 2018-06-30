@@ -19,6 +19,10 @@
 #include "config.h"
 #include "nes/params.h"
 
+#include "gui_modules/module.h"
+#include "gui_modules/emu.h"
+#include "gui_modules/menu.h"
+
 /**
  * Implementations are strewn-across multiple files, as having everything in a
  * single file became unwieldy.
@@ -27,119 +31,20 @@
 class SDL_GUI final {
 private:
   // Command-line args
-  struct {
-    bool log_cpu;
-    bool no_sav;
-    bool ppu_timing_hack;
-
-    std::string record_fm2_path;
-    std::string replay_fm2_path;
-
-    std::string config_file;
-
-    std::string rom;
-  } args;
+  CLIArgs args;
 
   // Global config
   Config config;
 
-  /*------------------------------  SDL Things  ------------------------------*/
-  bool sdl_running = true;
+  // Initialized once, passed by const-ref to all gui modules
+  SDLCommon sdl_common;
 
-  // 44100 makes pulses sound awful with my naive sampling method
-  static constexpr uint SAMPLE_RATE = 96000;
+  /*----------  Modules  ----------*/
 
-  // NES screen-size constants
-  static constexpr uint RES_X = 256;
-  static constexpr uint RES_Y = 240;
-
-  static constexpr uint SCREEN_SCALE = 2; // internal screen scale
-
-  struct {
-    SDL_Renderer* renderer = nullptr;
-    SDL_Window*   window   = nullptr;
-    SDL_GameController* controller = nullptr;
-  } sdl;
-
-  /*------------------------------  UI Things  -------------------------------*/
-
-  // implemented in ui_menu.cc
-  struct Menu {
-  private:
-    SDL_Rect bg;
-  protected:
-    SDL_GUI& gui;
-  public:
-    char current_rom_file [256] = "\0";
-    bool in_menu = true;
-    struct {
-      std::vector<cf_file_t> files;
-      char directory [256] = ".";
-      bool should_update_dir = true;
-      uint selected_i = 0;
-      struct {
-        uint timeout = 0;
-        char buf [16] = "\0";
-        uint i = 0;
-      } quicknav;
-
-      struct {
-        bool enter, up, down, left, right;
-        char last_ascii;
-      } hit = {0, 0, 0, 0, 0, 0};
-    } menu;
-
-    Menu(SDL_GUI& gui) : gui(gui) {}
-    ~Menu();
-
-    void init();
-    void input(const SDL_Event&);
-    void update();
-    void output();
-  } ui { *this };
-
-  /*------------------------------  NES Things  ------------------------------*/
-
-  // implemented in ui_emu.cc
-  struct Emu {
-  private:
-    SDL_Texture*      nes_texture = nullptr;
-    SDL_Rect          nes_screen;
-    // SDL_AudioDeviceID nes_audiodev;
-    Sound_Queue nes_sound_queue;
-
-    int speed_counter = 0;
-  protected:
-    SDL_GUI& gui;
-  public:
-    NES_Params params { SDL_GUI::SAMPLE_RATE, 100, false, false };
-    NES nes { this->params };
-    Cartridge* cart = nullptr;
-
-    JOY_Standard joy_1 { "P1" };
-    JOY_Standard joy_2 { "P2" };
-    JOY_Zapper   zap_2 { "Z2" };
-
-    // Movie Controllers
-    FM2_Replay fm2_replay;
-    FM2_Record fm2_record;
-
-    // Savestates
-    const Serializable::Chunk* savestate [4] = { nullptr };
-
-    Emu(SDL_GUI& gui) : gui(gui) {}
-    ~Emu();
-
-    void init();
-    void input(const SDL_Event&);
-    void update();
-    void output();
-  } emu { *this };
+  EmuModule*  emu  = nullptr;
+  MenuModule* menu = nullptr;
 
 private:
-  int load_rom(const char* rompath);
-  int unload_rom(Cartridge* cart);
-
   void input_global(const SDL_Event&);
 
 public:

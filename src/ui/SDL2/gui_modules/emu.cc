@@ -1,30 +1,39 @@
-#include "gui.h"
+#include "emu.h"
 
-void SDL_GUI::Emu::init() {
+#include "../fs/load.h"
+#include "../fs/util.h"
+
+EmuModule::EmuModule(const SDLCommon& sdl_common, const CLIArgs& cli_args, Config& config)
+: GUIModule(sdl_common, cli_args, config)
+, params { this->sdl_common.SAMPLE_RATE, 100, 0, 0 }
+, nes { this->params }
+{
+  /*----------  SDL init  ----------*/
+
   // nes screen texture
-  this->nes_texture = SDL_CreateTexture(
-    this->gui.sdl.renderer,
+  this->sdl.screen_texture = SDL_CreateTexture(
+    this->sdl_common.renderer,
     SDL_PIXELFORMAT_ARGB8888,
     SDL_TEXTUREACCESS_STREAMING,
-    this->gui.RES_X, this->gui.RES_Y
+    this->sdl_common.RES_X, this->sdl_common.RES_Y
   );
 
   // The rectangle that the nes screen texture is slapped onto
-  const int screen_w = this->gui.RES_X * this->gui.SCREEN_SCALE;
-  const int screen_h = this->gui.RES_Y * this->gui.SCREEN_SCALE;
-  this->nes_screen.h = screen_h;
-  this->nes_screen.w = screen_w;
-  this->nes_screen.x = 0;
-  this->nes_screen.y = 0;
+  const int screen_w = this->sdl_common.RES_X * this->sdl_common.SCREEN_SCALE;
+  const int screen_h = this->sdl_common.RES_Y * this->sdl_common.SCREEN_SCALE;
+  this->sdl.screen.h = screen_h;
+  this->sdl.screen.w = screen_w;
+  this->sdl.screen.x = 0;
+  this->sdl.screen.y = 0;
 
-  this->nes_sound_queue.init(SDL_GUI::SAMPLE_RATE);
+  this->sdl.sound_queue.init(this->sdl_common.SAMPLE_RATE);
 }
 
-SDL_GUI::Emu::~Emu() {
-  SDL_DestroyTexture(this->nes_texture);
+EmuModule::~EmuModule() {
+  SDL_DestroyTexture(this->sdl.screen_texture);
 }
 
-void SDL_GUI::Emu::input(const SDL_Event& event) {
+void EmuModule::input(const SDL_Event& event) {
   // Update from Controllers
   if (event.type == SDL_CONTROLLERBUTTONDOWN ||
       event.type == SDL_CONTROLLERBUTTONUP) {
@@ -93,8 +102,8 @@ void SDL_GUI::Emu::input(const SDL_Event& event) {
     // getting the light from the screen is a bit trickier...
     const u8* screen;
     this->nes.getFramebuff(screen);
-    const uint offset = (256 * 4 * (event.motion.y / this->gui.SCREEN_SCALE))
-                      + (event.motion.x / this->gui.SCREEN_SCALE) * 4;
+    const uint offset = (256 * 4 * (event.motion.y / this->sdl_common.SCREEN_SCALE))
+                      + (event.motion.x / this->sdl_common.SCREEN_SCALE) * 4;
     const bool new_light = screen[offset+ 0]  // R
                          | screen[offset+ 1]  // G
                          | screen[offset+ 2]; // B
@@ -179,7 +188,7 @@ void SDL_GUI::Emu::input(const SDL_Event& event) {
   }
 }
 
-void SDL_GUI::Emu::update() {
+void EmuModule::update() {
   // Calculate the number of frames to render
   // Speedup values that are not multiples of 100 cause every-other frame to
   // render 1 more/less frame than usual
@@ -205,21 +214,110 @@ void SDL_GUI::Emu::update() {
   }
 
   if (this->nes.isRunning() == false) {
-    // this->gui.sdl_running = true;
+    // this->sdl.sdl_running = true;
   }
 }
 
-void SDL_GUI::Emu::output() {
+void EmuModule::output() {
   // output audio!
   float* samples = nullptr;
   uint   count = 0;
   this->nes.getAudiobuff(samples, count);
   // SDL_QueueAudio(this->gui.sdl.nes_audiodev, samples, count * sizeof(float));
-  if (count) this->nes_sound_queue.write(samples, count);
+  if (count) this->sdl.sound_queue.write(samples, count);
 
   // output video!
   const u8* framebuffer;
   this->nes.getFramebuff(framebuffer);
-  SDL_UpdateTexture(this->nes_texture, nullptr, framebuffer, this->gui.RES_X * 4);
-  SDL_RenderCopy(this->gui.sdl.renderer, this->nes_texture, nullptr, &this->nes_screen);
+  SDL_UpdateTexture(this->sdl.screen_texture, nullptr, framebuffer, this->sdl_common.RES_X * 4);
+  SDL_RenderCopy(this->sdl_common.renderer, this->sdl.screen_texture, nullptr, &this->sdl.screen);
+}
+
+/*----------  Utils  ----------*/
+
+int EmuModule::load_rom(const char* rompath) {
+  delete this->cart;
+  for (uint i = 0; i < 4; i++) {
+    delete this->savestate[i];
+    this->savestate[i] = nullptr;
+  }
+
+  fprintf(stderr, "[Load] Loading '%s'\n", rompath);
+  Cartridge* cart = new Cartridge (ANESE_fs::load::load_rom_file(rompath));
+
+  switch (cart->status()) {
+  case Cartridge::Status::BAD_DATA:
+    fprintf(stderr, "[Cart] ROM file could not be parsed!\n");
+    delete cart;
+    return 1;
+  case Cartridge::Status::BAD_MAPPER:
+    fprintf(stderr, "[Cart] Mapper %u has not been implemented yet!\n",
+      cart->get_rom_file()->meta.mapper);
+    delete cart;
+    return 1;
+  case Cartridge::Status::NO_ERROR:
+    fprintf(stderr, "[Cart] ROM file loaded successfully!\n");
+    strcpy(this->current_rom_file, rompath);
+    this->cart = cart;
+    break;
+  }
+
+  // Try to load battery-backed save
+  const Serializable::Chunk* sav = nullptr;
+
+  if (!this->cli_args.no_sav) {
+    u8* data = nullptr;
+    uint len = 0;
+    ANESE_fs::load::load_file((std::string(rompath) + ".sav").c_str(), data, len);
+    if (data) {
+      fprintf(stderr, "[Savegame][Load] Found save data.\n");
+      sav = Serializable::Chunk::parse(data, len);
+      this->cart->get_mapper()->setBatterySave(sav);
+    } else {
+      fprintf(stderr, "[Savegame][Load] No save data found.\n");
+    }
+    delete data;
+  }
+
+  // Slap a cartridge in!
+  this->nes.loadCartridge(this->cart->get_mapper());
+
+  // Power-cycle the NES
+  this->nes.power_cycle();
+
+  return 0;
+}
+
+int EmuModule::unload_rom(Cartridge* cart) {
+  if (!cart) return 0;
+
+  fprintf(stderr, "[UnLoad] Unloading cart...\n");
+  // Save Battey-Backed RAM
+  if (cart != nullptr && !this->cli_args.no_sav) {
+    const Serializable::Chunk* sav = cart->get_mapper()->getBatterySave();
+    if (sav) {
+      const u8* data;
+      uint len;
+      Serializable::Chunk::collate(data, len, sav);
+
+      const char* sav_file_name = (std::string(this->current_rom_file) + ".sav").c_str();
+
+      FILE* sav_file = fopen(sav_file_name, "wb");
+      if (!sav_file) {
+        fprintf(stderr, "[Savegame][Save] Failed to open save file!\n");
+        return 1;
+      }
+
+      fwrite(data, 1, len, sav_file);
+      fclose(sav_file);
+      fprintf(stderr, "[Savegame][Save] Game successfully saved to '%s'!\n",
+        sav_file_name);
+
+      delete sav;
+    }
+  }
+
+  this->nes.removeCartridge();
+
+  return 0;
 }

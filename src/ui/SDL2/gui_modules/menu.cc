@@ -1,4 +1,4 @@
-#include "gui.h"
+#include "menu.h"
 
 #include <algorithm>
 
@@ -6,15 +6,18 @@
 #include <cute_files.h>
 #include <SDL2_inprint.h>
 
-void SDL_GUI::Menu::init() {
-  // nada
+MenuModule::~MenuModule() {
+
 }
 
-SDL_GUI::Menu::~Menu() {
-  // nada
+MenuModule::MenuModule(const SDLCommon& sdl_common, const CLIArgs& cli_args, Config& config, EmuModule& emu_module)
+: GUIModule(sdl_common, cli_args, config)
+, emu_module(emu_module)
+{
+
 }
 
-void SDL_GUI::Menu::input(const SDL_Event& event) {
+void MenuModule::input(const SDL_Event& event) {
   if (event.type == SDL_KEYDOWN) {
     switch (event.key.keysym.sym) {
     case SDLK_RETURN: this->menu.hit.enter = true; break;
@@ -44,7 +47,7 @@ void SDL_GUI::Menu::input(const SDL_Event& event) {
   }
 }
 
-void SDL_GUI::Menu::update() {
+void MenuModule::update() {
   std::vector<cf_file_t>& files = this->menu.files; // helpful alias
 
   // First, check if the user wants to navigate / load a rom
@@ -60,8 +63,8 @@ void SDL_GUI::Menu::update() {
     } else {
       // Load-up ROM (and close menu)
       fprintf(stderr, "[Menu] Selected '%s'\n", file.name);
-      this->gui.unload_rom(this->gui.emu.cart);
-      this->gui.load_rom(file.path);
+      this->emu_module.unload_rom(this->emu_module.cart);
+      this->emu_module.load_rom(file.path);
       this->in_menu = false;
     }
   }
@@ -148,14 +151,12 @@ void SDL_GUI::Menu::update() {
   }
 }
 
-void SDL_GUI::Menu::output() {
-  /*----------  Rendering  ----------*/
-
+void MenuModule::output() {
   // Paint transparent bg
   this->bg.x = this->bg.y = 0;
-  SDL_RenderGetLogicalSize(this->gui.sdl.renderer, &this->bg.w, &this->bg.h);
-  SDL_SetRenderDrawColor(this->gui.sdl.renderer, 0, 0, 0, 200);
-  SDL_RenderFillRect(this->gui.sdl.renderer, &this->bg);
+  SDL_RenderGetLogicalSize(this->sdl_common.renderer, &this->bg.w, &this->bg.h);
+  SDL_SetRenderDrawColor(this->sdl_common.renderer, 0, 0, 0, 200);
+  SDL_RenderFillRect(this->sdl_common.renderer, &this->bg);
 
   // Paint menu
   for (uint i = 0; i < this->menu.files.size(); i++) {
@@ -168,8 +169,8 @@ void SDL_GUI::Menu::output() {
     else                                   color = 0xffffff; // white - folder
 
     SDL2_inprint::incolor(color, /* unused */ 0);
-    SDL2_inprint::inprint(this->gui.sdl.renderer, file.name,
-      10, this->bg.h / this->gui.SCREEN_SCALE + (i - this->menu.selected_i) * 12
+    SDL2_inprint::inprint(this->sdl_common.renderer, file.name,
+      10, this->bg.h / this->sdl_common.SCREEN_SCALE + (i - this->menu.selected_i) * 12
     );
   }
 }
