@@ -3,7 +3,90 @@
 #include "ppu.h"
 
 #include <SDL.h>
-#include "common/debug.h"
+
+// Simple SDL debug window that is pixel-addressable
+struct DebugPixelbuffWindow {
+  SDL_Window*   window;
+  SDL_Renderer* renderer;
+  SDL_Texture*  texture;
+
+  u8* frame;
+
+  uint window_w, window_h;
+  uint texture_w, texture_h;
+  uint x, y;
+
+  ~DebugPixelbuffWindow() {
+    delete this->frame;
+
+    SDL_DestroyTexture(this->texture);
+    SDL_DestroyRenderer(this->renderer);
+    SDL_DestroyWindow(this->window);
+  }
+
+  DebugPixelbuffWindow(
+    const char* title,
+    uint window_w, uint window_h,
+    uint texture_w, uint texture_h,
+    uint x, uint y
+  ) {
+    SDL_Init(SDL_INIT_EVERYTHING);
+
+    this->window_w = window_w;
+    this->window_h = window_h;
+    this->texture_w = texture_w;
+    this->texture_h = texture_h;
+    this->x = x;
+    this->y = y;
+
+    this->window = SDL_CreateWindow(
+        title,
+        x, y,
+        window_w, window_h,
+        SDL_WINDOW_RESIZABLE
+    );
+
+    this->renderer = SDL_CreateRenderer(
+      this->window,
+      -1,
+      SDL_RENDERER_ACCELERATED
+    );
+
+    this->texture = SDL_CreateTexture(
+      this->renderer,
+      SDL_PIXELFORMAT_ARGB8888,
+      SDL_TEXTUREACCESS_STREAMING,
+      texture_w, texture_h
+    );
+
+    this->frame = new u8 [texture_w * texture_h * 4]();
+  }
+
+  DebugPixelbuffWindow(const DebugPixelbuffWindow&) = delete;
+
+  void set_pixel(uint x, uint y, u8 r, u8 g, u8 b, u8 a) {
+    const uint offset = ((this->texture_w * y) + x) * 4;
+    this->frame[offset + 0] = b;
+    this->frame[offset + 1] = g;
+    this->frame[offset + 2] = r;
+    this->frame[offset + 3] = a;
+  }
+
+  void set_pixel(uint x, uint y, u32 color) {
+    ((u32*)this->frame)[(this->texture_w * y) + x] = color;
+  }
+
+  void render() {
+    // Update the screen texture
+    SDL_UpdateTexture(this->texture, nullptr, this->frame, this->texture_w * 4);
+
+    // Render everything
+    SDL_RenderCopy(this->renderer, this->texture, nullptr, nullptr);
+
+    // Reveal out the composited image
+    SDL_RenderPresent(this->renderer);
+  }
+};
 
 constexpr uint UPDATE_EVERY_X_FRAMES = 10;
 

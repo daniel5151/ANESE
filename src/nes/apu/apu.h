@@ -1,13 +1,13 @@
 #pragma once
 
 #include "common/bitfield.h"
+#include "common/serializable.h"
 #include "common/util.h"
 #include "nes/interfaces/memory.h"
 
+#include "nes/params.h"
+
 #include "nes/wiring/interrupt_lines.h"
-
-#include "common/serializable.h"
-
 #include "filters.h"
 
 // NES APU
@@ -196,8 +196,6 @@ private:
 
   /*----------  Emulation Vars  ----------*/
 
-  const uint sample_rate;
-
   FirstOrderFilter* filters [3]; // Hi/Lo pass filter chain
 
   uint cycles;   // Total Cycles elapsed
@@ -233,10 +231,13 @@ private:
     float sample(u8 pulse1, u8 pulse2, u8 triangle, u8 noise, u8 dmc) const;
   } mixer;
 
+  /*----------  Params  ----------*/
+  const uint& sample_rate;
+
 public:
   ~APU();
   APU() = delete;
-  APU(Memory& mem, InterruptLines& interrupt, uint sample_rate);
+  APU(const NES_Params& params, Memory& mem, InterruptLines& interrupt);
 
   // <Memory>
   u8 read(u16 addr)            override;

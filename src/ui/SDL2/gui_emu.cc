@@ -1,7 +1,5 @@
 #include "gui.h"
 
-#include "common/debug.h"
-
 void SDL_GUI::Emu::init() {
   // nes screen texture
   this->nes_texture = SDL_CreateTexture(
@@ -26,11 +24,6 @@ SDL_GUI::Emu::~Emu() {
   SDL_DestroyTexture(this->nes_texture);
 }
 
-/**
- * @brief Handle SDL_Events corresponding to NES joypad/zapper input
- *
- * @param event SDL_Event
- */
 void SDL_GUI::Emu::input(const SDL_Event& event) {
   // Update from Controllers
   if (event.type == SDL_CONTROLLERBUTTONDOWN ||
@@ -98,7 +91,8 @@ void SDL_GUI::Emu::input(const SDL_Event& event) {
   // Update from Mouse
   if (event.type == SDL_MOUSEMOTION) {
     // getting the light from the screen is a bit trickier...
-    const u8* screen = this->nes.getFramebuff();
+    const u8* screen;
+    this->nes.getFramebuff(screen);
     const uint offset = (256 * 4 * (event.motion.y / this->gui.SCREEN_SCALE))
                       + (event.motion.x / this->gui.SCREEN_SCALE) * 4;
     const bool new_light = screen[offset+ 0]  // R
@@ -125,9 +119,9 @@ void SDL_GUI::Emu::input(const SDL_Event& event) {
     switch (event.key.keysym.sym) {
       case SDLK_SPACE:
         // Fast-Forward
-        this->speedup = (event.type == SDL_KEYDOWN) ? 200 : 100;
         this->speed_counter = 0;
-        this->nes.set_speed(this->speedup);
+        this->params.speed = (event.type == SDL_KEYDOWN) ? 200 : 100;
+        this->nes.updated_params();
         break;
     }
 
@@ -136,9 +130,9 @@ void SDL_GUI::Emu::input(const SDL_Event& event) {
         event.type == SDL_CONTROLLERBUTTONUP) {
       switch (event.cbutton.button) {
       case SDL_CONTROLLER_BUTTON_RIGHTSTICK:
-        this->speedup = (event.type == SDL_CONTROLLERBUTTONDOWN) ? 200 : 100;
         this->speed_counter = 0;
-        this->nes.set_speed(this->speedup);
+        this->params.speed = (event.type == SDL_CONTROLLERBUTTONDOWN) ? 200 : 100;
+        this->nes.updated_params();
         break;
       }
     }
@@ -161,19 +155,22 @@ void SDL_GUI::Emu::input(const SDL_Event& event) {
       case SDLK_p: this->nes.power_cycle(); break; // Power-Cycle
       case SDLK_EQUALS:
         // Speed up
-        this->nes.set_speed(this->speedup += 25);
         this->speed_counter = 0;
+        this->params.speed += 25;
+        this->nes.updated_params();
         break;
       case SDLK_MINUS:
         // Speed down
-        if (this->speedup - 25 != 0) {
-          this->nes.set_speed(this->speedup -= 25);
+        if (this->params.speed - 25 != 0) {
           this->speed_counter = 0;
+          this->params.speed -= 25;
+          this->nes.updated_params();
         }
         break;
       case SDLK_c: {
         // Toggle CPU trace
-        bool log = DEBUG_VARS::Get()->print_nestest ^= 1;
+        bool log = this->params.log_cpu = !this->params.log_cpu;
+        this->nes.updated_params();
         fprintf(stderr, "NESTEST CPU logging: %s\n", log ? "ON" : "OFF");
       } break;
       default: break;
@@ -182,16 +179,12 @@ void SDL_GUI::Emu::input(const SDL_Event& event) {
   }
 }
 
-/**
- * @brief Run NES for appropriate number of frames
- * @details Actual number of frames emulated depends on speed-multiplier
- */
 void SDL_GUI::Emu::update() {
   // Calculate the number of frames to render
   // Speedup values that are not multiples of 100 cause every-other frame to
   // render 1 more/less frame than usual
   uint numframes = 0;
-  this->speed_counter += this->speedup;
+  this->speed_counter += this->params.speed;
   while (this->speed_counter > 0) {
     this->speed_counter -= 100;
     numframes++;
@@ -216,9 +209,6 @@ void SDL_GUI::Emu::update() {
   }
 }
 
-/**
- * @brief Render NES Framebuffer
- */
 void SDL_GUI::Emu::output() {
   // output audio!
   float* samples = nullptr;
@@ -228,7 +218,8 @@ void SDL_GUI::Emu::output() {
   if (count) this->nes_sound_queue.write(samples, count);
 
   // output video!
-  const u8* framebuffer = this->nes.getFramebuff();
+  const u8* framebuffer;
+  this->nes.getFramebuff(framebuffer);
   SDL_UpdateTexture(this->nes_texture, nullptr, framebuffer, this->gui.RES_X * 4);
   SDL_RenderCopy(this->gui.sdl.renderer, this->nes_texture, nullptr, &this->nes_screen);
 }

@@ -4,9 +4,8 @@
 #include <cstdio>
 #include <cstring>
 
-#include "common/debug.h" // fogleman flag
-
 PPU::PPU(
+  const NES_Params& params,
   Memory& mem,
   DMA& dma,
   InterruptLines& interrupts
@@ -15,7 +14,8 @@ PPU::PPU(
   interrupts(interrupts),
   mem(mem),
   oam(256, "OAM"),
-  oam2(32, "Secondary OAM")
+  oam2(32, "Secondary OAM"),
+  fogleman_nmi_hack(params.ppu_timing_hack)
 {
   this->power_cycle();
 
@@ -86,9 +86,10 @@ void PPU::nmiChange() { // hack
 
 /*--------------------------  Framebuffer Methods  ---------------------------*/
 
-uint PPU::getFrames() const { return this->frames; }
-
-const u8* PPU::getFramebuff() const { return this->framebuff; }
+uint PPU::getNumFrames() const { return this->frames; }
+void PPU::getFramebuff(const u8*& framebuffer) const {
+  framebuffer = this->framebuff;
+};
 
 void PPU::draw_dot(Color color, uint x, uint y) {
   assert(x < 256 && y < 240);
@@ -743,7 +744,7 @@ void PPU::cycle() {
 
   // ---- Enable / Disable vblank ---- //
 
-  if (DEBUG_VARS::Get()->fogleman_hack) {
+  if (this->fogleman_nmi_hack) {
     if (this->nmi_delay > 0) {
       this->nmi_delay--;
       if (this->nmi_delay == 0 && this->reg.ppuctrl.V && this->reg.ppustatus.V) {
@@ -760,8 +761,7 @@ void PPU::cycle() {
       this->nmiChange(); // hack
       // Only the interrupt is affected by ppuctrl.V (not the flag!)
       if (this->reg.ppuctrl.V) {
-        if (DEBUG_VARS::Get()->fogleman_hack == false)
-          this->interrupts.request(Interrupts::NMI);
+        if (!this->fogleman_nmi_hack) this->interrupts.request(Interrupts::NMI);
       }
     }
 

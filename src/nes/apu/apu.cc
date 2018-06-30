@@ -55,18 +55,18 @@ APU::~APU() {
   for (FirstOrderFilter* filter : this->filters) delete filter;
 }
 
-APU::APU(Memory& mem, InterruptLines& interrupt, uint sample_rate)
+APU::APU(const NES_Params& params, Memory& mem, InterruptLines& interrupt)
 : interrupt(interrupt)
 , mem(mem)
-, sample_rate(sample_rate)
+, sample_rate(params.apu_sample_rate)
 {
   this->chan.pulse2.isPulse2 = true;
   this->power_cycle();
 
   // Setup filters
-  this->filters[0] = new HiPassFilter (90,    sample_rate);
-  this->filters[1] = new HiPassFilter (440,   sample_rate);
-  this->filters[2] = new LoPassFilter (14000, sample_rate);
+  this->filters[0] = new HiPassFilter (90,    params.apu_sample_rate);
+  this->filters[1] = new HiPassFilter (440,   params.apu_sample_rate);
+  this->filters[2] = new LoPassFilter (14000, params.apu_sample_rate);
 }
 
 // https://wiki.nesdev.com/w/index.php/CPU_power_up_state

@@ -262,7 +262,7 @@ the top higher on my priority list:
     objects _must_ implement `peek`, which enables non-destructive looks at
     arbitrary objects!
   - [ ] CPU
-    - [x] Step through instructions - _super jank, no external flags_
+    - [ ] Step through instructions
   - [ ] PPU Views
     - [x] Static Palette
     - [x] Palette Memory

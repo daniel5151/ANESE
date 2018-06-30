@@ -4,13 +4,12 @@
 #include <cstdio>
 #include <cassert>
 
-#include "common/debug.h"
-
 /*-----------------------------  Public Methods  -----------------------------*/
 
-CPU::CPU(Memory& mem, InterruptLines& interrupt)
-: interrupt(interrupt),
-  mem(mem)
+CPU::CPU(const NES_Params& params, Memory& mem, InterruptLines& interrupt)
+: interrupt(interrupt)
+, mem(mem)
+, print_nestest(params.log_cpu)
 {
   this->power_cycle();
 }
@@ -145,44 +144,12 @@ uint CPU::step() {
   // Lookup info about opcode
   Instructions::Opcode opcode = Instructions::Opcodes[op];
 
-  if (DEBUG_VARS::Get()->print_nestest) {
+  if (this->print_nestest) {
     this->nestest(opcode);
   }
 #ifdef NESTEST
   this->nestest(opcode); // print NESTEST debug info
 #endif
-
-  // Ghetto step through
-  if (DEBUG_VARS::Get()->step_cpu) {
-    for (;;) {
-      fprintf(stderr, "> ");
-      const char cmd = getc(stdin);
-
-      if (cmd == 'r') {
-        DEBUG_VARS::Get()->step_cpu = false;
-        break;
-      };
-
-      if (cmd == 'd') {
-        const char area = getc(stdin) - '0';
-        getc(stdin); // swallow newline
-        const u16 start = this->reg.pc - area - 1;
-        const u16 end   = this->reg.pc + area;
-        fprintf(stderr, "dump from 0x%04X - 0x%04X\n", start, end);
-        for (u16 addr = start; addr < end; addr++) {
-          Instructions::Opcode o = Instructions::Opcodes[this->mem.peek(addr)];
-          fprintf(stderr, "0x%04X : %02X | %s %s\n",
-            addr,
-            o.raw,
-            o.instr_name,
-            o.addrm_type
-          );
-        }
-      }
-
-      if (cmd == '\n') break;
-    }
-  }
 
   u16 addr = this->get_operand_addr(opcode);
 

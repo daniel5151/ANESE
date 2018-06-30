@@ -17,6 +17,7 @@
 #include <cute_files.h>
 
 #include "config.h"
+#include "nes/params.h"
 
 /**
  * Implementations are strewn-across multiple files, as having everything in a
@@ -106,10 +107,13 @@ private:
     SDL_Rect          nes_screen;
     // SDL_AudioDeviceID nes_audiodev;
     Sound_Queue nes_sound_queue;
+
+    int speed_counter = 0;
   protected:
     SDL_GUI& gui;
   public:
-    NES nes { SDL_GUI::SAMPLE_RATE };
+    NES_Params params { SDL_GUI::SAMPLE_RATE, 100, false, false };
+    NES nes { this->params };
     Cartridge* cart = nullptr;
 
     JOY_Standard joy_1 { "P1" };
@@ -122,10 +126,6 @@ private:
 
     // Savestates
     const Serializable::Chunk* savestate [4] = { nullptr };
-
-    // Speed-Control
-    uint speedup = 100;
-    int  speed_counter = 0;
 
     Emu(SDL_GUI& gui) : gui(gui) {}
     ~Emu();

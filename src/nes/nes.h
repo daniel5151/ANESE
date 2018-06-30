@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/serializable.h"
 #include "common/util.h"
 
 #include "cartridge/mapper.h"
@@ -13,10 +14,10 @@
 #include "wiring/ppu_mmu.h"
 #include "wiring/interrupt_lines.h"
 
-#include "common/serializable.h"
+#include "params.h"
 
 // Core NES class.
-// - Owns all NES core resources (but NOT the cartridge)
+// - Owns all NES core resources (but NOT the cartridge or joypads)
 // - Runs CPU, PPU, APU
 class NES final : public Serializable {
 private:
@@ -72,8 +73,10 @@ private:
     SERIALIZE_SERIALIZABLE(interrupts)
   SERIALIZE_END(10)
 
+  const NES_Params& params;
 public:
-  NES(uint apu_sample_rate);
+  NES(const NES_Params& new_params);
+  void updated_params();
 
   /*-----------  Key Operation Functions  ------------*/
 
@@ -90,14 +93,8 @@ public:
   void step_frame(); // Run the NES until there is a new frame to display
                      // (calls cycle() internally)
 
-  const u8* getFramebuff() const;
+  void getFramebuff(const u8*& framebuffer) const;
   void getAudiobuff(float*& samples, uint& len);
 
   bool isRunning() const;
-
-  /*-----------  "Fun" Functions  ------------*/
-  // i.e: toggles things the original hardware doesn't actually support / do
-
-  // notify the APU of the speed change
-  void set_speed(uint speed);
 };

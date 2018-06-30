@@ -14,11 +14,6 @@ SDL_GUI::Menu::~Menu() {
   // nada
 }
 
-/**
- * @brief Handle SDL_Events corresponding to UI actions
- *
- * @param event SDL_Event
- */
 void SDL_GUI::Menu::input(const SDL_Event& event) {
   if (event.type == SDL_KEYDOWN) {
     switch (event.key.keysym.sym) {
@@ -49,9 +44,6 @@ void SDL_GUI::Menu::input(const SDL_Event& event) {
   }
 }
 
-/**
- * @brief Update menu from inputs
- */
 void SDL_GUI::Menu::update() {
   std::vector<cf_file_t>& files = this->menu.files; // helpful alias
 
@@ -156,9 +148,6 @@ void SDL_GUI::Menu::update() {
   }
 }
 
-/**
- * @brief Render Menu
- */
 void SDL_GUI::Menu::output() {
   /*----------  Rendering  ----------*/
 

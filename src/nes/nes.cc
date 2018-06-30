@@ -4,7 +4,7 @@
 
 // The constructor creates the individual NES components, and "wires them up"
 // to one antother.
-NES::NES(uint apu_sample_rate) :
+NES::NES(const NES_Params& params) :
 // RAM Modules
 cpu_wram(0x800, "WRAM"),
 ppu_vram(0x800, "CIRAM"),
@@ -12,9 +12,9 @@ ppu_pram(32, "Palette"),
 // Processors
 // (techincally UB since we pass references to objects that have not been
 // initialized yet...)
-cpu(this->cpu_mmu, this->interrupts),
-apu(this->cpu_mmu, this->interrupts, apu_sample_rate),
-ppu(
+cpu(params, this->cpu_mmu, this->interrupts),
+apu(params, this->cpu_mmu, this->interrupts),
+ppu(params,
   this->ppu_mmu,
   this->dma,
   this->interrupts
@@ -32,8 +32,13 @@ ppu_mmu(
 ),
 joy(),
 dma(this->cpu_mmu),
-interrupts()
+interrupts(),
+params(params)
 {}
+
+void NES::updated_params() {
+  this->apu.set_speed(this->params.speed / 100.0);
+}
 
 bool NES::loadCartridge(Mapper* cart) {
   if (cart == nullptr)
@@ -62,6 +67,12 @@ void NES::detach_joy(uint port)              { this->joy.detach_joy(port);      
 
 // Power Cycling initializes all the components to their "power on" state
 void NES::power_cycle() {
+  if (this->params.apu_sample_rate == 0) {
+    fprintf(stderr, "[NES] Fatal Error! No APU sample rate defined. "
+                    "Check the NES_Params object passed to NES::NES()!\n");
+    assert(this->params.apu_sample_rate != 0);
+  }
+
   this->is_running = true;
 
   this->apu.power_cycle();
@@ -125,14 +136,14 @@ void NES::cycle() {
 void NES::step_frame() {
   if (this->is_running == false) return;
 
-  const uint curr_frame = this->ppu.getFrames();
-  while (this->is_running && this->ppu.getFrames() == curr_frame) {
+  const uint curr_frame = this->ppu.getNumFrames();
+  while (this->is_running && this->ppu.getNumFrames() == curr_frame) {
     this->cycle();
   }
 }
 
-const u8* NES::getFramebuff() const {
-  return this->ppu.getFramebuff();
+void NES::getFramebuff(const u8*& framebuffer) const {
+  this->ppu.getFramebuff(framebuffer);
 }
 
 void NES::getAudiobuff(float*& samples, uint& len) {
@@ -141,8 +152,4 @@ void NES::getAudiobuff(float*& samples, uint& len) {
 
 bool NES::isRunning() const {
   return this->is_running;
-}
-
-void NES::set_speed(uint speed) {
-  this->apu.set_speed(speed / 100.0);
 }

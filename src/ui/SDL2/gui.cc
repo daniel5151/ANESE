@@ -10,7 +10,6 @@
 
 #include "common/util.h"
 #include "common/serializable.h"
-#include "common/debug.h"
 
 #include "nes/cartridge/cartridge.h"
 #include "nes/joy/controllers/standard.h"
@@ -73,10 +72,11 @@ int SDL_GUI::init(int argc, char* argv[]) {
   // TODO: put this somewhere else...
   strcpy(this->ui.menu.directory, this->config.roms_dir);
 
-  // ---------------------------- Debug Switches ---------------------------- //
+  // ------------------------------ NES Params ------------------------------ //
 
-  if (this->args.log_cpu)         { DEBUG_VARS::Get()->print_nestest = true; }
-  if (this->args.ppu_timing_hack) { DEBUG_VARS::Get()->fogleman_hack = true; }
+  if (this->args.log_cpu)         { this->emu.params.log_cpu         = true; }
+  if (this->args.ppu_timing_hack) { this->emu.params.ppu_timing_hack = true; }
+  this->emu.nes.updated_params();
 
   // ------------------------------ Init SDL2 ------------------------------- //
 
@@ -284,11 +284,6 @@ int SDL_GUI::unload_rom(Cartridge* cart) {
   return 0;
 }
 
-/**
- * @brief Handle SDL_Events corresponding to global actions (e.g: quit)
- *
- * @param event SDL_Event
- */
 void SDL_GUI::input_global(const SDL_Event& event) {
   if (
     (event.type == SDL_QUIT) ||
@@ -364,7 +359,7 @@ int SDL_GUI::run() {
     // Present fups though the title of the main window
     char window_title [64];
     sprintf(window_title, "anese - %u fups - %u%% speed",
-      uint(avg_fps), this->emu.speedup);
+      uint(avg_fps), this->emu.params.speed);
     SDL_SetWindowTitle(this->sdl.window, window_title);
   }
 

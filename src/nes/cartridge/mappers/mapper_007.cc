@@ -4,8 +4,6 @@
 #include <cstdio>
 #include <cstring>
 
-#include "common/debug.h"
-
 Mapper_007::Mapper_007(const ROM_File& rom_file)
 : Mapper(7, "AxROM", rom_file, 0x4000, 0x2000)
 {}

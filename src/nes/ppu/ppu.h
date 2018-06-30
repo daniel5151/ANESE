@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/bitfield.h"
+#include "common/serializable.h"
 #include "common/util.h"
 #include "nes/interfaces/memory.h"
 
@@ -9,7 +10,7 @@
 #include "nes/generic/ram/ram.h"
 #include "nes/wiring/interrupt_lines.h"
 
-#include "common/serializable.h"
+#include "nes/params.h"
 
 namespace PPURegisters {
   enum Reg {
@@ -214,8 +215,10 @@ private:
     SERIALIZE_POD(frames)
   SERIALIZE_END(11)
 
+  /*---------------  Hacks  --------------*/
+  const bool& fogleman_nmi_hack;
+
 #ifdef DEBUG_PPU
-  /*---------------  Debug  --------------*/
   // Implementation in debug.cc
   void   init_debug_windows();
   void update_debug_windows();
@@ -223,7 +226,7 @@ private:
 
 public:
   PPU() = delete;
-  PPU(
+  PPU(const NES_Params& params,
     Memory& mem,
     DMA& dma,
     InterruptLines& interrupts
@@ -240,8 +243,8 @@ public:
 
   void cycle();
 
-  const u8* getFramebuff() const;
-  uint      getFrames() const;
+  void getFramebuff(const u8*& framebuffer) const;
+  uint getNumFrames() const;
 
   // NES color palette (static, for the time being)
   static const Color palette [64];

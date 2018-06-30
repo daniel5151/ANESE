@@ -1,13 +1,14 @@
 #pragma once
 
 #include "common/bitfield.h"
+#include "common/serializable.h"
 #include "common/util.h"
 #include "instructions.h"
 #include "nes/interfaces/memory.h"
 
 #include "nes/wiring/interrupt_lines.h"
 
-#include "common/serializable.h"
+#include "nes/params.h"
 
 // MOS 6502 (no BCD)
 // https://wiki.nesdev.com/w/index.php/CPU
@@ -73,14 +74,15 @@ private:
   void s_push  (u8  val);
   void s_push16(u16 val);
 
-  /*-------------  Testing  --------------*/
+  /*-------------  Debug  --------------*/
+  const bool& print_nestest;
 
   // print nestest golden-log formatted CPU log data
   void nestest(const Instructions::Opcode& opcode) const;
 
 public:
   CPU() = delete;
-  CPU(Memory& mem, InterruptLines& interrupt);
+  CPU(const NES_Params& params, Memory& mem, InterruptLines& interrupt);
 
   void power_cycle();
   void reset();
