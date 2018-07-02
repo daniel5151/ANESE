@@ -1,14 +1,16 @@
 #include "emu.h"
 
+#include <cstdio>
+
 #include "../fs/load.h"
 #include "../fs/util.h"
 
-EmuModule::EmuModule(const SDLCommon& sdl_common, const CLIArgs& cli_args, Config& config)
-: GUIModule(sdl_common, cli_args, config)
+EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
+: GUIModule(sdl_common, config)
 , params { this->sdl_common.SAMPLE_RATE, 100, false, false }
 , nes { this->params }
 {
-  /*----------  SDL init  ----------*/
+  /*-------------------------------  SDL init  -------------------------------*/
 
   // nes screen texture
   this->sdl.screen_texture = SDL_CreateTexture(
@@ -27,10 +29,54 @@ EmuModule::EmuModule(const SDLCommon& sdl_common, const CLIArgs& cli_args, Confi
   this->sdl.screen.y = 0;
 
   this->sdl.sound_queue.init(this->sdl_common.SAMPLE_RATE);
+
+  // ---------------------------- Movie Support ----------------------------- //
+
+  if (this->config.cli.replay_fm2_path != "") {
+    bool did_load = this->fm2_replay.init(this->config.cli.replay_fm2_path.c_str());
+    if (!did_load)
+      fprintf(stderr, "[Replay][fm2] Movie loading failed!\n");
+    fprintf(stderr, "[Replay][fm2] Movie successfully loaded!\n");
+  }
+
+  if (this->config.cli.record_fm2_path != "") {
+    bool did_load = this->fm2_record.init(this->config.cli.record_fm2_path.c_str());
+    if (!did_load)
+      fprintf(stderr, "[Record][fm2] Failed to setup Movie recording!\n");
+    fprintf(stderr, "[Record][fm2] Movie recording is setup!\n");
+  }
+
+  // -------------------------- NES Initialization -------------------------- //
+
+  // pass controllers to this->fm2_record
+  this->fm2_record.set_joy(0, FM2_Controller::SI_GAMEPAD, &this->joy_1);
+  this->fm2_record.set_joy(1, FM2_Controller::SI_GAMEPAD, &this->joy_2);
+
+  // Check if there is fm2 to replay
+  if (this->fm2_replay.is_enabled()) {
+    // plug in fm2 controllers
+    this->nes.attach_joy(0, this->fm2_replay.get_joy(0));
+    this->nes.attach_joy(1, this->fm2_replay.get_joy(1));
+  } else {
+    // plug in physical nes controllers
+    this->nes.attach_joy(0, &this->joy_1);
+    this->nes.attach_joy(1, &this->zap_2);
+  }
+
+  // Finally, flip some parameters (if needed)
+  if (this->config.cli.log_cpu)         { this->params.log_cpu         = true; }
+  if (this->config.cli.ppu_timing_hack) { this->params.ppu_timing_hack = true; }
+  this->nes.updated_params();
 }
 
 EmuModule::~EmuModule() {
+  /*------------------------------  SDL Cleanup  -----------------------------*/
+
   SDL_DestroyTexture(this->sdl.screen_texture);
+
+  /*------------------------------  NES Cleanup  -----------------------------*/
+  this->unload_rom(this->cart);
+  delete this->cart;
 }
 
 void EmuModule::input(const SDL_Event& event) {
@@ -265,7 +311,7 @@ int EmuModule::load_rom(const char* rompath) {
   // Try to load battery-backed save
   const Serializable::Chunk* sav = nullptr;
 
-  if (!this->cli_args.no_sav) {
+  if (!this->config.cli.no_sav) {
     u8* data = nullptr;
     uint len = 0;
     ANESE_fs::load::load_file((std::string(rompath) + ".sav").c_str(), data, len);
@@ -293,7 +339,7 @@ int EmuModule::unload_rom(Cartridge* cart) {
 
   fprintf(stderr, "[UnLoad] Unloading cart...\n");
   // Save Battey-Backed RAM
-  if (cart != nullptr && !this->cli_args.no_sav) {
+  if (cart != nullptr && !this->config.cli.no_sav) {
     const Serializable::Chunk* sav = cart->get_mapper()->getBatterySave();
     if (sav) {
       const u8* data;

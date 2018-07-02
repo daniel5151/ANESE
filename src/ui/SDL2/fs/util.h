@@ -11,12 +11,12 @@
 namespace ANESE_fs { namespace util {
 
 // this is pretty jank
-static inline void get_abs_path(const char* path, char* out, unsigned int n) {
+static inline void get_abs_path(char* abs_path, const char* path, unsigned int n) {
 #ifdef WIN32
-  GetFullPathName(path, n, out, nullptr);
+  GetFullPathName(path, n, abs_path, nullptr);
 #else
   (void)n;
-  (void)realpath(path, out);
+  (void)realpath(path, abs_path);
 #endif
 }
 

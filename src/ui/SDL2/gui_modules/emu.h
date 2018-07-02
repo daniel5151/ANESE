@@ -44,7 +44,7 @@ public:
 
 public:
   virtual ~EmuModule();
-  EmuModule(const SDLCommon& sdl_common, const CLIArgs& cli_args, Config& config);
+  EmuModule(const SDLCommon& sdl_common, Config& config);
   void input(const SDL_Event&) override;
   void update() override;
   void output() override;

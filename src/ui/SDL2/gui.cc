@@ -1,72 +1,13 @@
 #include "gui.h"
 
 #include <cstdio>
-#include <iostream>
 
-#include <cfgpath.h>
-#include <clara.hpp>
 #include <SDL2_inprint.h>
-#include <SimpleIni.h>
 
 #include "common/util.h"
-#include "common/serializable.h"
-
-#include "nes/cartridge/cartridge.h"
-#include "nes/joy/controllers/standard.h"
-#include "nes/nes.h"
-
-#include "fs/util.h"
 
 int SDL_GUI::init(int argc, char* argv[]) {
-  // --------------------------- Argument Parsing --------------------------- //
-
-  bool show_help = false;
-  auto cli
-    = clara::Help(show_help)
-    | clara::Opt(this->args.log_cpu)
-        ["--log-cpu"]
-        ("Output CPU execution over STDOUT")
-    | clara::Opt(this->args.no_sav)
-        ["--no-sav"]
-        ("Don't load/create sav files")
-    | clara::Opt(this->args.ppu_timing_hack)
-        ["--alt-nmi-timing"]
-        ("Enable NMI timing fix \n"
-         "(fixes some games, eg: Bad Dudes, Solomon's Key)")
-    | clara::Opt(this->args.record_fm2_path, "path")
-        ["--record-fm2"]
-        ("Record a movie in the fm2 format")
-    | clara::Opt(this->args.replay_fm2_path, "path")
-        ["--replay-fm2"]
-        ("Replay a movie in the fm2 format")
-    | clara::Opt(this->args.config_file, "path")
-        ["--config"]
-        ("Use custom config file")
-    | clara::Arg(this->args.rom, "rom")
-        ("an iNES rom");
-
-  auto result = cli.parse(clara::Args(argc, argv));
-  if(!result) {
-    std::cerr << "Error: " << result.errorMessage() << "\n";
-    std::cerr << cli;
-    exit(1);
-  }
-
-  if (show_help) {
-    std::cout << cli;
-    exit(1);
-  }
-
-  // ------------------------- Config File Parsing ------------------------- -//
-
-  // Get cross-platform config path (if no custom path specified)
-  if (this->args.config_file == "") {
-    char config_f_path [256];
-    cfgpath::get_user_config_file(config_f_path, 256, "anese");
-    this->args.config_file = config_f_path;
-  }
-
-  this->config.load(this->args.config_file.c_str());
+  this->config.load(argc, argv);
 
   // --------------------------- Init SDL2 Common --------------------------- //
 
@@ -116,56 +57,15 @@ int SDL_GUI::init(int argc, char* argv[]) {
   SDL2_inprint::prepare_inline_font();
 
   /*----------  Init GUI modules  ----------*/
-  this->emu  = new EmuModule(this->sdl_common, this->args, this->config);
-  this->menu = new MenuModule(this->sdl_common, this->args, this->config, *this->emu);
-
-  // TODO: put this somewhere else...
-  strcpy(this->menu->menu.directory, this->config.roms_dir);
-
-  // ------------------------------ NES Params ------------------------------ //
-
-  if (this->args.log_cpu)         { this->emu->params.log_cpu         = true; }
-  if (this->args.ppu_timing_hack) { this->emu->params.ppu_timing_hack = true; }
-  this->emu->nes.updated_params();
-
-  // ---------------------------- Movie Support ----------------------------- //
-
-  if (this->args.replay_fm2_path != "") {
-    bool did_load = this->emu->fm2_replay.init(this->args.replay_fm2_path.c_str());
-    if (!did_load)
-      fprintf(stderr, "[Replay][fm2] Movie loading failed!\n");
-    fprintf(stderr, "[Replay][fm2] Movie successfully loaded!\n");
-  }
-
-  if (this->args.record_fm2_path != "") {
-    bool did_load = this->emu->fm2_record.init(this->args.record_fm2_path.c_str());
-    if (!did_load)
-      fprintf(stderr, "[Record][fm2] Failed to setup Movie recording!\n");
-    fprintf(stderr, "[Record][fm2] Movie recording is setup!\n");
-  }
-
-  // -------------------------- NES Initialization -------------------------- //
-
-  // pass controllers to this->fm2_record
-  this->emu->fm2_record.set_joy(0, FM2_Controller::SI_GAMEPAD, &this->emu->joy_1);
-  this->emu->fm2_record.set_joy(1, FM2_Controller::SI_GAMEPAD, &this->emu->joy_2);
-
-  // Check if there is fm2 to replay
-  if (this->emu->fm2_replay.is_enabled()) {
-    // plug in fm2 controllers
-    this->emu->nes.attach_joy(0, this->emu->fm2_replay.get_joy(0));
-    this->emu->nes.attach_joy(1, this->emu->fm2_replay.get_joy(1));
-  } else {
-    // plug in physical nes controllers
-    this->emu->nes.attach_joy(0, &this->emu->joy_1);
-    this->emu->nes.attach_joy(1, &this->emu->zap_2);
-  }
+  this->emu  = new EmuModule(this->sdl_common, this->config);
+  this->menu = new MenuModule(this->sdl_common, this->config, *this->emu);
 
   // Load ROM if one has been passed as param
-  if (this->args.rom != "") {
+  if (this->config.cli.rom != "") {
     this->menu->in_menu = false;
-    int error = this->emu->load_rom(this->args.rom.c_str());
-    if (error) return error;
+    int error = this->emu->load_rom(this->config.cli.rom.c_str());
+    if (error)
+      return error;
   }
 
   return 0;
@@ -174,20 +74,11 @@ int SDL_GUI::init(int argc, char* argv[]) {
 SDL_GUI::~SDL_GUI() {
   fprintf(stderr, "[SDL2] Stopping SDL2 GUI\n");
 
-  // Cleanup ROM (unloading also creates savs)
-  this->emu->unload_rom(this->emu->cart);
-  delete this->emu->cart;
-
-  // Update config
-  // TODO: put this somewhere else...
-  char new_roms_dir [256];
-  ANESE_fs::util::get_abs_path(this->menu->menu.directory, new_roms_dir, 256);
-  strcpy(this->config.roms_dir, new_roms_dir);
-
-  this->config.save(this->args.config_file.c_str());
-
+  // order matters (menu has ref to emu)
   delete this->menu;
   delete this->emu;
+
+  this->config.save();
 
   // SDL Cleanup
   // SDL_CloseAudioDevice(this->sdl_common.nes_audiodev);

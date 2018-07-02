@@ -21,14 +21,11 @@ struct SDLCommon {
 class GUIModule {
 protected:
   const SDLCommon& sdl_common;
-
-  const CLIArgs& cli_args;
   Config& config;
 public:
   virtual ~GUIModule() = default;
-  GUIModule(const SDLCommon& sdl_common, const CLIArgs& cli_args, Config& config)
+  GUIModule(const SDLCommon& sdl_common, Config& config)
   : sdl_common(sdl_common)
-  , cli_args(cli_args)
   , config(config)
   {}
 
