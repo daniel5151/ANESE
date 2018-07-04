@@ -30,9 +30,11 @@ is well commented, providing sources and insights for much of the logic.
 
 ## Downloads
 
-At the moment, there are no official releases of ANESE, but there are ways to
-get nightly releases. These are compiled directly from the latest ANESE commit,
-so there may be bugs.
+Official releases can be found on the Releases tab on GitHub.
+
+Alternatively, for the most up-to-date version of ANESE, you can download
+nightly builds. These are compiled directly from the latest ANESE commit,
+so there may (will) be bugs.
 
 **Windows:** You can download nightly versions of ANESE from
 [AppVeyor](https://ci.appveyor.com/project/daniel5151/anese)'s build artifacts
