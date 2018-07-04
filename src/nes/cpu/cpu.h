@@ -15,12 +15,6 @@
 // http://users.telenet.be/kim1-6502/6502
 // http://obelisk.me.uk/6502
 class CPU final : public Serializable {
-public:
-  enum class State {
-    Running,
-    Halted
-  };
-
 private:
   /*----------  Hardware  ----------*/
 
@@ -54,12 +48,12 @@ private:
   /*----------  Emulation Vars  ----------*/
 
   uint cycles; // Cycles elapsed
-  State state; // CPU state
+  bool is_running;
 
   SERIALIZE_START(3, "CPU")
     SERIALIZE_POD(reg)
     SERIALIZE_POD(cycles)
-    SERIALIZE_POD(state)
+    SERIALIZE_POD(is_running)
   SERIALIZE_END(3)
 
   /*--------------  Helpers  -------------*/
@@ -74,11 +68,17 @@ private:
   void s_push  (u8  val);
   void s_push16(u16 val);
 
+  // 16-bit memory accesses
+  u16 peek16(u16 addr) const;
+  u16 read16(u16 addr);
+  u16 peek16_zpg(u16 addr) const;
+  u16 read16_zpg(u16 addr);
+  void write16(u16 addr, u8 val);
+
   /*-------------  Debug  --------------*/
   const bool& print_nestest;
-
-  // print nestest golden-log formatted CPU log data
-  void nestest(const Instructions::Opcode& opcode) const;
+  // nestest is implemented in nestest.cc
+  static void nestest(const CPU& cpu, const Instructions::Opcode& opcode);
 
 public:
   CPU() = delete;
@@ -87,7 +87,7 @@ public:
   void power_cycle();
   void reset();
 
-  CPU::State getState() const;
+  bool isRunning() const { return this->is_running; }
 
   uint step(); // exec instruction, and return cycles taken
 };

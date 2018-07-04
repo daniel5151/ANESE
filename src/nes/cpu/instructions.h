@@ -4,13 +4,6 @@
 
 namespace Instructions {
 
-// I am using namespaced enums instead of enum classes so that I can use
-// `using namepsace Instructions::Instr and Instructions::AddrM` in functions
-// that make heavy use of them.
-//
-// The alternative is enum switch statements where every single case has to have
-// Instr:: and AddrM:: appended to the front of it, which suuuuucks
-
 namespace Instr {
 enum Type {
   INVALID,

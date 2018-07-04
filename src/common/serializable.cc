@@ -117,25 +117,25 @@ Serializable::Chunk* Serializable::serialize() const {
         : (field.type == 2 ? *field.len_variable : field.len_fixed)
     );
     switch (field.type) {
-    case _field_type::INVALID: assert(false); break;
-    case _field_type::POD:
+    case _field_type::SERIAL_INVALID: assert(false); break;
+    case _field_type::SERIAL_POD:
       fprintf(stderr, "0x%08X\n", *((uint*)field.thing));
       next = new Chunk(field.thing, field.len_fixed);
       break;
-    case _field_type::ARRAY_VARIABLE:
+    case _field_type::SERIAL_ARRAY_VARIABLE:
       fprintf(stderr, "0x%08X\n", **((uint**)field.thing));
       next = new Chunk(*((void**)field.thing), *field.len_variable);
       break;
-    case _field_type::SERIALIZABLE:
+    case _field_type::SERIAL_IZABLE:
       fprintf(stderr, "serializable: \n");
       next = ((Serializable*)field.thing)->serialize();
       assert(next != nullptr);
       break;
-    case _field_type::SERIALIZABLE_PTR: {
+    case _field_type::SERIAL_IZABLE_PTR: {
       fprintf(stderr, "serializable_ptr: ");
       if (!field.thing) {
         fprintf(stderr, "null\n");
-        next = new Chunk(); // nullchunk == tried to serialize null serializable
+        next = new Chunk(); // nullchunk.
       } else {
         fprintf(stderr, "recursive\n");
         next = ((Serializable*)field.thing)->serialize();
@@ -151,8 +151,8 @@ Serializable::Chunk* Serializable::serialize() const {
       tail = next;
     }
 
-    if (field.type == _field_type::SERIALIZABLE ||
-        field.type == _field_type::SERIALIZABLE_PTR) {
+    if (field.type == _field_type::SERIAL_IZABLE ||
+        field.type == _field_type::SERIAL_IZABLE_PTR) {
       while (tail->next) tail = tail->next;
     }
   }
@@ -180,38 +180,32 @@ const Serializable::Chunk* Serializable::deserialize(const Chunk* c) {
         : (field.type == 2 ? *field.len_variable : field.len_fixed)
     );
 
-    if (c->len != field.len_fixed && (field.type == _field_type::ARRAY_VARIABLE && c->len != *field.len_variable)) {
-      fprintf(stderr, "[Deserialization] Field length mismatch! "
-        "This is probably caused by a change in serialization order.\n");
-      assert(false);
-    }
-
     switch (field.type) {
-    case _field_type::INVALID: assert(false); break;
-    case _field_type::POD:
+    case _field_type::SERIAL_INVALID: assert(false); break;
+    case _field_type::SERIAL_POD:
       fprintf(stderr, "0x%08X\n", *((uint*)c->data));
       memcpy(field.thing, c->data, c->len);
       c = c->next;
       break;
-    case _field_type::ARRAY_VARIABLE:
+    case _field_type::SERIAL_ARRAY_VARIABLE:
       fprintf(stderr, "0x%08X\n", *((uint*)c->data));
       memcpy(*((void**)field.thing), c->data, c->len);
       c = c->next;
       break;
-    case _field_type::SERIALIZABLE:
+    case _field_type::SERIAL_IZABLE:
       fprintf(stderr, "serializable: \n");
       // recursively deserialize the data
       c = ((Serializable*)field.thing)->deserialize(c);
       break;
-    case _field_type::SERIALIZABLE_PTR: {
+    case _field_type::SERIAL_IZABLE_PTR: {
       fprintf(stderr, "serializable_ptr: ");
       if (c->len == 0 && field.thing == nullptr) {
         fprintf(stderr, "null\n");
-        // nullchunk == this serializable was null, so the thing must be null
+        // nullchunk. Ignore this and carry on.
         c = c->next;
       } else {
-        // recursively deserialize the data
         fprintf(stderr, "recursive\n");
+        // recursively deserialize the data
         c = ((Serializable*)field.thing)->deserialize(c);
       }
     } break;
@@ -222,61 +216,3 @@ const Serializable::Chunk* Serializable::deserialize(const Chunk* c) {
   delete field_data;
   return c;
 }
-
-// // "testing"
-// struct test_struct_base : public Serializable {
-//   uint balls;
-// };
-
-// struct test_struct : test_struct_base {
-//   uint val;
-//   test_struct* next;
-//   uint val2;
-
-//   u8* varlen_array;
-
-//   SERIALIZE_START(4, "test")
-//     SERIALIZE_SERIALIZABLE_PTR(this->next)
-//     SERIALIZE_POD(this->val)
-//     SERIALIZE_POD(this->val2)
-//     SERIALIZE_ARRAY_VARIABLE(this->varlen_array, this->val)
-//   SERIALIZE_END(4)
-
-//   test_struct(uint val) {
-//     this->val = val;
-//     this->val2 = val << 16;
-//     this->next = nullptr;
-//     this->varlen_array = new u8 [val];
-//     for (uint i = 0; i < val; i++) {
-//       this->varlen_array[i] = (i + 1) * 2;
-//       this->varlen_array[i] |= this->varlen_array[i] << 4;
-//     }
-//   }
-
-//   void add(test_struct* next) { this->next = next; }
-// };
-
-// static auto test = [](){
-//   test_struct* basicboi = new test_struct(1);
-//   basicboi->add(new test_struct(2));
-//   basicboi->next->add(new test_struct(3));
-
-//   const u8* data;
-//   uint len;
-//   Serializable::Chunk* base_state = ((test_struct_base*)basicboi)->serialize();
-//   base_state->debugprint();
-//   base_state->collate(data, len);
-
-//   basicboi->val = 100;
-//   basicboi->next->val = 200;
-//   basicboi->next->next->val = 300;
-
-//   const Serializable::Chunk* too = Serializable::Chunk::parse(data, len);
-//   too->debugprint();
-
-//   ((test_struct_base*)basicboi)->deserialize(Serializable::Chunk::parse(data, len));
-
-//   assert(basicboi->val == 1 && basicboi->next->val == 2 && basicboi->next->next->val == 3);
-
-//   return 1;
-// }();

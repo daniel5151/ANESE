@@ -4,11 +4,11 @@
 
 namespace ROMFileFormat {
   enum Type {
-    iNES,
-    NES2,
-    INVALID
+    ROM_iNES,
+    ROM_NES2,
+    ROM_INVALID
   };
 }
 
 // Parses data into usable ROM_File
-ROM_File* parse_ROM(const u8* data, uint data_len);
+ROM_File* parseROM(const u8* data, uint data_len);

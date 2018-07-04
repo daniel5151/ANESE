@@ -3,11 +3,6 @@
 #include <cassert>
 #include <cstdio>
 
-JOY::JOY() {
-  this->joy[0] = nullptr;
-  this->joy[1] = nullptr;
-}
-
 u8 JOY::read(u16 addr) {
   // Why | 0x40?
   // On the NES and Famicom, the top three (or five) bits are Open Bus.
@@ -40,14 +35,14 @@ u8 JOY::peek(u16 addr) const {
 
 void JOY::write(u16 addr, u8 val) {
   if (addr == 0x4016) {
-    if (this->joy[0]) this->joy[0]->write(addr, val);
-    if (this->joy[1]) this->joy[1]->write(addr, val);
-  } else {
-    fprintf(stderr,
-      "[JOY] Should not be able to write to 0x%04X! Check MMU!\n", addr
-    );
-    assert(false);
+    if (this->joy[0]) return this->joy[0]->write(addr, val);
+    if (this->joy[1]) return this->joy[1]->write(addr, val);
   }
+
+  fprintf(stderr,
+    "[JOY] Should not be able to write to 0x%04X! Check MMU!\n", addr
+  );
+  assert(false);
 }
 
 void JOY::attach_joy(uint port, Memory* joy) {

@@ -292,16 +292,16 @@ int EmuModule::load_rom(const char* rompath) {
   Cartridge* cart = new Cartridge (ANESE_fs::load::load_rom_file(rompath));
 
   switch (cart->status()) {
-  case Cartridge::Status::BAD_DATA:
+  case Cartridge::Status::CART_BAD_DATA:
     fprintf(stderr, "[Cart] ROM file could not be parsed!\n");
     delete cart;
     return 1;
-  case Cartridge::Status::BAD_MAPPER:
+  case Cartridge::Status::CART_BAD_MAPPER:
     fprintf(stderr, "[Cart] Mapper %u has not been implemented yet!\n",
       cart->get_rom_file()->meta.mapper);
     delete cart;
     return 1;
-  case Cartridge::Status::NO_ERROR:
+  case Cartridge::Status::CART_NO_ERROR:
     fprintf(stderr, "[Cart] ROM file loaded successfully!\n");
     strcpy(this->current_rom_file, rompath);
     this->cart = cart;
@@ -346,9 +346,10 @@ int EmuModule::unload_rom(Cartridge* cart) {
       uint len;
       Serializable::Chunk::collate(data, len, sav);
 
-      const char* sav_file_name = (std::string(this->current_rom_file) + ".sav").c_str();
+      char buf [256];
+      sprintf(buf, "%s.sav", this->current_rom_file);
 
-      FILE* sav_file = fopen(sav_file_name, "wb");
+      FILE* sav_file = fopen(buf, "wb");
       if (!sav_file) {
         fprintf(stderr, "[Savegame][Save] Failed to open save file!\n");
         return 1;
@@ -356,8 +357,7 @@ int EmuModule::unload_rom(Cartridge* cart) {
 
       fwrite(data, 1, len, sav_file);
       fclose(sav_file);
-      fprintf(stderr, "[Savegame][Save] Game successfully saved to '%s'!\n",
-        sav_file_name);
+      fprintf(stderr, "[Savegame][Save] Game successfully saved to '%s'!\n", buf);
 
       delete sav;
     }

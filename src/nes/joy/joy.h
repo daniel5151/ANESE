@@ -3,14 +3,16 @@
 #include "common/util.h"
 #include "nes/interfaces/memory.h"
 
-// Joypad router
+// Joypad "router"
+// Doesn't construct controllers, simply accepts controllers, and maps them to
+//  their appropriate memory address
 class JOY final : public Memory {
 private:
-  Memory* joy [2];
+  Memory* joy [2] = { nullptr };
 
 public:
   ~JOY() = default; // doesn't own joypads
-  JOY();
+  JOY() = default;
 
   // <Memory>
   u8 read(u16 addr)            override;

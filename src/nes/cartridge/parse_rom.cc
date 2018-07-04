@@ -4,8 +4,9 @@
 
 #include <cstdio>
 
-static ROM_File* parse_iNES(const u8* data, uint data_len) {
-  (void)data_len;
+// https://wiki.nesdev.com/w/index.php/INES
+static ROM_File* parseROM_iNES(const u8* data, uint data_len) {
+  (void)data_len; // TODO: actually bounds-check data lol
 
   const u8 prg_rom_pages = data[4];
   const u8 chr_rom_pages = data[5];
@@ -21,10 +22,10 @@ static ROM_File* parse_iNES(const u8* data, uint data_len) {
   }
 
   // Cool, this seems to be a valid iNES rom.
-  // Let's allocate the rom_file, and get to work!
-  ROM_File* rom_file = new ROM_File();
-  rom_file->data     = data;
-  rom_file->data_len = data_len;
+  // Let's allocate the rom_file, handoff data ownership, and get to work!
+  ROM_File* rf = new ROM_File();
+  rf->data     = data;
+  rf->data_len = data_len;
 
   // 7       0
   // ---------
@@ -36,26 +37,24 @@ static ROM_File* parse_iNES(const u8* data, uint data_len) {
   // B: has_battery
   // M: mirror_type (0 = horizontal, 1 = vertical)
 
-  rom_file->meta.has_trainer = nth_bit(data[6], 2);
-  rom_file->meta.has_battery = nth_bit(data[6], 1);
+  rf->meta.has_trainer = nth_bit(data[6], 2);
+  rf->meta.has_battery = nth_bit(data[6], 1);
 
   if (nth_bit(data[6], 3)) {
-    rom_file->meta.mirror_mode = Mirroring::FourScreen;
+    rf->meta.mirror_mode = Mirroring::FourScreen;
   } else {
-    if (nth_bit(data[6], 0)) {
-      rom_file->meta.mirror_mode = Mirroring::Vertical;
-    } else {
-      rom_file->meta.mirror_mode = Mirroring::Horizontal;
-    }
+    rf->meta.mirror_mode = nth_bit(data[6], 0)
+      ? Mirroring::Vertical
+      : Mirroring::Horizontal;
   }
 
-  if (rom_file->meta.has_trainer)
+  if (rf->meta.has_trainer)
     fprintf(stderr, "[File Parsing][iNES] ROM has a trainer\n");
-  if (rom_file->meta.has_battery)
-    fprintf(stderr, "[File Parsing][iNES] ROM has a battery\n");
+  if (rf->meta.has_battery)
+    fprintf(stderr, "[File Parsing][iNES] ROM has battery-backed SRAM\n");
 
   fprintf(stderr, "[File Parsing][iNES] Initial Mirroring Mode: %s\n",
-    Mirroring::toString(rom_file->meta.mirror_mode));
+    Mirroring::toString(rf->meta.mirror_mode));
 
   // 7       0
   // ---------
@@ -72,19 +71,19 @@ static ROM_File* parse_iNES(const u8* data, uint data_len) {
     fprintf(stderr, "[File Parsing][iNES] ROM has NES 2.0 header.\n");
   }
 
-  rom_file->meta.is_PC10 = nth_bit(data[7], 1);
-  rom_file->meta.is_VS   = nth_bit(data[7], 0);
+  rf->meta.is_PC10 = nth_bit(data[7], 1);
+  rf->meta.is_VS   = nth_bit(data[7], 0);
 
-  if (rom_file->meta.is_PC10)
+  if (rf->meta.is_PC10)
     fprintf(stderr, "[File Parsing][iNES] This is a PC10 ROM\n");
-  if (rom_file->meta.is_VS)
+  if (rf->meta.is_VS)
     fprintf(stderr, "[File Parsing][iNES] This is a VS ROM\n");
 
-  rom_file->meta.mapper = data[6] >> 4 | (data[7] & 0xFF00);
+  rf->meta.mapper = data[6] >> 4 | (data[7] & 0xFF00);
 
-  fprintf(stderr, "[File Parsing][iNES] Mapper: %d\n", rom_file->meta.mapper);
+  fprintf(stderr, "[File Parsing][iNES] Mapper: %d\n", rf->meta.mapper);
 
-  // I'm not parsing the rest of the header, since it's not that useful
+  // I'm not parsing the rest of the header, since it's not that useful...
 
 
   // Finally, use the header data to get pointers into the data for the various
@@ -104,30 +103,30 @@ static ROM_File* parse_iNES(const u8* data, uint data_len) {
   const u8* data_p = data + 0x10; // move past header
 
   // Look for the trainer
-  if (rom_file->meta.has_trainer) {
-    rom_file->rom.misc.trn_rom = data_p;
+  if (rf->meta.has_trainer) {
+    rf->rom.misc.trn_rom = data_p;
     data_p += 0x200;
   } else {
-    rom_file->rom.misc.trn_rom = nullptr;
+    rf->rom.misc.trn_rom = nullptr;
   }
 
-  rom_file->rom.prg.len = prg_rom_pages * 0x4000;
-  rom_file->rom.prg.data = data_p;
-  data_p += rom_file->rom.prg.len;
+  rf->rom.prg.len = prg_rom_pages * 0x4000;
+  rf->rom.prg.data = data_p;
+  data_p += rf->rom.prg.len;
 
-  rom_file->rom.chr.len = chr_rom_pages * 0x2000;
-  rom_file->rom.chr.data = data_p;
-  data_p += rom_file->rom.chr.len;
+  rf->rom.chr.len = chr_rom_pages * 0x2000;
+  rf->rom.chr.data = data_p;
+  data_p += rf->rom.chr.len;
 
-  if (rom_file->meta.is_PC10) {
-    rom_file->rom.misc.pci_rom = data_p;
-    rom_file->rom.misc.pc_prom = data_p + 0x2000;
+  if (rf->meta.is_PC10) {
+    rf->rom.misc.pci_rom = data_p;
+    rf->rom.misc.pc_prom = data_p + 0x2000;
   } else {
-    rom_file->rom.misc.pci_rom = nullptr;
-    rom_file->rom.misc.pc_prom = nullptr;
+    rf->rom.misc.pci_rom = nullptr;
+    rf->rom.misc.pc_prom = nullptr;
   }
 
-  return rom_file;
+  return rf;
 }
 
 static ROMFileFormat::Type rom_type(const u8* data, uint data_len) {
@@ -136,7 +135,7 @@ static ROMFileFormat::Type rom_type(const u8* data, uint data_len) {
   // Can't parse data if there is none ;)
   if (data == nullptr) {
     fprintf(stderr, "[File Parsing] ROM file is nullptr!\n");
-    return ROMFileFormat::INVALID;
+    return ROMFileFormat::ROM_INVALID;
   }
 
   // Try to determine ROM format
@@ -152,22 +151,22 @@ static ROMFileFormat::Type rom_type(const u8* data, uint data_len) {
     const bool is_NES2 = nth_bit(data[7], 3) && !nth_bit(data[6], 2);
     if (is_NES2) {
       fprintf(stderr, "[File Parsing] ROM has NES 2.0 header.\n");
-      return ROMFileFormat::NES2;
+      return ROMFileFormat::ROM_NES2;
     }
 
-    return ROMFileFormat::iNES;
+    return ROMFileFormat::ROM_iNES;
   }
 
   fprintf(stderr, "[File Parsing] Cannot identify ROM type!\n");
-  return ROMFileFormat::INVALID;
+  return ROMFileFormat::ROM_INVALID;
 }
 
-ROM_File* parse_ROM(const u8* data, uint data_len) {
+ROM_File* parseROM(const u8* data, uint data_len) {
   // Determine ROM type, and parse it
   switch(rom_type(data, data_len)) {
-  case ROMFileFormat::iNES: return parse_iNES(data, data_len);
-  case ROMFileFormat::NES2: return parse_iNES(data, data_len);
-  case ROMFileFormat::INVALID: return nullptr;
+  case ROMFileFormat::ROM_iNES: return parseROM_iNES(data, data_len);
+  case ROMFileFormat::ROM_NES2: return parseROM_iNES(data, data_len);
+  case ROMFileFormat::ROM_INVALID: return nullptr;
   }
   return nullptr;
 }

@@ -75,12 +75,6 @@ void NES::power_cycle() {
 
   this->is_running = true;
 
-  this->apu.power_cycle();
-  this->cpu.power_cycle();
-  this->ppu.power_cycle();
-
-  if (this->cart) this->cart->power_cycle();
-
   this->cpu_wram.clear();
   this->ppu_pram.clear();
   this->ppu_vram.clear();
@@ -88,11 +82,21 @@ void NES::power_cycle() {
   this->interrupts.clear();
   this->interrupts.request(Interrupts::RESET);
 
+  this->apu.power_cycle();
+  this->cpu.power_cycle();
+  this->ppu.power_cycle();
+
+  if (this->cart)
+    this->cart->power_cycle();
+
   fprintf(stderr, "[NES] Power Cycled\n");
 }
 
 void NES::reset() {
   this->is_running = true;
+
+  this->interrupts.clear();
+  this->interrupts.request(Interrupts::RESET);
 
   // cpu_wram, ppu_pram, and ppu_vram are not affected by resets
   // (i.e: they keep previous state)
@@ -101,10 +105,8 @@ void NES::reset() {
   this->cpu.reset();
   this->ppu.reset();
 
-  if (this->cart) this->cart->reset();
-
-  this->interrupts.clear();
-  this->interrupts.request(Interrupts::RESET);
+  if (this->cart)
+    this->cart->reset();
 
   fprintf(stderr, "[NES] Reset\n");
 }
@@ -128,8 +130,7 @@ void NES::cycle() {
     this->cart->cycle();
   }
 
-  // Check if the CPU halted, and stop NES if it is
-  if (this->cpu.getState() == CPU::State::Halted)
+  if (!this->cpu.isRunning())
     this->is_running = false;
 }
 
@@ -148,8 +149,4 @@ void NES::getFramebuff(const u8*& framebuffer) const {
 
 void NES::getAudiobuff(float*& samples, uint& len) {
   this->apu.getAudiobuff(samples, len);
-}
-
-bool NES::isRunning() const {
-  return this->is_running;
 }

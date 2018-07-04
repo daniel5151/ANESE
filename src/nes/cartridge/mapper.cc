@@ -2,7 +2,7 @@
 
 /*--------------------------------  Helpers  ---------------------------------*/
 
-void Mapper::set_prg_banks(const ROM_File& rom_file, const u16 size) {
+void Mapper::init_prg_banks(const ROM_File& rom_file, const u16 size) {
   this->banks.prg.len = rom_file.rom.prg.len / size;
   this->banks.prg.bank = new ROM* [this->banks.prg.len];
 
@@ -14,7 +14,7 @@ void Mapper::set_prg_banks(const ROM_File& rom_file, const u16 size) {
     this->banks.prg.bank[i] = new ROM (size, p, "Mapper PRG");
 }
 
-void Mapper::set_chr_banks(const ROM_File& rom_file, const u16 size) {
+void Mapper::init_chr_banks(const ROM_File& rom_file, const u16 size) {
   if (!rom_file.rom.chr.len) {
     fprintf(stderr, "[Mapper] No CHR ROM detected. Using 8K CHR RAM\n");
     this->banks.chr.is_RAM = true;
@@ -36,7 +36,7 @@ void Mapper::set_chr_banks(const ROM_File& rom_file, const u16 size) {
       : (Memory*) new ROM (size, p, "Mapper CHR ROM");
 }
 
-/*-------------------------------  Serivices  --------------------------------*/
+/*------------------  Common Mapper Functions / Services  --------------------*/
 
 void Mapper::irq_trigger() const {
   if (this->interrupt_line)
@@ -84,8 +84,8 @@ Mapper::Mapper(
 : name(name)
 , number(number)
 {
-  this->set_prg_banks(rom_file, prg_bank_size);
-  this->set_chr_banks(rom_file, chr_bank_size);
+  this->init_prg_banks(rom_file, prg_bank_size);
+  this->init_chr_banks(rom_file, chr_bank_size);
 }
 
 /*---------------------------------  Factory  --------------------------------*/

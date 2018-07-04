@@ -11,10 +11,18 @@
 
 #include "common/serializable.h"
 
-/**
- * @brief Base Mapper Interface
- * @details Provides Mapper interface, and provides common mapper functionality
- */
+// Base Mapper Interface
+// Implements common mapper utilities (eg: bank-chunking, IRQ handling)
+// At minimum, Mappers must implement the following methods:
+//   - peek/write
+//   - update_banks
+//   - mirroring
+//   - reset
+// The following virtual methods implement default behaviors:
+//   - read ................. calls peek
+//   - get/setBatterySave ... get returns nullptr, set does nothing
+//   - cycle ................ does nothing
+//   - power_cycle .......... clears CHR RAM, and calls reset + update_banks
 class Mapper : public Memory, public Serializable {
 private:
   /*---------------------------------  Data  ---------------------------------*/
@@ -40,6 +48,8 @@ private:
     } chr;
   } banks;
 
+  /*----------------------------  Serialization  -----------------------------*/
+
 protected:
   SERIALIZE_START(this->banks.chr.len, "Mapper")
     SERIALIZE_CUSTOM() {
@@ -52,11 +62,21 @@ protected:
     }
   SERIALIZE_END(this->banks.chr.len)
 
-  /*-------------------------------  Methods  --------------------------------*/
+  virtual void update_banks() = 0;
+
+  virtual const Serializable::Chunk* deserialize(const Serializable::Chunk* c) override {
+    c = this->Serializable::deserialize(c);
+    this->update_banks();
+    return c;
+  }
+
+  /*-------------------------------  Helpers  --------------------------------*/
 
 private:
-  void set_prg_banks(const ROM_File& rom_file, const u16 size);
-  void set_chr_banks(const ROM_File& rom_file, const u16 size);
+  void init_prg_banks(const ROM_File& rom_file, const u16 size);
+  void init_chr_banks(const ROM_File& rom_file, const u16 size);
+
+  /*-----------------  Common Mapper Functions / Services  -------------------*/
 
 protected:
   // Services provided to all mappers
@@ -67,19 +87,17 @@ protected:
   ROM&    get_prg_bank(uint bank) const;
   Memory& get_chr_bank(uint bank) const;
 
+  /*--------------------------  External Interface  --------------------------*/
+
 public:
-
   virtual ~Mapper();
-
   Mapper(
     uint number, const char* name,
     const ROM_File& rom_file,
     u16 prg_bank_size, u16 chr_bank_size
   );
 
-  /*-------------------  Emulator Actions Mapper Interface  ------------------*/
-
-  // Call when inserting / removing cartridge from NES
+  // Should be called when when inserting / removing cartridges from NES
   void set_interrupt_line(InterruptLines* interrupt_line) {
     this->interrupt_line = interrupt_line;
   }
@@ -90,30 +108,24 @@ public:
 
   // ---- Battery Backed Saving ---- //
   virtual const Serializable::Chunk* getBatterySave() const { return nullptr; }
-  virtual void setBatterySave(const Serializable::Chunk* c) { (void)c; }
-
-  // ---- Serialization ---- //
-  virtual const Serializable::Chunk* deserialize(const Serializable::Chunk* c) override {
-    c = this->Serializable::deserialize(c);
-    this->update_banks();
-    return c;
-  }
+  virtual void setBatterySave(const Serializable::Chunk* c) { return (void)c; }
 
   /*------------------------  Core Mapper Interface  -------------------------*/
 
-  // <Memory>
-  // reading doesn't tend to have side-effects, except in some fancy mappers
+  // reads tend to be side-effect free, except with some fancier mappers
   virtual u8 read(u16 addr) override { return this->peek(addr); }
   virtual u8 peek(u16 addr) const override      = 0;
   virtual void write(u16 addr, u8 val) override = 0;
-  // <Memory/>
 
   virtual Mirroring::Type mirroring() const = 0; // Get mirroring mode
 
-  // Mappers tend to be benign, but some do have some fancy behavior.
   virtual void cycle() {}
 
   virtual void power_cycle() {
+    // NOTE: there are a couple of boards that have battery-backed CHR RAM.
+    // They required a complete override of the power_cycle() method
+    // iNES    168
+    // NES 2.0 513
     if (this->banks.chr.is_RAM) {
       for (uint j = 0; j < this->banks.chr.len; j++) {
         static_cast<RAM*>(this->banks.chr.bank[j])->clear();
@@ -123,9 +135,6 @@ public:
     this->update_banks();
   };
   virtual void reset() = 0;
-
-protected:
-  virtual void update_banks() = 0; // (called post-deserialization)
 
 public:
   /*------------------------------  Utilities  -------------------------------*/

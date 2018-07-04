@@ -7,8 +7,8 @@
 #include <cstdio>
 
 // A DIY data-serialization system.
-// Incredibly hacky, super brittle, and a true abuse of C++'s typesystem.
-// Beautiful.
+// Hacky. Brittle. Beautiful.
+// A true abuse of C/C++'s typesystem (or lack thereof)
 //
 // Caveats:
 // --------
@@ -19,16 +19,16 @@
 //     or else deserialization will fail catastrophically
 // 3) Circular dependencies break everything (i.e: bad things will happen when
 //     serialize() gets called on A, thus calling serialize() on member B, who
-//     holds a referance to A... You'll blow the stack, and that's bad)
+//     holds a reference to A... You'll blow the stack, and that's bad)
 // 4) `Serializable` inheritence is not handled _nicely_, with one having to
 //    manually override de/serialize functions with calls to the parent funcs,
 //    performing the chunk-manipulation manually.
 //
 // Dangerous Shenanigans that should be AVOIDED
 // --------------------------------------------
-// - Calling de/serialize in the constructor/destructor can be dangeous, as some
-//    fields (notably SERIALIZE_ARRAY_VARIABLE and SERIALIZE_SERIALIZABLE(_PTR))
-//    may not be instatiated yet.
+// - Calling de/serialize in the constructor/destructor can be dangerous, as
+//    some fields (notably SERIALIZE_ARRAY_VARIABLE and
+//    SERIALIZE_SERIALIZABLE_PTR) may not have been instantiated yet.
 //   Tread carefully.
 //
 // Basic Usage:
@@ -59,8 +59,8 @@
 //
 // 2) define the serialization structure in the structure's definition
 // ```
-//   my_thing() {
-//     // a POD type of fixed ssize
+//   struct my_thing : public Serializable {
+//     // a POD type of fixed size
 //     uint some_flags;
 //     ...
 //     ...
@@ -91,15 +91,15 @@
 // Advanced:
 // ---------
 // - If a class need to preform some actions post / pre de/serialize, you can
-//   override the serilization methods and add custom behavior.
+//   override the serialization methods and add custom behavior.
 //     - **Be Careful:** when overriding de/serialize functions, make sure to
 //       call the parent class's de/serialize functions, or else the class will
 //       not properly serialize!
 // - If you inherit from an object that is already Serializable, make sure that
 //   you add the SERIALIZE_PARENT(BaseClass) macro before SERIALIZE_START.
 //   This tells Serializable to also serialize whatever state the parent had
-//     - _Caveat:_ There is no support for multiple inheritence at the moment
-// - Since everything is just regular ol C++ under the hood, you can implement
+//     - _Caveat:_ There is no support for multiple inheritance at the moment
+// - Since everything is just regular 'ol C++ under the hood, you can implement
 //   custom serialization routines (outside of the predefined macros). When
 //   doing so, express intent by wrapping the custom implementation in a
 //   SERIALIZE_CUSTOM() {} block
@@ -110,8 +110,8 @@
 class Serializable {
 public:
   // Chunks are the base units of serialization.
-  // They are functionally singly-linked lists, where each node stores a pointer
-  // to an array of bytes of a certain length.
+  // Functionally, they are simple singly-linked lists, with each node holding
+  // a chunk of data, it's length, and a reference to the next link in the chain
   struct Chunk {
     uint len;
     u8* data;
@@ -138,11 +138,11 @@ public:
 /*------------------------------  Macro Support  -----------------------------*/
 protected:
   enum _field_type {
-    INVALID = 0,
-    POD,
-    ARRAY_VARIABLE,
-    SERIALIZABLE,
-    SERIALIZABLE_PTR
+    SERIAL_INVALID = 0,
+    SERIAL_POD,
+    SERIAL_ARRAY_VARIABLE,
+    SERIAL_IZABLE,
+    SERIAL_IZABLE_PTR
   };
 
   struct _field_data {
@@ -150,7 +150,7 @@ protected:
     const char* label;
     _field_type type;
     void* thing;
-    // only one of the two is used
+    // only one of the following are used
     uint len_fixed;
     uint* len_variable;
   };
@@ -160,15 +160,18 @@ protected:
     // this is a bit of a hacky workaround to the case where a base-class is
     // marked serializable, but none of it's children, or itself, provide any
     // serializable state...
-    // this is bad since it uses a static "dump" to read/write dummy data, and
-    // it is hella-not guaranteed to be consistent
+    // this is bad since it uses a static "dump" chunk of memory to read/write
+    // dummy data, and that means the serialized state probably won't be
+    // consistent :/
     fprintf(stderr, "[Serializable] WARNING: "
       "Calling base _get_serializable_state. "
       "This may result in different dumps for identical state!\n");
 
     static uint dump = 0;
     static const _field_data nothing [1] = {{
-      "<nothing>", "<nothing>", _field_type::POD, &dump, sizeof dump, nullptr
+      "<nothing>", "<nothing>",
+      _field_type::SERIAL_POD, &dump,
+      sizeof dump, nullptr
     }};
 
     data = nothing;
@@ -232,44 +235,44 @@ protected:
 /*-----------------------  Serialize Datatypes Macros  -----------------------*/
 
 #ifdef _WIN32
-  const char slash = '\\';
+  static constexpr char slash = '\\';
 #else
-  const char slash = '/';
+  static constexpr char slash = '/';
 #endif
 
-#define SERIALIZE_POD(thing)                                         \
-  new_state[i++] = {                                                 \
-    chunk_label, strrchr(__FILE__ ": " #thing, slash) + 1,           \
-    Serializable::_field_type::POD,                                  \
-    (void*)&(thing),                                                 \
-    sizeof(thing), 0                                                 \
+#define SERIALIZE_POD(thing)                                                   \
+  new_state[i++] = {                                                           \
+    chunk_label, strrchr(__FILE__ ": " #thing, slash) + 1,                     \
+    Serializable::_field_type::SERIAL_POD,                                     \
+    (void*)&(thing),                                                           \
+    sizeof(thing), 0                                                           \
   };
 
-#define SERIALIZE_ARRAY_VARIABLE(thing, len)                         \
-  new_state[i++] = {                                                 \
-    chunk_label, strrchr(__FILE__ ": " #thing, slash) + 1,           \
-    Serializable::_field_type::ARRAY_VARIABLE,                       \
-    (void*)&(thing),                                                 \
-    0, (uint*)&len                                                   \
+#define SERIALIZE_ARRAY_VARIABLE(thing, len)                                   \
+  new_state[i++] = {                                                           \
+    chunk_label, strrchr(__FILE__ ": " #thing, slash) + 1,                     \
+    Serializable::_field_type::SERIAL_ARRAY_VARIABLE,                          \
+    (void*)&(thing),                                                           \
+    0, (uint*)&len                                                             \
   };
 
-#define SERIALIZE_SERIALIZABLE(item)                                 \
-  new_state[i++] = {                                                 \
-    chunk_label, strrchr(__FILE__ ": " #item, slash) + 1,            \
-    Serializable::_field_type::SERIALIZABLE,                         \
-    (void*)static_cast<const Serializable*>(&(item)),                \
-    0, 0                                                             \
-  };                                                                 \
-  if (new_state[i-1].thing == nullptr)                               \
-    fprintf(stderr, "[Serializable][%s] Warning: could not cast `" #item \
+#define SERIALIZE_SERIALIZABLE(item)                                           \
+  new_state[i++] = {                                                           \
+    chunk_label, strrchr(__FILE__ ": " #item, slash) + 1,                      \
+    Serializable::_field_type::SERIAL_IZABLE,                                  \
+    (void*)static_cast<const Serializable*>(&(item)),                          \
+    0, 0                                                                       \
+  };                                                                           \
+  if (new_state[i-1].thing == nullptr)                                         \
+    fprintf(stderr, "[Serializable][%s] Warning: could not cast `" #item       \
                     "` down to Serializable!\n", chunk_label);
 
-#define SERIALIZE_SERIALIZABLE_PTR(thingptr)                         \
-  new_state[i++] = {                                                 \
-    chunk_label, strrchr(__FILE__ ": " #thingptr, slash) + 1,        \
-    Serializable::_field_type::SERIALIZABLE_PTR,                     \
-    (void*)static_cast<const Serializable*>(thingptr),               \
-    0, 0                                                             \
+#define SERIALIZE_SERIALIZABLE_PTR(thingptr)                                   \
+  new_state[i++] = {                                                           \
+    chunk_label, strrchr(__FILE__ ": " #thingptr, slash) + 1,                  \
+    Serializable::_field_type::SERIAL_IZABLE_PTR,                              \
+    (void*)static_cast<const Serializable*>(thingptr),                         \
+    0, 0                                                                       \
   };
 
 #define SERIALIZE_CUSTOM() // doesn't do anything except express intent

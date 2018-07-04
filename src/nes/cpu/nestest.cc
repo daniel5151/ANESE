@@ -3,11 +3,11 @@
 
 #include <cstdio>
 
-void CPU::nestest(const Instructions::Opcode& opcode) const {
+void CPU::nestest(const CPU& cpu, const Instructions::Opcode& opcode) {
   using namespace Instructions;
 
   // Print PC and raw opcode byte
-  printf("%04X  %02X ", this->reg.pc - 1, opcode.raw);
+  printf("%04X  %02X ", cpu.reg.pc - 1, opcode.raw);
 
   // create buffer for instruction operands
   char instr_buf [64];
@@ -18,8 +18,8 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
   using namespace Instructions::AddrM;
 
   // Evaluate a few useful values
-  u8  arg8   = this->mem.peek(this->reg.pc + 0);
-  u8  arg8_2 = this->mem.peek(this->reg.pc + 1);
+  u8  arg8   = cpu.mem.peek(cpu.reg.pc + 0);
+  u8  arg8_2 = cpu.mem.peek(cpu.reg.pc + 1);
   u16 arg16  = arg8 | (arg8_2 << 8);
 
   // Print operand bytes
@@ -50,72 +50,72 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
 
   // Decode addressing mode
   switch(opcode.addrm) {
-    case abs_: addr = arg16;                                             break;
-    case absX: addr = arg16 + this->reg.x;                               break;
-    case absY: addr = arg16 + this->reg.y;                               break;
-    case ind_: addr = this->mem.peek16_zpg(arg16);                       break;
-    case indY: addr = this->mem.peek16_zpg(arg8) + this->reg.y;          break;
-    case Xind: addr = this->mem.peek16_zpg((arg8 + this->reg.x) & 0xFF); break;
-    case zpg_: addr = arg8;                                              break;
-    case zpgX: addr = (arg8 + this->reg.x) & 0xFF;                       break;
-    case zpgY: addr = (arg8 + this->reg.y) & 0xFF;                       break;
-    case rel : addr = this->reg.pc;                                      break;
-    case imm : addr = this->reg.pc;                                      break;
-    case acc : addr = this->reg.a;                                       break;
-    case impl: addr = u8(0xFACA11);                                      break;
+    case abs_: addr = arg16;                                              break;
+    case absX: addr = arg16 + cpu.reg.x;                                  break;
+    case absY: addr = arg16 + cpu.reg.y;                                  break;
+    case ind_: addr = cpu.peek16_zpg(arg16);                              break;
+    case indY: addr = cpu.peek16_zpg(arg8) + cpu.reg.y;                   break;
+    case Xind: addr = cpu.peek16_zpg((arg8 + cpu.reg.x) & 0xFF);          break;
+    case zpg_: addr = arg8;                                               break;
+    case zpgX: addr = (arg8 + cpu.reg.x) & 0xFF;                          break;
+    case zpgY: addr = (arg8 + cpu.reg.y) & 0xFF;                          break;
+    case rel : addr = cpu.reg.pc;                                         break;
+    case imm : addr = cpu.reg.pc;                                         break;
+    case acc : addr = cpu.reg.a;                                          break;
+    case impl: addr = u8(0xFACA11);                                       break;
     default: break;
   }
 
   // Print specific instrucion operands for each addressing mode
   switch(opcode.addrm) {
   case abs_: sprintf(instr_buf, "$%04X = %02X",
-                             arg16,
-              this->mem.peek(arg16)
+                           arg16,
+              cpu.mem.peek(arg16)
             ); break;
   case absX: sprintf(instr_buf, "$%04X,X @ %04X = %02X",
-                             arg16,
-                         u16(arg16 + this->reg.x),
-              this->mem.peek(arg16 + this->reg.x)
+                           arg16,
+                       u16(arg16 + cpu.reg.x),
+              cpu.mem.peek(arg16 + cpu.reg.x)
             ); break;
   case absY: sprintf(instr_buf, "$%04X,Y @ %04X = %02X",
-                             arg16,
-                         u16(arg16 + this->reg.y),
-              this->mem.peek(arg16 + this->reg.y)
+                           arg16,
+                       u16(arg16 + cpu.reg.y),
+              cpu.mem.peek(arg16 + cpu.reg.y)
             ); break;
   case indY: sprintf(instr_buf, "($%02X),Y = %04X @ %04X = %02X",
-                                                  arg8,
-                             this->mem.peek16_zpg(arg8),
-                         u16(this->mem.peek16_zpg(arg8) + this->reg.y),
-              this->mem.peek(this->mem.peek16_zpg(arg8) + this->reg.y)
+                                          arg8,
+                           cpu.peek16_zpg(arg8),
+                       u16(cpu.peek16_zpg(arg8) + cpu.reg.y),
+              cpu.mem.peek(cpu.peek16_zpg(arg8) + cpu.reg.y)
             ); break;
   case Xind: sprintf(instr_buf, "($%02X,X) @ %02X = %04X = %02X",
-                                                                   arg8,
-                                                  u8(this->reg.x + arg8),
-                             this->mem.peek16_zpg(u8(this->reg.x + arg8)),
-              this->mem.peek(this->mem.peek16_zpg(u8(this->reg.x + arg8)))
+                                                         arg8,
+                                          u8(cpu.reg.x + arg8),
+                           cpu.peek16_zpg(u8(cpu.reg.x + arg8)),
+              cpu.mem.peek(cpu.peek16_zpg(u8(cpu.reg.x + arg8)))
             ); break;
   case ind_: sprintf(instr_buf, "($%04X) = %04X",
-                                   arg16,
-              this->mem.peek16_zpg(arg16)
+                             arg16,
+              cpu.peek16_zpg(arg16)
             ); break;
   case zpg_: sprintf(instr_buf, "$%02X = %02X",
-                             arg8,
-              this->mem.peek(arg8)
+                           arg8,
+              cpu.mem.peek(arg8)
             ); break;
   case zpgX: sprintf(instr_buf, "$%02X,X @ %02X = %02X",
-                                arg8,
-                             u8(arg8 + this->reg.x),
-              this->mem.peek(u8(arg8 + this->reg.x))
+                              arg8,
+                           u8(arg8 + cpu.reg.x),
+              cpu.mem.peek(u8(arg8 + cpu.reg.x))
             ); break;
   case zpgY: sprintf(instr_buf, "$%02X,Y @ %02X = %02X",
-                                arg8,
-                             u8(arg8 + this->reg.y),
-              this->mem.peek(u8(arg8 + this->reg.y))
+                              arg8,
+                           u8(arg8 + cpu.reg.y),
+              cpu.mem.peek(u8(arg8 + cpu.reg.y))
             ); break;
-  case rel : sprintf(instr_buf, "$%04X", this->reg.pc + 1 + i8(arg8));   break;
-  case imm : sprintf(instr_buf, "#$%02X", arg8);                         break;
-  case acc : sprintf(instr_buf, " ");                                    break;
-  case impl: sprintf(instr_buf, " ");                                    break;
+  case rel : sprintf(instr_buf, "$%04X", cpu.reg.pc + 1 + i8(arg8));      break;
+  case imm : sprintf(instr_buf, "#$%02X", arg8);                          break;
+  case acc : sprintf(instr_buf, " ");                                     break;
+  case impl: sprintf(instr_buf, " ");                                     break;
   default: sprintf(instr_buf, " "); break;
   }
 
@@ -143,14 +143,14 @@ void CPU::nestest(const Instructions::Opcode& opcode) const {
 
   // Print processor state
   printf("A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%3u\n",
-    this->reg.a,
-    this->reg.x,
-    this->reg.y,
-    this->reg.p.raw & ~0x10, // 0b11101111, match nestest "golden" log
-    this->reg.s,
-    this->cycles * 3 % 341 // CYC measures PPU X coordinates
-                           // PPU does 1 x coordinate per cycle
-                           // PPU runs 3x as fast as CPU
-                           // ergo, multiply cycles by 3 should be fineee
+    cpu.reg.a,
+    cpu.reg.x,
+    cpu.reg.y,
+    cpu.reg.p.raw & ~0x10, // 0b11101111, match nestest "golden" log
+    cpu.reg.s,
+    cpu.cycles * 3 % 341 // CYC measures PPU X coordinates
+                         // PPU does 1 x coordinate per cycle
+                         // PPU runs 3x as fast as CPU
+                         // ergo, multiply cycles by 3 should be fineee
   );
 }

@@ -18,11 +18,12 @@ namespace JOY_Standard_Button {
   };
 }
 
+// https://wiki.nesdev.com/w/index.php/Standard_controller
 class JOY_Standard final : public Memory, public Serializable {
 private:
   bool strobe = false;
   u8 curr_btn = 0x01;
-  u8 buttons = 0;
+  u8 buttons  = 0x00;
 
   const char* label;
 

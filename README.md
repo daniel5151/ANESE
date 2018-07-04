@@ -13,20 +13,20 @@
 </p>
 
 **ANESE** (**A**nother **NES** **E**mulator) is a Nintendo Entertainment System
-Emulator being written for fun and learning.
+Emulator written for fun and learning.
 
-While accuracy and performance are long-term goals, ANESE's primary focus is
-getting some of the more popular titles up and running. Most basic Mappers have
+While accuracy and performance are long-term goals, ANESE's primary focus is to
+get some of the more popular titles up and running. Most basic Mappers have
 been implemented, so many popular titles should be working! :smile:
 
-ANESE is built with _cross-platform_ in mind, and is regularly built on all
+ANESE is built with _cross-platform_ in mind, and is regularly tested on all
 major platforms (macOS, Windows, and Linux). ANESE doesn't use any
 vendor-specific language extensions, and is compiled with strict compiler flags.
 It is also linted (fairly) regularly.
 
 Lastly, ANESE strives to keep a clean and _interesting_ C++11 codebase,
 emphasizing _readability_, _maintainability_, and _approachability_. The code
-is heavily commented, providing sources and insights for much of the logic.
+is well commented, providing sources and insights for much of the logic.
 
 ## Downloads
 
@@ -87,12 +87,13 @@ If you're interested in looking under the hood of the PPU, you can pass the
 
 ## Running
 
-ANESE can run from the shell using `anese [rom.nes]` syntax.
+Running ANESE with no arguments throws you into a directory-browser, from which
+you can navigate to your ROM and launch it.
 
-If no ROM is provided, a simple dialog window pops-up prompting the user to
-select a valid NES rom.
-
-For a full list of switches, run `anese -h`
+Alternatively, ANESE can run from the shell using `anese [rom.nes]` syntax.
+Certain features are only accessible from the command-line at the moment (e.g:
+movie recording / playback, PPU timing hacks). For a full list of switches,
+run `anese -h`
 
 **Windows Users:** make sure the executable can find `SDL2.dll`! Download the
 runtime DLLs from the SDL website, and plop them in the same directory as
@@ -163,17 +164,28 @@ that rely on sub-instruction level timings (eg: Solomon's Key).
 
 ## TODO
 
-This is a list of things I would like to try to accomplish, with those closer to
-the top higher on my priority list:
+These are features that will add major value to ANESE:
+
+- [ ] _Implement_: Cycle accurate CPU (will probably fix _many_ bugs)
+- [ ] _Implement_: Better menu (not just fs, also config)
+- [ ] _CMake_: more robust macOS bundles (good way to get SDL2.0 packaged?)
+- [ ] _Implement_: LibRetro Core
+- [ ] _Implement_: Get the Light-gun working
+- [ ] _Debugging_: Add debug GUI
+  - All objects implementing the Memory interface _must also_ implement `peek`,
+    i.e: a `const` read. As such, a debugger could easily inspect any/all memory
+    locations with no side effects!
+
+Here's a couple that have been crossed off already:
 
 - [x] _Implement_: My own APU (don't use Blarrg's)
-- [ ] _Implement_: More robust menu system
 - [x] _Refactor_: Modularize `main.cc` - push everything into `src/ui/`
   - [x] _Refactor_: Split `gui.cc` into more files!
-- [ ] _CMake_: Make building macOS bundles less brittle
 - [x] _Refactor_: Push common mapper behavior to Base Mapper (eg: bank chunking)
-- [ ] _Implement_: LibRetro Core
-- [ ] _Implement_: Sub-instruction cycle accurate CPU
+
+And here are some ongoing low-priority goals:
+
+- [ ] _Refactor_: Roll-my-own Sound_Queue (SDL_QueueAudio?)
 - [ ] _Cleanup_: Unify naming conventions (either camelCase or snake_case)
 - [ ] _Cleanup_: Comment the codebase _even more_
 - [ ] _Security_: Actually bounds-check files lol
@@ -221,7 +233,7 @@ the top higher on my priority list:
   - [x] DMC DMA
 - [ ] Joypads
   - [x] Basic Controller
-  - [ ] Zapper - _needs work_
+  - [ ] Zapper - _still needs work_
   - [ ] NES Four Score
 
 ### Secondary Milestones
@@ -234,13 +246,13 @@ the top higher on my priority list:
   - [x] Battery Backed RAM - Saves to `.sav`
   - [x] Save-states
     - [ ] Dump to file
-- [ ] Config File
+- [x] Config File
   - [x] Preserve ROM path
   - [x] Window size
   - [ ] Controls
 - [x] Running NESTEST (behind a flag)
 - [x] Controller support - _currently very basic_
-- [ ] A SDL GUI
+- [x] A SDL GUI
   - [x] SDL-based ROM picker
   - [ ] Options menu
 
@@ -257,13 +269,9 @@ the top higher on my priority list:
   - [x] SDL Standalone
   - [ ] LibRetro
 - [ ] Debugger!
-  - There is a lot of great infrastructure in place that could make ANESE a
-    top-tier NES debugger, primarily the fact that all memory-interfaced
-    objects _must_ implement `peek`, which enables non-destructive looks at
-    arbitrary objects!
   - [ ] CPU
     - [ ] Step through instructions
-  - [ ] PPU Views
+  - [x] PPU Views
     - [x] Static Palette
     - [x] Palette Memory
     - [x] Pattern Tables
@@ -273,25 +281,27 @@ the top higher on my priority list:
 ### Accuracy & Compatibility
 
 - More Mappers! Always more mappers!
+- [ ] Add automatic testing
+  - [ ] Screenshots: compare power-on with 30 seconds of button mashing
+  - [ ] Test ROMs: Parse debug outputs
 - CPU
   - [ ] Implement Unofficial Opcodes
-  - [ ] Pass More Tests yo
+  - [ ] Pass More Tests
   - [ ] _\(Stretch\)_ Switch to sub-instruction level cycle-based emulation
         (vs instruction level)
 - PPU
   - [x] Make the sprite rendering pipeline more accurate (fetch-timings)
-    - This _should_ fix _Punch Out!!_ **UPDATE:** it totally did.
-  - [ ] Pass More Tests yo
-  - [ ] Make value in PPU <-> CPU bus decay
+  - [ ] Pass More Tests
+  - [ ] Make value in PPU <-> CPU bus decay?
 
 ## Attributions
 
 - A big shout-out to [LaiNES](https://github.com/AndreaOrru/LaiNES) and
 [fogleman/nes](https://github.com/fogleman/nes), two solid NES emulators that I
 referenced while implementing some particularly tricky parts of the PPU). While
-I actively avoided looking at the source codes of other NES emulators as I wrote
-my initial implementations of the CPU and PPU, I did occationally sneak a peek
-at how others did things when I got very stuck.
+I actively avoided looking at the source codes of other NES emulators while
+writing my initial implementations of the CPU and PPU, I did sneak a peek at how
+others solved some problems once I got stuck.
 - These awesome libraries make ANESE a lot nicer to use:
   - [sdl2](https://www.libsdl.org/) - A/V and Input
   - [SDL_inprint](https://github.com/driedfruit/SDL_inprint/) - SDL fonts, without SDL_ttf

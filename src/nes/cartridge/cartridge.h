@@ -3,9 +3,9 @@
 #include "mapper.h"
 #include "rom_file.h"
 
-#undef NO_ERROR // TODO: track down nebulous Windows.h include that defines this
-
-// A thin class that owns a ROM_File and it's associated mapper
+// Container for ROM_File* and associated mapper.
+// Takes ownership of any ROM_File passed to it, and handles Mapper detection
+//  and construction
 class Cartridge {
 private:
   const ROM_File* const rom_file;
@@ -23,15 +23,15 @@ public:
   {}
 
   enum class Status {
-    NO_ERROR = 0,
-    BAD_MAPPER,
-    BAD_DATA
+    CART_NO_ERROR = 0,
+    CART_BAD_MAPPER,
+    CART_BAD_DATA
   };
 
   Status status() {
-    if (this->rom_file == nullptr) return Status::BAD_DATA;
-    if (this->mapper   == nullptr) return Status::BAD_MAPPER;
-    return Status::NO_ERROR;
+    if (this->rom_file == nullptr) return Status::CART_BAD_DATA;
+    if (this->mapper   == nullptr) return Status::CART_BAD_MAPPER;
+    return Status::CART_NO_ERROR;
   }
 
   const ROM_File* get_rom_file() { return this->rom_file; }

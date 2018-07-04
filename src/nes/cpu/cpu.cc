@@ -26,25 +26,22 @@ void CPU::power_cycle() {
 
   this->reg.s = 0xFD;
 
-  this->state = CPU::State::Running;
+  this->is_running = true;
 }
 
 void CPU::reset() {
-  this->state = CPU::State::Running;
+  this->is_running = true;
+  // RESET interrupt should be asserted exterally
 }
-
-CPU::State CPU::getState() const { return this->state; }
 
 /*----------------------------  Private Methods  -----------------------------*/
 
 void CPU::service_interrupt(Interrupts::Type interrupt, bool brk /* = false */) {
-  using namespace Interrupts;
-
-  assert(interrupt != NONE);
+  assert(interrupt != Interrupts::NONE);
 
 #ifdef NESTEST
   // custom reset for headless nestest
-  if (interrupt == RESET) {
+  if (interrupt == Interrupts::RESET) {
     this->reg.pc = 0xC000;
     this->interrupt.service(interrupt);
     return;
@@ -52,7 +49,7 @@ void CPU::service_interrupt(Interrupts::Type interrupt, bool brk /* = false */) 
 #endif
 
   // Push stack pointer and processor status onto stack for safekeeping
-  if (interrupt != RESET) {
+  if (interrupt != Interrupts::RESET) {
     this->s_push16(this->reg.pc);
     this->s_push(this->reg.p.raw);
   } else {
@@ -63,10 +60,10 @@ void CPU::service_interrupt(Interrupts::Type interrupt, bool brk /* = false */) 
   this->cycles += 7;
 
   switch (interrupt) {
-  case IRQ: if (brk || !this->reg.p.i)
-              this->reg.pc = this->mem.read16(0xFFFE); break;
-  case RESET: this->reg.pc = this->mem.read16(0xFFFC); break;
-  case NMI:   this->reg.pc = this->mem.read16(0xFFFA); break;
+  case Interrupts::IRQ: if (brk || !this->reg.p.i)
+                          this->reg.pc = this->read16(0xFFFE); break;
+  case Interrupts::RESET: this->reg.pc = this->read16(0xFFFC); break;
+  case Interrupts::NMI:   this->reg.pc = this->read16(0xFFFA); break;
   default: break;
   }
 
@@ -84,7 +81,7 @@ u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
   // To keep switch-statement code clean, define some temporary macros that
   // read 8 and 1 bit arguments (respectively)
   #define arg8  (this->mem[this->reg.pc++])
-  #define arg16 (this->mem.read16((this->reg.pc += 2) - 2))
+  #define arg16 (this->read16((this->reg.pc += 2) - 2))
 
   #define dummy_read() this->mem.read(this->reg.pc)
 
@@ -92,9 +89,9 @@ u16 CPU::get_operand_addr(const Instructions::Opcode& opcode) {
     case abs_: addr = arg16;                                             break;
     case absX: addr = arg16 + this->reg.x;                               break;
     case absY: addr = arg16 + this->reg.y;                               break;
-    case ind_: addr = this->mem.read16_zpg(arg16);                       break;
-    case indY: addr = this->mem.read16_zpg(arg8) + this->reg.y;          break;
-    case Xind: addr = this->mem.read16_zpg((arg8 + this->reg.x) & 0xFF); break;
+    case ind_: addr = this->read16_zpg(arg16);                           break;
+    case indY: addr = this->read16_zpg(arg8) + this->reg.y;              break;
+    case Xind: addr = this->read16_zpg((arg8 + this->reg.x) & 0xFF);     break;
     case zpg_: addr = arg8;                                              break;
     case zpgX: addr = (arg8 + this->reg.x) & 0xFF;                       break;
     case zpgY: addr = (arg8 + this->reg.y) & 0xFF;                       break;
@@ -145,10 +142,10 @@ uint CPU::step() {
   Instructions::Opcode opcode = Instructions::Opcodes[op];
 
   if (this->print_nestest) {
-    this->nestest(opcode);
+    this->nestest(*this, opcode);
   }
 #ifdef NESTEST
-  this->nestest(opcode); // print NESTEST debug info
+  this->nestest(*this, opcode);
 #endif
 
   u16 addr = this->get_operand_addr(opcode);
@@ -171,8 +168,11 @@ uint CPU::step() {
     /* Check if extra cycles due to jumping across pages */            \
     if ((this->reg.pc & 0xFF00) != ((this->reg.pc + offset) & 0xFF00)) \
       this->cycles += 1;                                               \
-    this->reg.pc += offset;                                            \
+    this->reg.pc += offset;
 
+  // This _may_ seem bad, but in reality, this switch statement actually gets
+  // compiled down to a jump table!
+  // Don't believe me? Check godbolt!
   switch (opcode.instr) {
       case ADC: { u8  val = this->mem[addr];
                   u16 sum = this->reg.a + val + this->reg.p.c;
@@ -219,7 +219,7 @@ uint CPU::step() {
       case BPL: { branch(!this->reg.p.n);
                 } break;
       case BRK: { // ignores interrupt disable bit, and forces an interrupt
-                  this->service_interrupt(Interrupts::Type::IRQ, true);
+                  this->service_interrupt(Interrupts::IRQ, true);
                 } break;
       case BVC: { branch(!this->reg.p.v);
                 } break;
@@ -394,7 +394,7 @@ uint CPU::step() {
         this->cycles,
         opcode.raw
       );
-      this->state = CPU::State::Halted;
+      this->is_running = false;
       break;
   }
 
@@ -415,4 +415,27 @@ u16 CPU::s_pull16() {
 void CPU::s_push16(u16 val) {
   this->s_push(val >> 8);   // push hi
   this->s_push(val & 0xFF); // push lo
+}
+
+u16 CPU::peek16(u16 addr) const {
+  return this->mem.peek(addr + 0) |
+        (this->mem.peek(addr + 1) << 8);
+}
+u16 CPU::read16(u16 addr) {
+  return this->mem.read(addr + 0) |
+        (this->mem.read(addr + 1) << 8);
+};
+
+u16 CPU::peek16_zpg(u16 addr) const {
+  return this->mem.peek(addr + 0) |
+        (this->mem.peek(((addr + 0) & 0xFF00) | ((addr + 1) & 0x00FF)) << 8);
+}
+u16 CPU::read16_zpg(u16 addr) {
+  return this->mem.read(addr + 0) |
+        (this->mem.read(((addr + 0) & 0xFF00) | ((addr + 1) & 0x00FF)) << 8);
+}
+
+void CPU::write16(u16 addr, u8 val) {
+  this->mem.write(addr + 0, val);
+  this->mem.write(addr + 1, val);
 }

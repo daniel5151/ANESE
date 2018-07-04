@@ -1,6 +1,8 @@
 #include "zapper.h"
 
-JOY_Zapper::JOY_Zapper(const char* label) : label(label) {}
+JOY_Zapper::JOY_Zapper(const char* label) : label(label) {
+  (void)this->label; // silence unused warning
+}
 
 // <Memory>
 u8 JOY_Zapper::read(u16 addr) { return this->peek(addr); }

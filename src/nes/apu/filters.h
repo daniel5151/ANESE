@@ -30,6 +30,7 @@ public:
   LoPassFilter(hertz f, hertz sample_rate)
   : FirstOrderFilter(f, sample_rate)
   , a { this->dt / (this->RC + this->dt) }
+  , prev { 0, 0 }
   {}
 
   double process(double x) override {
@@ -49,6 +50,7 @@ public:
   HiPassFilter(hertz f, hertz sample_rate)
   : FirstOrderFilter(f, sample_rate)
   , a { this->RC / (this->RC + this->dt) }
+  , prev { 0, 0 }
   {}
 
   double process(double x) override {

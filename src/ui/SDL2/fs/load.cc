@@ -137,5 +137,5 @@ ROM_File* ANESE_fs::load::load_rom_file(const char* filepath) {
     return nullptr;
   }
 
-  return parse_ROM(data, data_len);
+  return parseROM(data, data_len);
 }

@@ -19,6 +19,7 @@
 // Core NES class.
 // - Owns all NES core resources (but NOT the cartridge or joypads)
 // - Runs CPU, PPU, APU
+// - serialize() returns a full save state (including cart)
 class NES final : public Serializable {
 private:
   /*================================
@@ -86,15 +87,14 @@ public:
   void attach_joy(uint port, Memory* joy);
   void detach_joy(uint port);
 
-  void power_cycle(); // Set all volatile components to default power_on state
-  void reset();       // Set all volatile components to default reset state
+  void power_cycle();
+  void reset();
 
   void cycle();      // Run a single clock cycle
-  void step_frame(); // Run the NES until there is a new frame to display
-                     // (calls cycle() internally)
+  void step_frame(); // Cycle the NES until there is a new frame to display
 
   void getFramebuff(const u8*& framebuffer) const;
   void getAudiobuff(float*& samples, uint& len);
 
-  bool isRunning() const;
+  bool isRunning() const { return this->is_running; }
 };

@@ -4,7 +4,9 @@
 #include <cassert>
 #include <cstring>
 
-JOY_Standard::JOY_Standard(const char* label /* = "?" */) : label(label) {}
+JOY_Standard::JOY_Standard(const char* label /* = "?" */) : label(label) {
+  (void)this->label; // silence unused warning
+}
 
 u8 JOY_Standard::read(u16 addr) {
   (void) addr;
