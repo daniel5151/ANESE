@@ -25,10 +25,14 @@ public:
     SDL_Renderer* renderer = nullptr;
     SDL_Window*   window   = nullptr;
 
-    SDL_Rect     screen;
+    SDL_Rect     screen_rect;
     SDL_Texture* screen_texture = nullptr;
     // SDL_AudioDeviceID nes_audiodev;
     Sound_Queue  sound_queue;
+
+    // wideNES
+    SDL_Rect     widescreen_rect;
+    SDL_Texture* widescreen_texture = nullptr;
   } sdl;
 
 private:

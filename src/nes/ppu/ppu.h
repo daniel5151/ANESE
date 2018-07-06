@@ -216,6 +216,7 @@ private:
   SERIALIZE_END(11)
 
   /*---------------  Hacks  --------------*/
+
   const bool& fogleman_nmi_hack;
 
 #ifdef DEBUG_PPU
@@ -223,6 +224,8 @@ private:
   void   init_debug_windows();
   void update_debug_windows();
 #endif // DEBUG_PPU
+
+  /*---------------  Public  --------------*/
 
 public:
   PPU() = delete;
@@ -248,4 +251,13 @@ public:
 
   // NES color palette (static, for the time being)
   static const Color palette [64];
+
+  /*---------------  wideNES  --------------*/
+
+public:
+  struct Scroll { u8 x; u8 y; };
+private:
+  Scroll last_scroll;
+public:
+  Scroll get_scroll() const;
 };

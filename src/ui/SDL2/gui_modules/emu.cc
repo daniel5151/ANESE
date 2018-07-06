@@ -5,6 +5,8 @@
 #include "../fs/load.h"
 #include "../fs/util.h"
 
+static constexpr uint WIDENESS = 3;
+
 EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
 : GUIModule(sdl_common, config)
 , params { this->sdl.SAMPLE_RATE, 100, false, false }
@@ -17,7 +19,7 @@ EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
   this->sdl.window = SDL_CreateWindow(
     "anese",
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-    this->sdl.RES_X * this->config.window_scale,
+    this->sdl.RES_X * this->config.window_scale * WIDENESS,
     this->sdl.RES_Y * this->config.window_scale,
     SDL_WINDOW_RESIZABLE
   );
@@ -29,9 +31,9 @@ EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
   );
 
   // Letterbox the screen in the window
-  SDL_RenderSetLogicalSize(this->sdl.renderer,
-    this->sdl.RES_X * this->sdl_common.SCREEN_SCALE,
-    this->sdl.RES_Y * this->sdl_common.SCREEN_SCALE);
+  // SDL_RenderSetLogicalSize(this->sdl.renderer,
+  //   this->sdl.RES_X * this->sdl_common.SCREEN_SCALE,
+  //   this->sdl.RES_Y * this->sdl_common.SCREEN_SCALE);
 
   // Allow opacity
   SDL_SetRenderDrawBlendMode(this->sdl.renderer, SDL_BLENDMODE_BLEND);
@@ -44,13 +46,25 @@ EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
     this->sdl.RES_X, this->sdl.RES_Y
   );
 
-  // The rectangle that the nes screen texture is slapped onto
-  const int screen_w = this->sdl.RES_X * this->sdl_common.SCREEN_SCALE;
-  const int screen_h = this->sdl.RES_Y * this->sdl_common.SCREEN_SCALE;
-  this->sdl.screen.h = screen_h;
-  this->sdl.screen.w = screen_w;
-  this->sdl.screen.x = 0;
-  this->sdl.screen.y = 0;
+  // wideNES texture
+  this->sdl.widescreen_texture = SDL_CreateTexture(
+    this->sdl.renderer,
+    SDL_PIXELFORMAT_ARGB8888,
+    SDL_TEXTUREACCESS_STREAMING,
+    this->sdl.RES_X * WIDENESS, this->sdl.RES_Y
+  );
+
+  // NES screen rect
+  this->sdl.screen_rect.x = 0;
+  this->sdl.screen_rect.y = 0;
+  this->sdl.screen_rect.h = this->sdl.RES_Y * this->sdl_common.SCREEN_SCALE;
+  this->sdl.screen_rect.w = this->sdl.RES_X * this->sdl_common.SCREEN_SCALE;
+
+  // wideNES screen rect
+  this->sdl.widescreen_rect.x = 0;
+  this->sdl.widescreen_rect.y = 0;
+  this->sdl.widescreen_rect.h = this->sdl.RES_Y * this->sdl_common.SCREEN_SCALE;
+  this->sdl.widescreen_rect.w = this->sdl.RES_X * this->sdl_common.SCREEN_SCALE * WIDENESS;
 
   // SDL_AudioSpec as, have;
   // as.freq = SDL_GUI::SAMPLE_RATE;
@@ -69,14 +83,14 @@ EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
     bool did_load = this->fm2_replay.init(this->config.cli.replay_fm2_path.c_str());
     if (!did_load)
       fprintf(stderr, "[Replay][fm2] Movie loading failed!\n");
-    fprintf(stderr, "[Replay][fm2] Movie successfully loaded!\n");
+    else fprintf(stderr, "[Replay][fm2] Movie successfully loaded!\n");
   }
 
   if (this->config.cli.record_fm2_path != "") {
     bool did_load = this->fm2_record.init(this->config.cli.record_fm2_path.c_str());
     if (!did_load)
       fprintf(stderr, "[Record][fm2] Failed to setup Movie recording!\n");
-    fprintf(stderr, "[Record][fm2] Movie recording is setup!\n");
+    else fprintf(stderr, "[Record][fm2] Movie recording is setup!\n");
   }
 
   // -------------------------- NES Initialization -------------------------- //
@@ -300,6 +314,8 @@ void EmuModule::update() {
   }
 }
 
+#include "nes/ppu/ppu.h"
+
 void EmuModule::output() {
   // output audio!
   float* samples = nullptr;
@@ -312,7 +328,53 @@ void EmuModule::output() {
   const u8* framebuffer;
   this->nes.getFramebuff(framebuffer);
   SDL_UpdateTexture(this->sdl.screen_texture, nullptr, framebuffer, this->sdl.RES_X * 4);
-  SDL_RenderCopy(this->sdl.renderer, this->sdl.screen_texture, nullptr, &this->sdl.screen);
+  SDL_RenderCopy(this->sdl.renderer, this->sdl.screen_texture, nullptr, &this->sdl.screen_rect);
+
+  // wideNES
+  static int offset = 0;
+  static PPU::Scroll last_scroll = {0, 0};
+  PPU::Scroll curr_scroll = this->nes.get_PPU().get_scroll();
+    fprintf(stderr, "%u, %u\n", curr_scroll.x, curr_scroll.y);
+
+  const int dx = curr_scroll.x - last_scroll.x;
+
+  last_scroll = curr_scroll;
+
+  if ((dx < 0 ? -dx : dx) > 100) { // rough heuristic for scroll.x wrap
+    if (dx < 0) { // going left
+      offset = (offset + 256) % (256 * WIDENESS);
+    } else { // going right
+      offset = (offset - 256) % (256 * WIDENESS);
+    }
+  }
+
+  SDL_Rect update_rect;
+  update_rect.x = offset + last_scroll.x;
+  update_rect.y = 0;
+  update_rect.h = this->sdl.RES_Y;
+  update_rect.w = this->sdl.RES_X;
+
+  SDL_UpdateTexture(this->sdl.widescreen_texture, &update_rect, framebuffer, this->sdl.RES_X * 4);
+
+  SDL_RenderCopy(this->sdl.renderer,
+    this->sdl.widescreen_texture, nullptr, &this->sdl.widescreen_rect);
+
+  // regular screen
+  update_rect.x *= this->sdl_common.SCREEN_SCALE;
+  update_rect.y *= this->sdl_common.SCREEN_SCALE;
+  update_rect.h *= this->sdl_common.SCREEN_SCALE;
+  update_rect.w *= this->sdl_common.SCREEN_SCALE;
+
+  SDL_RenderCopy(this->sdl.renderer,
+    this->sdl.screen_texture, nullptr, &update_rect);
+  SDL_SetRenderDrawColor(this->sdl.renderer, 0xff, 0xff, 0xff, 0xff);
+  SDL_RenderDrawRect(this->sdl.renderer, &update_rect);
+
+  update_rect.x -= (256 * WIDENESS) * this->sdl_common.SCREEN_SCALE;
+  SDL_RenderCopy(this->sdl.renderer,
+    this->sdl.screen_texture, nullptr, &update_rect);
+  SDL_SetRenderDrawColor(this->sdl.renderer, 0xff, 0xff, 0xff, 0xff);
+  SDL_RenderDrawRect(this->sdl.renderer, &update_rect);
 }
 
 /*----------  Utils  ----------*/

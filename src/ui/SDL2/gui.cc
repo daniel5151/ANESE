@@ -106,6 +106,7 @@ int SDL_GUI::run() {
       this->menu->update();
 
     // Render something
+    // SDL_RenderClear(this->sdl_common.renderer);
     this->emu->output(); // keep showing NES in the background
     if (this->menu->in_menu) {
       this->menu->output();

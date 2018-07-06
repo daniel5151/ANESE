@@ -279,11 +279,17 @@ void PPU::write(u16 addr, u8 val) {
                       this->reg.t.coarse_x = val >> 3;
                       // x:               CBA = d: .....CBA
                       this->reg.x = val & 0x07;
+
+                      if (val || this->last_scroll.x == 0xFF || this->last_scroll.x == 0x01)
+                        this->last_scroll.x = val; // wideNES
                     }
                     if (this->latch == 1) {
                       // t: .CBA..HG FED..... = d: HGFEDCBA
                       this->reg.t.coarse_y = val >> 3;
                       this->reg.t.fine_y   = val & 0x07;
+
+                      if (val)
+                        this->last_scroll.y = val; // wideNES
                     }
                     this->latch = !this->latch;
   /*   0x2006  */ } return;
@@ -815,3 +821,7 @@ const Color PPU::palette [64] = {
   0xFFFEFF, 0xC0DFFF, 0xD3D2FF, 0xE8C8FF, 0xFBC2FF, 0xFEC4EA, 0xFECCC5, 0xF7D8A5,
   0xE4E594, 0xCFEF96, 0xBDF4AB, 0xB3F3CC, 0xB5EBF2, 0xB8B8B8, 0x000000, 0x000000,
 };
+
+/*---------------------------------  wideNES  --------------------------------*/
+
+PPU::Scroll PPU::get_scroll() const { return last_scroll; }

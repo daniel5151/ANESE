@@ -97,4 +97,9 @@ public:
   void getAudiobuff(float*& samples, uint& len);
 
   bool isRunning() const { return this->is_running; }
+
+  /*-----------  wideNES  ------------*/
+
+  const PPU& get_PPU() const { return this->ppu; }
+
 };
