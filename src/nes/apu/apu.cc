@@ -557,7 +557,7 @@ void APU::cycle() {
 
     // Send it off the the audio-buffer!
     audiobuff.data[audiobuff.i] = sample;
-    if (audiobuff.i < 4096) audiobuff.i++;
+    if (audiobuff.i < 4095) audiobuff.i++;
   }
 }
 

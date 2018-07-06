@@ -15,27 +15,6 @@ int SDL_GUI::init(int argc, char* argv[]) {
 
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
 
-  this->sdl_common.window = SDL_CreateWindow(
-    "anese",
-    SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-    this->sdl_common.RES_X * this->config.window_scale,
-    this->sdl_common.RES_Y * this->config.window_scale,
-    SDL_WINDOW_RESIZABLE
-  );
-
-  this->sdl_common.renderer = SDL_CreateRenderer(
-    this->sdl_common.window,
-    -1,
-    SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
-  );
-
-  // Letterbox the screen in the window
-  SDL_RenderSetLogicalSize(this->sdl_common.renderer,
-    this->sdl_common.RES_X * this->sdl_common.SCREEN_SCALE,
-    this->sdl_common.RES_Y * this->sdl_common.SCREEN_SCALE);
-  // Allow opacity when drawing menu
-  SDL_SetRenderDrawBlendMode(this->sdl_common.renderer, SDL_BLENDMODE_BLEND);
-
   /* Open the first available controller. */
   for (int i = 0; i < SDL_NumJoysticks(); i++) {
     if (SDL_IsGameController(i)) {
@@ -43,24 +22,12 @@ int SDL_GUI::init(int argc, char* argv[]) {
     }
   }
 
-  // SDL_AudioSpec as, have;
-  // as.freq = SDL_GUI::SAMPLE_RATE;
-  // as.format = AUDIO_F32SYS;
-  // as.channels = 1;
-  // as.samples = 4096;
-  // as.callback = nullptr; // use SDL_QueueAudio
-  // this->sdl_common.nes_audiodev = SDL_OpenAudioDevice(NULL, 0, &as, &have, 0);
-  // SDL_PauseAudioDevice(this->sdl_common.nes_audiodev, 0);
-
-  // Setup SDL2_inprint font
-  SDL2_inprint::inrenderer(this->sdl_common.renderer);
-  SDL2_inprint::prepare_inline_font();
-
   /*----------  Init GUI modules  ----------*/
   this->emu  = new EmuModule(this->sdl_common, this->config);
   this->menu = new MenuModule(this->sdl_common, this->config, *this->emu);
 
   // Load ROM if one has been passed as param
+  // TODO: this really should go somewhere else...
   if (this->config.cli.rom != "") {
     this->menu->in_menu = false;
     int error = this->emu->load_rom(this->config.cli.rom.c_str());
@@ -83,11 +50,7 @@ SDL_GUI::~SDL_GUI() {
   // SDL Cleanup
   // SDL_CloseAudioDevice(this->sdl_common.nes_audiodev);
   SDL_GameControllerClose(this->sdl_common.controller);
-  SDL_DestroyRenderer(this->sdl_common.renderer);
-  SDL_DestroyWindow(this->sdl_common.window);
   SDL_Quit();
-
-  SDL2_inprint::kill_inline_font();
 
   printf("\nANESE closed successfully\n");
 }
@@ -149,7 +112,7 @@ int SDL_GUI::run() {
     }
 
     // SHOW ME WHAT YOU GOT
-    SDL_RenderPresent(this->sdl_common.renderer);
+    SDL_RenderPresent(this->emu->sdl.renderer);
 
     // time how long all-that took
     time_ms frame_end_time = SDL_GetTicks();
@@ -168,7 +131,7 @@ int SDL_GUI::run() {
     char window_title [64];
     sprintf(window_title, "anese - %u fups - %u%% speed",
       uint(avg_fps), this->emu->params.speed);
-    SDL_SetWindowTitle(this->sdl_common.window, window_title);
+    SDL_SetWindowTitle(this->emu->sdl.window, window_title);
   }
 
   return 0;

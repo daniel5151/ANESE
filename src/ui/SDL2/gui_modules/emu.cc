@@ -7,28 +7,61 @@
 
 EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
 : GUIModule(sdl_common, config)
-, params { this->sdl_common.SAMPLE_RATE, 100, false, false }
+, params { this->sdl.SAMPLE_RATE, 100, false, false }
 , nes { this->params }
 {
   /*-------------------------------  SDL init  -------------------------------*/
 
+  fprintf(stderr, "[SDL2] Initializing ANESE core GUI\n");
+
+  this->sdl.window = SDL_CreateWindow(
+    "anese",
+    SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+    this->sdl.RES_X * this->config.window_scale,
+    this->sdl.RES_Y * this->config.window_scale,
+    SDL_WINDOW_RESIZABLE
+  );
+
+  this->sdl.renderer = SDL_CreateRenderer(
+    this->sdl.window,
+    -1,
+    SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+  );
+
+  // Letterbox the screen in the window
+  SDL_RenderSetLogicalSize(this->sdl.renderer,
+    this->sdl.RES_X * this->sdl_common.SCREEN_SCALE,
+    this->sdl.RES_Y * this->sdl_common.SCREEN_SCALE);
+
+  // Allow opacity
+  SDL_SetRenderDrawBlendMode(this->sdl.renderer, SDL_BLENDMODE_BLEND);
+
   // nes screen texture
   this->sdl.screen_texture = SDL_CreateTexture(
-    this->sdl_common.renderer,
+    this->sdl.renderer,
     SDL_PIXELFORMAT_ARGB8888,
     SDL_TEXTUREACCESS_STREAMING,
-    this->sdl_common.RES_X, this->sdl_common.RES_Y
+    this->sdl.RES_X, this->sdl.RES_Y
   );
 
   // The rectangle that the nes screen texture is slapped onto
-  const int screen_w = this->sdl_common.RES_X * this->sdl_common.SCREEN_SCALE;
-  const int screen_h = this->sdl_common.RES_Y * this->sdl_common.SCREEN_SCALE;
+  const int screen_w = this->sdl.RES_X * this->sdl_common.SCREEN_SCALE;
+  const int screen_h = this->sdl.RES_Y * this->sdl_common.SCREEN_SCALE;
   this->sdl.screen.h = screen_h;
   this->sdl.screen.w = screen_w;
   this->sdl.screen.x = 0;
   this->sdl.screen.y = 0;
 
-  this->sdl.sound_queue.init(this->sdl_common.SAMPLE_RATE);
+  // SDL_AudioSpec as, have;
+  // as.freq = SDL_GUI::SAMPLE_RATE;
+  // as.format = AUDIO_F32SYS;
+  // as.channels = 1;
+  // as.samples = 4096;
+  // as.callback = nullptr; // use SDL_QueueAudio
+  // this->sdl_common.nes_audiodev = SDL_OpenAudioDevice(NULL, 0, &as, &have, 0);
+  // SDL_PauseAudioDevice(this->sdl_common.nes_audiodev, 0);
+
+  this->sdl.sound_queue.init(this->sdl.SAMPLE_RATE);
 
   // ---------------------------- Movie Support ----------------------------- //
 
@@ -73,6 +106,9 @@ EmuModule::~EmuModule() {
   /*------------------------------  SDL Cleanup  -----------------------------*/
 
   SDL_DestroyTexture(this->sdl.screen_texture);
+
+  SDL_DestroyRenderer(this->sdl.renderer);
+  SDL_DestroyWindow(this->sdl.window);
 
   /*------------------------------  NES Cleanup  -----------------------------*/
   this->unload_rom(this->cart);
@@ -275,8 +311,8 @@ void EmuModule::output() {
   // output video!
   const u8* framebuffer;
   this->nes.getFramebuff(framebuffer);
-  SDL_UpdateTexture(this->sdl.screen_texture, nullptr, framebuffer, this->sdl_common.RES_X * 4);
-  SDL_RenderCopy(this->sdl_common.renderer, this->sdl.screen_texture, nullptr, &this->sdl.screen);
+  SDL_UpdateTexture(this->sdl.screen_texture, nullptr, framebuffer, this->sdl.RES_X * 4);
+  SDL_RenderCopy(this->sdl.renderer, this->sdl.screen_texture, nullptr, &this->sdl.screen);
 }
 
 /*----------  Utils  ----------*/

@@ -16,14 +16,22 @@
 #include "../util/Sound_Queue.h"
 
 class EmuModule : public GUIModule {
-private:
+public:
   struct {
+    const uint RES_X = 256;
+    const uint RES_Y = 240;
+    const uint SAMPLE_RATE = 96000;
+
+    SDL_Renderer* renderer = nullptr;
+    SDL_Window*   window   = nullptr;
+
     SDL_Rect     screen;
     SDL_Texture* screen_texture = nullptr;
     // SDL_AudioDeviceID nes_audiodev;
     Sound_Queue  sound_queue;
   } sdl;
 
+private:
   int speed_counter = 0;
 
 public:
