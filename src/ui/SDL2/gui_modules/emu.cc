@@ -18,7 +18,7 @@ EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
   this->sdl.window = SDL_CreateWindow(
     "anese",
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-    this->sdl.RES_X * this->config.window_scale * 3.25,
+    this->sdl.RES_X * this->config.window_scale * 2.25,
     this->sdl.RES_Y * this->config.window_scale,
     SDL_WINDOW_RESIZABLE
   );

@@ -28,6 +28,19 @@ Lastly, ANESE strives to keep a clean and _interesting_ C++11 codebase,
 emphasizing _readability_, _maintainability_, and _approachability_. The code
 is well commented, providing sources and insights for much of the logic.
 
+## WideNES
+
+This branch adds an experimental feature to ANESE that I'm calling **WideNES**,
+which attempts to automatically "widescreenify" NES games.
+
+A GIF is worth a 1000 words:
+
+<p align="center">
+  <a href="https://prilik.com/ANESE">
+    <img src="resources/web/wideNES_smb1.gif" alt="wideNES">
+  </a>
+</p>
+
 ## Downloads
 
 Official releases can be found on the Releases tab on GitHub.
