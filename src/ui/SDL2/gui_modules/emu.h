@@ -15,9 +15,12 @@
 
 #include "../util/Sound_Queue.h"
 
+#include <map>
+
 class EmuModule : public GUIModule {
 public:
   struct {
+    // regular NES
     const uint RES_X = 256;
     const uint RES_Y = 240;
     const uint SAMPLE_RATE = 96000;
@@ -25,18 +28,54 @@ public:
     SDL_Renderer* renderer = nullptr;
     SDL_Window*   window   = nullptr;
 
-    SDL_Rect     screen_rect;
     SDL_Texture* screen_texture = nullptr;
     // SDL_AudioDeviceID nes_audiodev;
     Sound_Queue  sound_queue;
-
-    // wideNES
-    SDL_Rect     widescreen_rect;
-    SDL_Texture* widescreen_texture = nullptr;
   } sdl;
 
 private:
   int speed_counter = 0;
+
+  // wideNES
+  friend class WideNES;
+  class WideNES {
+    friend EmuModule;
+
+    struct Tile {
+      SDL_Texture* texture;
+      int x, y;
+      // u8 framebuf [256 * 240 * 4];
+      Tile(SDL_Renderer* renderer, int x, int y);
+    };
+
+    struct {
+      u8 x = 0;
+      u8 y = 0;
+    } last_scroll;
+
+    struct {
+      int x = 0;
+      int y = 0;
+      Tile* tile;
+    } curr;
+
+    struct {
+      int min_x = 0; int max_x = 0;
+      int min_y = 0; int max_y = 0;
+    } bounds;
+
+    std::map<int, std::map<int, Tile*>> tiles;
+
+    EmuModule* self;
+
+  public:
+    WideNES(EmuModule& self);
+
+    void samplePPU();
+
+  };
+  WideNES* wideNES;
+
 
 public:
   NES_Params params;

@@ -280,16 +280,31 @@ void PPU::write(u16 addr, u8 val) {
                       // x:               CBA = d: .....CBA
                       this->reg.x = val & 0x07;
 
-                      if (val || this->last_scroll.x == 0xFF || this->last_scroll.x == 0x01)
-                        this->last_scroll.x = val; // wideNES
+                      /*----------------------  wideNES  ---------------------*/
+
+                      static u8 last_couple_vals [10] = {1};
+
+                      for (int i = 9; i >= 0; i--)
+                        last_couple_vals[i] = last_couple_vals[i - 1];
+                      last_couple_vals[0] = val;
+
+                      // this is very-much just a heuristic...
+                      bool true_0 =
+                        !last_couple_vals[0] &&
+                        !last_couple_vals[1] &&
+                        !last_couple_vals[2] &&
+                        !last_couple_vals[3];
+
+                      if (val || true_0)
+                        this->last_scroll.x = val;
+
+                      /*--------------------  end wideNES  -------------------*/
+
                     }
                     if (this->latch == 1) {
                       // t: .CBA..HG FED..... = d: HGFEDCBA
                       this->reg.t.coarse_y = val >> 3;
                       this->reg.t.fine_y   = val & 0x07;
-
-                      if (val)
-                        this->last_scroll.y = val; // wideNES
                     }
                     this->latch = !this->latch;
   /*   0x2006  */ } return;

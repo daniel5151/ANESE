@@ -5,8 +5,6 @@
 #include "../fs/load.h"
 #include "../fs/util.h"
 
-static constexpr uint WIDENESS = 3;
-
 EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
 : GUIModule(sdl_common, config)
 , params { this->sdl.SAMPLE_RATE, 100, false, false }
@@ -16,14 +14,16 @@ EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
 
   fprintf(stderr, "[SDL2] Initializing ANESE core GUI\n");
 
+  // make window
   this->sdl.window = SDL_CreateWindow(
     "anese",
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-    this->sdl.RES_X * this->config.window_scale * WIDENESS,
+    this->sdl.RES_X * this->config.window_scale * 3.25,
     this->sdl.RES_Y * this->config.window_scale,
     SDL_WINDOW_RESIZABLE
   );
 
+  // make renderer
   this->sdl.renderer = SDL_CreateRenderer(
     this->sdl.window,
     -1,
@@ -38,33 +38,13 @@ EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
   // Allow opacity
   SDL_SetRenderDrawBlendMode(this->sdl.renderer, SDL_BLENDMODE_BLEND);
 
-  // nes screen texture
+  // NES screen texture
   this->sdl.screen_texture = SDL_CreateTexture(
     this->sdl.renderer,
     SDL_PIXELFORMAT_ARGB8888,
     SDL_TEXTUREACCESS_STREAMING,
     this->sdl.RES_X, this->sdl.RES_Y
   );
-
-  // wideNES texture
-  this->sdl.widescreen_texture = SDL_CreateTexture(
-    this->sdl.renderer,
-    SDL_PIXELFORMAT_ARGB8888,
-    SDL_TEXTUREACCESS_STREAMING,
-    this->sdl.RES_X * WIDENESS, this->sdl.RES_Y
-  );
-
-  // NES screen rect
-  this->sdl.screen_rect.x = 0;
-  this->sdl.screen_rect.y = 0;
-  this->sdl.screen_rect.h = this->sdl.RES_Y * this->sdl_common.SCREEN_SCALE;
-  this->sdl.screen_rect.w = this->sdl.RES_X * this->sdl_common.SCREEN_SCALE;
-
-  // wideNES screen rect
-  this->sdl.widescreen_rect.x = 0;
-  this->sdl.widescreen_rect.y = 0;
-  this->sdl.widescreen_rect.h = this->sdl.RES_Y * this->sdl_common.SCREEN_SCALE;
-  this->sdl.widescreen_rect.w = this->sdl.RES_X * this->sdl_common.SCREEN_SCALE * WIDENESS;
 
   // SDL_AudioSpec as, have;
   // as.freq = SDL_GUI::SAMPLE_RATE;
@@ -114,6 +94,9 @@ EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
   if (this->config.cli.log_cpu)         { this->params.log_cpu         = true; }
   if (this->config.cli.ppu_timing_hack) { this->params.ppu_timing_hack = true; }
   this->nes.updated_params();
+
+  // ------------------------ wideNES Initialization ------------------------ //
+  this->wideNES = new WideNES(*this);
 }
 
 EmuModule::~EmuModule() {
@@ -127,6 +110,95 @@ EmuModule::~EmuModule() {
   /*------------------------------  NES Cleanup  -----------------------------*/
   this->unload_rom(this->cart);
   delete this->cart;
+}
+
+/*----------  Utils  ----------*/
+
+int EmuModule::load_rom(const char* rompath) {
+  delete this->cart;
+  for (uint i = 0; i < 4; i++) {
+    delete this->savestate[i];
+    this->savestate[i] = nullptr;
+  }
+
+  fprintf(stderr, "[Load] Loading '%s'\n", rompath);
+  Cartridge* cart = new Cartridge (ANESE_fs::load::load_rom_file(rompath));
+
+  switch (cart->status()) {
+  case Cartridge::Status::CART_BAD_DATA:
+    fprintf(stderr, "[Cart] ROM file could not be parsed!\n");
+    delete cart;
+    return 1;
+  case Cartridge::Status::CART_BAD_MAPPER:
+    fprintf(stderr, "[Cart] Mapper %u has not been implemented yet!\n",
+      cart->get_rom_file()->meta.mapper);
+    delete cart;
+    return 1;
+  case Cartridge::Status::CART_NO_ERROR:
+    fprintf(stderr, "[Cart] ROM file loaded successfully!\n");
+    strcpy(this->current_rom_file, rompath);
+    this->cart = cart;
+    break;
+  }
+
+  // Try to load battery-backed save
+  const Serializable::Chunk* sav = nullptr;
+
+  if (!this->config.cli.no_sav) {
+    u8* data = nullptr;
+    uint len = 0;
+    ANESE_fs::load::load_file((std::string(rompath) + ".sav").c_str(), data, len);
+    if (data) {
+      fprintf(stderr, "[Savegame][Load] Found save data.\n");
+      sav = Serializable::Chunk::parse(data, len);
+      this->cart->get_mapper()->setBatterySave(sav);
+    } else {
+      fprintf(stderr, "[Savegame][Load] No save data found.\n");
+    }
+    delete data;
+  }
+
+  // Slap a cartridge in!
+  this->nes.loadCartridge(this->cart->get_mapper());
+
+  // Power-cycle the NES
+  this->nes.power_cycle();
+
+  return 0;
+}
+
+int EmuModule::unload_rom(Cartridge* cart) {
+  if (!cart) return 0;
+
+  fprintf(stderr, "[UnLoad] Unloading cart...\n");
+  // Save Battey-Backed RAM
+  if (cart != nullptr && !this->config.cli.no_sav) {
+    const Serializable::Chunk* sav = cart->get_mapper()->getBatterySave();
+    if (sav) {
+      const u8* data;
+      uint len;
+      Serializable::Chunk::collate(data, len, sav);
+
+      char buf [256];
+      sprintf(buf, "%s.sav", this->current_rom_file);
+
+      FILE* sav_file = fopen(buf, "wb");
+      if (!sav_file) {
+        fprintf(stderr, "[Savegame][Save] Failed to open save file!\n");
+        return 1;
+      }
+
+      fwrite(data, 1, len, sav_file);
+      fclose(sav_file);
+      fprintf(stderr, "[Savegame][Save] Game successfully saved to '%s'!\n", buf);
+
+      delete sav;
+    }
+  }
+
+  this->nes.removeCartridge();
+
+  return 0;
 }
 
 void EmuModule::input(const SDL_Event& event) {
@@ -305,8 +377,12 @@ void EmuModule::update() {
     if (this->fm2_replay.is_enabled())
       this->fm2_replay.step_frame();
 
+    this->wideNES->samplePPU();
+
     // run the NES for a frame
     this->nes.step_frame();
+
+
   }
 
   if (this->nes.isRunning() == false) {
@@ -315,6 +391,69 @@ void EmuModule::update() {
 }
 
 #include "nes/ppu/ppu.h"
+
+EmuModule::WideNES::Tile::Tile(SDL_Renderer* renderer, int x, int y) {
+  this->x = x;
+  this->y = y;
+  this->texture = SDL_CreateTexture(
+    renderer,
+    SDL_PIXELFORMAT_ARGB8888,
+    SDL_TEXTUREACCESS_STREAMING,
+    256 * 2, 240 * 2
+  );
+}
+
+EmuModule::WideNES::WideNES(EmuModule& emumod) : self(&emumod) {
+  this->curr.tile = new WideNES::Tile (self->sdl.renderer, 0, 0);
+  this->tiles[this->curr.x][this->curr.y] = this->curr.tile;
+}
+
+void EmuModule::WideNES::samplePPU() {
+  // wideNES
+  PPU::Scroll curr_scroll = self->nes.get_PPU().get_scroll();
+  // fprintf(stderr, "%u, %u\n", curr.scroll.x, curr.scroll.y);
+
+  const int dx = curr_scroll.x - this->last_scroll.x;
+
+  this->last_scroll.x = curr_scroll.x;
+  this->last_scroll.y = curr_scroll.y;
+
+  if ((dx < 0 ? -dx : dx) > 100) { // rough heuristic to detect a scroll.x wrap
+    if (dx < 0) this->curr.x++; // going left
+    else        this->curr.x--; // groing right
+
+    if (this->curr.x < this->bounds.min_x) this->bounds.min_x = this->curr.x;
+    if (this->curr.x > this->bounds.max_x) this->bounds.max_x = this->curr.x;
+
+    bool tile_exists = this->tiles.count(this->curr.x)
+                    && this->tiles[this->curr.x].count(this->curr.y);
+
+    if (!tile_exists) {
+      // create a new tile
+      this->curr.tile = new WideNES::Tile (self->sdl.renderer,
+        this->curr.x, this->curr.y);
+      this->tiles[this->curr.x][this->curr.y] = this->curr.tile;
+    } else {
+      // tile already exists => update it?
+      // this->curr.tile = this->tiles[this->curr.x][this->curr.y];
+      // tile already exists => leave it be?
+      this->curr.tile = nullptr;
+    }
+  }
+
+  // actually do the update
+  if (this->curr.tile) {
+    SDL_Rect update_rect;
+    update_rect.x = this->last_scroll.x;
+    update_rect.y = 0;
+    update_rect.h = self->sdl.RES_Y;
+    update_rect.w = self->sdl.RES_X;
+
+    const u8* framebuffer;
+    self->nes.getFramebuff(framebuffer);
+    SDL_UpdateTexture(this->curr.tile->texture, &update_rect, framebuffer, self->sdl.RES_X * 4);
+  }
+}
 
 void EmuModule::output() {
   // output audio!
@@ -328,140 +467,56 @@ void EmuModule::output() {
   const u8* framebuffer;
   this->nes.getFramebuff(framebuffer);
   SDL_UpdateTexture(this->sdl.screen_texture, nullptr, framebuffer, this->sdl.RES_X * 4);
-  SDL_RenderCopy(this->sdl.renderer, this->sdl.screen_texture, nullptr, &this->sdl.screen_rect);
+
+  // wideNES additions
+
+  // calculate origin offset (tile (0,0) / actual NES screen)
+  const int nes_w = this->sdl.RES_X * this->sdl_common.SCREEN_SCALE;
+  const int nes_h = this->sdl.RES_Y * this->sdl_common.SCREEN_SCALE;
+  int window_w, window_h;
+  SDL_GetWindowSize(this->sdl.window, &window_w, &window_h);
+
+  const SDL_Rect origin {
+    (window_w - nes_w) / 2, 0,
+    nes_w, nes_h
+  };
+
+  // final compositing
 
   // wideNES
-  static int offset = 0;
-  static PPU::Scroll last_scroll = {0, 0};
-  PPU::Scroll curr_scroll = this->nes.get_PPU().get_scroll();
-    fprintf(stderr, "%u, %u\n", curr_scroll.x, curr_scroll.y);
+  for (auto col : this->wideNES->tiles) {
+    for (auto row : col.second) {
+      const WideNES::Tile* tile = row.second;
 
-  const int dx = curr_scroll.x - last_scroll.x;
+      SDL_Rect offset = origin;
+      offset.x -= this->sdl_common.SCREEN_SCALE * (256 * (this->wideNES->curr.x - tile->x));
+      offset.x -= this->sdl_common.SCREEN_SCALE * (this->wideNES->last_scroll.x);
 
-  last_scroll = curr_scroll;
-
-  if ((dx < 0 ? -dx : dx) > 100) { // rough heuristic for scroll.x wrap
-    if (dx < 0) { // going left
-      offset = (offset + 256) % (256 * WIDENESS);
-    } else { // going right
-      offset = (offset - 256) % (256 * WIDENESS);
+      SDL_Rect clip { 0, 0, 256, 240 };
+      SDL_RenderCopy(this->sdl.renderer, tile->texture, &clip, &offset);
+      SDL_SetRenderDrawColor(this->sdl.renderer, 0, 0xff, 0, 0xff);
+      SDL_RenderDrawRect(this->sdl.renderer, &offset);
     }
   }
 
-  SDL_Rect update_rect;
-  update_rect.x = offset + last_scroll.x;
-  update_rect.y = 0;
-  update_rect.h = this->sdl.RES_Y;
-  update_rect.w = this->sdl.RES_X;
+  {
+    WideNES::Tile* end_tile = this->wideNES->tiles[this->wideNES->bounds.max_x][this->wideNES->bounds.max_y];
 
-  SDL_UpdateTexture(this->sdl.widescreen_texture, &update_rect, framebuffer, this->sdl.RES_X * 4);
+    SDL_Rect offset = origin;
+    offset.x -= this->sdl_common.SCREEN_SCALE * (256 * (this->wideNES->curr.x - end_tile->x));
+    offset.x -= this->sdl_common.SCREEN_SCALE * (this->wideNES->last_scroll.x);
 
-  SDL_RenderCopy(this->sdl.renderer,
-    this->sdl.widescreen_texture, nullptr, &this->sdl.widescreen_rect);
+    SDL_Rect clip { 0, 0, 256, 240 };
+    clip.w *= 2;
+    offset.w *= 2;
+    SDL_RenderCopy(this->sdl.renderer, end_tile->texture, &clip, &offset);
+    SDL_SetRenderDrawColor(this->sdl.renderer, 0xff, 0, 0, 0xff);
+    SDL_RenderDrawRect(this->sdl.renderer, &offset);
+  }
 
-  // regular screen
-  update_rect.x *= this->sdl_common.SCREEN_SCALE;
-  update_rect.y *= this->sdl_common.SCREEN_SCALE;
-  update_rect.h *= this->sdl_common.SCREEN_SCALE;
-  update_rect.w *= this->sdl_common.SCREEN_SCALE;
-
-  SDL_RenderCopy(this->sdl.renderer,
-    this->sdl.screen_texture, nullptr, &update_rect);
+  // actual NES screen
+  SDL_RenderCopy(this->sdl.renderer, this->sdl.screen_texture, nullptr, &origin);
   SDL_SetRenderDrawColor(this->sdl.renderer, 0xff, 0xff, 0xff, 0xff);
-  SDL_RenderDrawRect(this->sdl.renderer, &update_rect);
-
-  update_rect.x -= (256 * WIDENESS) * this->sdl_common.SCREEN_SCALE;
-  SDL_RenderCopy(this->sdl.renderer,
-    this->sdl.screen_texture, nullptr, &update_rect);
-  SDL_SetRenderDrawColor(this->sdl.renderer, 0xff, 0xff, 0xff, 0xff);
-  SDL_RenderDrawRect(this->sdl.renderer, &update_rect);
+  SDL_RenderDrawRect(this->sdl.renderer, &origin);
 }
 
-/*----------  Utils  ----------*/
-
-int EmuModule::load_rom(const char* rompath) {
-  delete this->cart;
-  for (uint i = 0; i < 4; i++) {
-    delete this->savestate[i];
-    this->savestate[i] = nullptr;
-  }
-
-  fprintf(stderr, "[Load] Loading '%s'\n", rompath);
-  Cartridge* cart = new Cartridge (ANESE_fs::load::load_rom_file(rompath));
-
-  switch (cart->status()) {
-  case Cartridge::Status::CART_BAD_DATA:
-    fprintf(stderr, "[Cart] ROM file could not be parsed!\n");
-    delete cart;
-    return 1;
-  case Cartridge::Status::CART_BAD_MAPPER:
-    fprintf(stderr, "[Cart] Mapper %u has not been implemented yet!\n",
-      cart->get_rom_file()->meta.mapper);
-    delete cart;
-    return 1;
-  case Cartridge::Status::CART_NO_ERROR:
-    fprintf(stderr, "[Cart] ROM file loaded successfully!\n");
-    strcpy(this->current_rom_file, rompath);
-    this->cart = cart;
-    break;
-  }
-
-  // Try to load battery-backed save
-  const Serializable::Chunk* sav = nullptr;
-
-  if (!this->config.cli.no_sav) {
-    u8* data = nullptr;
-    uint len = 0;
-    ANESE_fs::load::load_file((std::string(rompath) + ".sav").c_str(), data, len);
-    if (data) {
-      fprintf(stderr, "[Savegame][Load] Found save data.\n");
-      sav = Serializable::Chunk::parse(data, len);
-      this->cart->get_mapper()->setBatterySave(sav);
-    } else {
-      fprintf(stderr, "[Savegame][Load] No save data found.\n");
-    }
-    delete data;
-  }
-
-  // Slap a cartridge in!
-  this->nes.loadCartridge(this->cart->get_mapper());
-
-  // Power-cycle the NES
-  this->nes.power_cycle();
-
-  return 0;
-}
-
-int EmuModule::unload_rom(Cartridge* cart) {
-  if (!cart) return 0;
-
-  fprintf(stderr, "[UnLoad] Unloading cart...\n");
-  // Save Battey-Backed RAM
-  if (cart != nullptr && !this->config.cli.no_sav) {
-    const Serializable::Chunk* sav = cart->get_mapper()->getBatterySave();
-    if (sav) {
-      const u8* data;
-      uint len;
-      Serializable::Chunk::collate(data, len, sav);
-
-      char buf [256];
-      sprintf(buf, "%s.sav", this->current_rom_file);
-
-      FILE* sav_file = fopen(buf, "wb");
-      if (!sav_file) {
-        fprintf(stderr, "[Savegame][Save] Failed to open save file!\n");
-        return 1;
-      }
-
-      fwrite(data, 1, len, sav_file);
-      fclose(sav_file);
-      fprintf(stderr, "[Savegame][Save] Game successfully saved to '%s'!\n", buf);
-
-      delete sav;
-    }
-  }
-
-  this->nes.removeCartridge();
-
-  return 0;
-}

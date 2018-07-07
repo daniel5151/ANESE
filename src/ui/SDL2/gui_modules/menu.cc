@@ -168,7 +168,7 @@ void MenuModule::output() {
 
   // Paint transparent bg
   this->bg.x = this->bg.y = 0;
-  SDL_RenderGetLogicalSize(this->emu.sdl.renderer, &this->bg.w, &this->bg.h);
+  SDL_GetWindowSize(this->emu.sdl.window, &this->bg.w, &this->bg.h);
   SDL_SetRenderDrawColor(this->emu.sdl.renderer, 0, 0, 0, 200);
   SDL_RenderFillRect(this->emu.sdl.renderer, &this->bg);
 

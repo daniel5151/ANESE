@@ -570,5 +570,4 @@ void APU::getAudiobuff(float*& samples, uint& len) {
 
 void APU::set_speed(float speed) {
   this->clock_rate = 1789773 * speed;
-  fprintf(stderr, "%u\n", this->clock_rate);
 }
