@@ -42,28 +42,26 @@ private:
     friend EmuModule;
 
     struct Tile {
+      struct {
+        int x, y;
+      } pos; // position within tile-grid
+
       SDL_Texture* texture;
-      int x, y;
-      // u8 framebuf [256 * 240 * 4];
+      u8 framebuffer [256 * 240 * 4];
       Tile(SDL_Renderer* renderer, int x, int y);
     };
 
+    // used to calculate dx and dy
     struct {
-      u8 x = 0;
-      u8 y = 0;
-    } last_scroll;
+      u8 x, y;
+    } last_scroll { 0, 0 };
 
+    // total scroll (offset from origin)
     struct {
-      int x = 0;
-      int y = 0;
-      Tile* tile;
-    } curr;
+      int x, y;
+    } scroll { 0, 0 };
 
-    struct {
-      int min_x = 0; int max_x = 0;
-      int min_y = 0; int max_y = 0;
-    } bounds;
-
+    // tilemap
     std::map<int, std::map<int, Tile*>> tiles;
 
     EmuModule* self;

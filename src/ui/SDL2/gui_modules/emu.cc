@@ -18,8 +18,8 @@ EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
   this->sdl.window = SDL_CreateWindow(
     "anese",
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-    this->sdl.RES_X * this->config.window_scale * 2.25,
-    this->sdl.RES_Y * this->config.window_scale * 2.25,
+    256 * this->config.window_scale * 2.25,
+    240 * this->config.window_scale * 2.25,
     SDL_WINDOW_RESIZABLE
   );
 
@@ -32,8 +32,8 @@ EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
 
   // Letterbox the screen in the window
   // SDL_RenderSetLogicalSize(this->sdl.renderer,
-  //   this->sdl.RES_X * this->sdl_common.SCREEN_SCALE,
-  //   this->sdl.RES_Y * this->sdl_common.SCREEN_SCALE);
+  //   256 * this->sdl_common.SCREEN_SCALE,
+  //   240 * this->sdl_common.SCREEN_SCALE);
 
   // Allow opacity
   SDL_SetRenderDrawBlendMode(this->sdl.renderer, SDL_BLENDMODE_BLEND);
@@ -43,7 +43,7 @@ EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
     this->sdl.renderer,
     SDL_PIXELFORMAT_ARGB8888,
     SDL_TEXTUREACCESS_STREAMING,
-    this->sdl.RES_X, this->sdl.RES_Y
+    256, 240
   );
 
   // SDL_AudioSpec as, have;
@@ -426,12 +426,10 @@ void EmuModule::update() {
     if (this->fm2_replay.is_enabled())
       this->fm2_replay.step_frame();
 
-    this->wideNES->samplePPU();
-
     // run the NES for a frame
     this->nes.step_frame();
 
-
+    this->wideNES->samplePPU();
   }
 
   if (this->nes.isRunning() == false) {
@@ -442,80 +440,96 @@ void EmuModule::update() {
 #include "nes/ppu/ppu.h"
 
 EmuModule::WideNES::Tile::Tile(SDL_Renderer* renderer, int x, int y) {
-  this->x = x;
-  this->y = y;
+  this->pos.x = x;
+  this->pos.y = y;
   this->texture = SDL_CreateTexture(
     renderer,
     SDL_PIXELFORMAT_ARGB8888,
     SDL_TEXTUREACCESS_STREAMING,
-    256 * 2, 240 * 2
+    256, 240
   );
 }
 
-EmuModule::WideNES::WideNES(EmuModule& emumod) : self(&emumod) {
-  this->curr.tile = new WideNES::Tile (self->sdl.renderer, 0, 0);
-  this->tiles[this->curr.x][this->curr.y] = this->curr.tile;
-}
+EmuModule::WideNES::WideNES(EmuModule& emumod) : self(&emumod) {}
+
+#include <cmath>
 
 void EmuModule::WideNES::samplePPU() {
-  // wideNES
-  PPU::Scroll curr_scroll = self->nes.get_PPU().get_scroll();
-  fprintf(stderr, "%u, %u\n", curr_scroll.x, curr_scroll.y);
+  // First, calculate the new scroll position
 
-  const int dx = curr_scroll.x - this->last_scroll.x;
-  const int dy = curr_scroll.y - this->last_scroll.y;
+  PPU::Scroll curr_scroll = self->nes.get_PPU().get_scroll();
+
+  int dx = curr_scroll.x - this->last_scroll.x;
+  int dy = curr_scroll.y - this->last_scroll.y;
+
+  // 256 -> 0 | dx is negative | means we are going right
+  // 0 -> 256 | dx is positive | means we are going left
+  if (::abs(dx) > 100) {
+    if (dx < 0) dx += 256; // going right
+    else        dx -= 256; // going left
+  }
+  // 240 -> 0 | dy is negative | means we are going down
+  // 0 -> 240 | dy is positive | means we are going up
+  if (::abs(dy) > 100) {
+    if (dy < 0) dy += 240; // going down
+    else        dy -= 240; // going up
+  }
+
+  this->scroll.x += dx;
+  this->scroll.y += dy;
 
   this->last_scroll.x = curr_scroll.x;
   this->last_scroll.y = curr_scroll.y;
 
-  bool need_new_tile = false;
+  // Next, update the textures / framebuffers of the affected tiles
 
-  if ((dx < 0 ? -dx : dx) > 100) { // rough heuristic to detect a scroll.x wrap
-    need_new_tile = true;
-    if (dx < 0) this->curr.x++; // going left
-    else        this->curr.x--; // groing right
+  const int pos_x = ::floor(this->scroll.x / 256.0);
+  const int pos_y = ::floor(this->scroll.y / 240.0);
+
+#define mk_tile(x,y)                                                  \
+  if ((this->tiles.count(x) && this->tiles[x].count(y)) == false) {   \
+    this->tiles[x][y] = new WideNES::Tile (self->sdl.renderer, x, y); \
   }
 
-  if ((dy < 0 ? -dy : dy) > 100) { // rough heuristic to detect a scroll.y wrap
-    need_new_tile = true;
-    if (dy < 0) this->curr.y++; // going left
-    else        this->curr.y--; // groing right
-  }
+  mk_tile(pos_x + 0, pos_y + 0);
+  mk_tile(pos_x + 1, pos_y + 0);
+  mk_tile(pos_x + 0, pos_y + 1);
+  mk_tile(pos_x + 1, pos_y + 1);
+#undef mk_tile
 
-  if (need_new_tile) {
-    if (this->curr.x < this->bounds.min_x) this->bounds.min_x = this->curr.x;
-    if (this->curr.x > this->bounds.max_x) this->bounds.max_x = this->curr.x;
-    if (this->curr.y < this->bounds.min_y) this->bounds.min_y = this->curr.y;
-    if (this->curr.y > this->bounds.max_y) this->bounds.max_y = this->curr.y;
+  const u8* framebuffer;
+  self->nes.getFramebuff(framebuffer);
 
-    bool tile_exists = this->tiles.count(this->curr.x)
-                    && this->tiles[this->curr.x].count(this->curr.y);
+#define update_tile(px,py,w,h,dx,dy,sx,sy)                                     \
+  for (int x = 0; x < w; x++) {                                                \
+    for (int y = 0; y < h; y++) {                                              \
+      WideNES::Tile* tile = this->tiles[px][py];                               \
+      const uint src_px_i = (256 * 4 * (y + sy)) + (4 * (x + sx));             \
+      const uint dst_px_i = (256 * 4 * (y + dy)) + (4 * (x + dx));             \
+      tile->framebuffer[dst_px_i + 0] = framebuffer[src_px_i + 0];             \
+      tile->framebuffer[dst_px_i + 1] = framebuffer[src_px_i + 1];             \
+      tile->framebuffer[dst_px_i + 2] = framebuffer[src_px_i + 2];             \
+      tile->framebuffer[dst_px_i + 3] = framebuffer[src_px_i + 3];             \
+    }                                                                          \
+  }                                                                            \
+  SDL_UpdateTexture(                                                           \
+    this->tiles[px][py]->texture,                                              \
+    nullptr,                                                                   \
+    this->tiles[px][py]->framebuffer,                                          \
+    256 * 4                                                                    \
+  );
 
-    if (!tile_exists) {
-      // create a new tile
-      this->curr.tile = new WideNES::Tile (self->sdl.renderer,
-        this->curr.x, this->curr.y);
-      this->tiles[this->curr.x][this->curr.y] = this->curr.tile;
-    } else {
-      // tile already exists => update it?
-      this->curr.tile = this->tiles[this->curr.x][this->curr.y];
-      // tile already exists => leave it be?
-      // this->curr.tile = nullptr;
-    }
-  }
+  const int tl_w = this->scroll.x - pos_x * 256;
+  const int tl_h = this->scroll.y - pos_y * 240;
+  const int br_w = 256 - tl_w;
+  const int br_h = 240 - tl_h;
 
-  // actually do the update
-  if (this->curr.tile) {
-    SDL_Rect update_rect;
-    update_rect.x = this->last_scroll.x;
-    update_rect.y = this->last_scroll.y;
-    update_rect.h = self->sdl.RES_Y;
-    update_rect.w = self->sdl.RES_X;
-
-    const u8* framebuffer;
-    self->nes.getFramebuff(framebuffer);
-    SDL_UpdateTexture(this->curr.tile->texture, &update_rect, framebuffer, self->sdl.RES_X * 4);
-  }
+  // see diagram...
+  update_tile(pos_x + 0, pos_y + 0, /**/ br_w, br_h, /**/ tl_w, tl_h, /**/ 0,    0);
+  update_tile(pos_x + 1, pos_y + 0, /**/ tl_w, br_h, /**/    0, tl_h, /**/ br_w, 0);
+  update_tile(pos_x + 0, pos_y + 1, /**/ br_w, tl_h, /**/ tl_w,    0, /**/ 0,    br_h);
+  update_tile(pos_x + 1, pos_y + 1, /**/ tl_w, tl_h, /**/    0,    0, /**/ br_w, br_h);
+#undef update_tile
 }
 
 void EmuModule::output() {
@@ -529,13 +543,13 @@ void EmuModule::output() {
   // output video!
   const u8* framebuffer;
   this->nes.getFramebuff(framebuffer);
-  SDL_UpdateTexture(this->sdl.screen_texture, nullptr, framebuffer, this->sdl.RES_X * 4);
+  SDL_UpdateTexture(this->sdl.screen_texture, nullptr, framebuffer, 256 * 4);
 
-  // wideNES additions
+  // final compositing
 
-  // calculate origin offset (tile (0,0) / actual NES screen)
-  const int nes_w = this->sdl.RES_X * this->sdl_common.SCREEN_SCALE;
-  const int nes_h = this->sdl.RES_Y * this->sdl_common.SCREEN_SCALE;
+  // calculate origin (tile (0,0) / actual NES screen)
+  const int nes_w = 256 * this->sdl_common.SCREEN_SCALE;
+  const int nes_h = 240 * this->sdl_common.SCREEN_SCALE;
   int window_w, window_h;
   SDL_GetWindowSize(this->sdl.window, &window_w, &window_h);
 
@@ -545,45 +559,19 @@ void EmuModule::output() {
     nes_w, nes_h
   };
 
-  // final compositing
-
-  // wideNES
+  // wideNES tiles
   for (auto col : this->wideNES->tiles) {
     for (auto row : col.second) {
       const WideNES::Tile* tile = row.second;
 
       SDL_Rect offset = origin;
-      offset.x -= this->sdl_common.SCREEN_SCALE * (256 * (this->wideNES->curr.x - tile->x));
-      offset.x -= this->sdl_common.SCREEN_SCALE * (this->wideNES->last_scroll.x);
+      offset.x -= this->sdl_common.SCREEN_SCALE * (this->wideNES->scroll.x - tile->pos.x * 256);
+      offset.y -= this->sdl_common.SCREEN_SCALE * (this->wideNES->scroll.y - tile->pos.y * 240);
 
-      offset.y -= this->sdl_common.SCREEN_SCALE * (240 * (this->wideNES->curr.y - tile->y));
-      offset.y -= this->sdl_common.SCREEN_SCALE * (this->wideNES->last_scroll.y);
-
-      SDL_Rect clip { 0, 0, 256, 240 };
-      SDL_RenderCopy(this->sdl.renderer, tile->texture, &clip, &offset);
+      SDL_RenderCopy(this->sdl.renderer, tile->texture, nullptr, &offset);
       SDL_SetRenderDrawColor(this->sdl.renderer, 0, 0xff, 0, 0xff);
       SDL_RenderDrawRect(this->sdl.renderer, &offset);
     }
-  }
-
-  {
-    WideNES::Tile* end_tile = this->wideNES->tiles[this->wideNES->bounds.max_x][this->wideNES->bounds.max_y];
-
-    SDL_Rect offset = origin;
-    offset.x -= this->sdl_common.SCREEN_SCALE * (256 * (this->wideNES->curr.x - end_tile->x));
-    offset.x -= this->sdl_common.SCREEN_SCALE * (this->wideNES->last_scroll.x);
-
-    offset.y -= this->sdl_common.SCREEN_SCALE * (240 * (this->wideNES->curr.y - end_tile->y));
-    offset.y -= this->sdl_common.SCREEN_SCALE * (this->wideNES->last_scroll.y);
-
-    SDL_Rect clip { 0, 0, 256, 240 };
-    clip.w *= 2;
-    clip.h *= 2;
-    offset.w *= 2;
-    offset.h *= 2;
-    SDL_RenderCopy(this->sdl.renderer, end_tile->texture, &clip, &offset);
-    SDL_SetRenderDrawColor(this->sdl.renderer, 0xff, 0, 0, 0xff);
-    SDL_RenderDrawRect(this->sdl.renderer, &offset);
   }
 
   // actual NES screen
