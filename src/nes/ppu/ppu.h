@@ -188,9 +188,10 @@ private:
   int nmi_previous;
   void nmiChange();
 
-  // framebuffer
-  u8 framebuff [240 * 256 * 4] = {0};
-  void draw_dot(Color color, uint x, uint y);
+  // framebuffers
+  u8 framebuffer     [240 * 256 * 4] = {0};
+  u8 framebuffer_spr [240 * 256 * 4] = {0};
+  u8 framebuffer_bgr [240 * 256 * 4] = {0};
 
   // scanline tracker
   struct {
@@ -245,6 +246,9 @@ public:
   void reset();
 
   void cycle();
+
+  void getFramebuffSpr(const u8*& framebuffer) const;
+  void getFramebuffBgr(const u8*& framebuffer) const;
 
   void getFramebuff(const u8*& framebuffer) const;
   uint getNumFrames() const;

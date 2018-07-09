@@ -157,8 +157,7 @@ void PPU::update_debug_windows() {
       u16 tile_addr,
       uint tl_x, uint tl_y,
       uint palette, // from 0 - 4
-      DebugPixelbuffWindow* window,
-      bool render_to_main_window = false
+      DebugPixelbuffWindow* window
     ) {
       for (uint y = 0; y < 8; y++) {
         u8 lo_bp = this->mem.peek(tile_addr + y + 0);
@@ -170,14 +169,6 @@ void PPU::update_debug_windows() {
           Color color = this->palette[
             this->mem.peek(0x3F00 + palette * 4 + pixel_type) % 64
           ];
-
-          // Render to main window too?
-          if (render_to_main_window) {
-            u32* pixels = reinterpret_cast<u32*>(this->framebuff);
-            u8 main_x = (tl_x % 256) + 7 - x;
-            u8 main_y = (tl_y % 240) + y;
-            pixels[(256 * main_y) + main_x] = color;
-          }
 
           window->set_pixel(
             tl_x + (7 - x),
@@ -205,8 +196,7 @@ void PPU::update_debug_windows() {
     // Nametables
     auto paint_nametable = [=](
       u16 base_addr,
-      uint offset_x, uint offset_y,
-      bool render_to_main_window = false
+      uint offset_x, uint offset_y
     ){
       union { // PPUADDR   - 0x2006 - PPU VRAM address register
         u16 val;
@@ -267,7 +257,7 @@ void PPU::update_debug_windows() {
         const uint tl_x = (tile_no % 32) * 8 + offset_x;
         const uint tl_y = (tile_no / 32) * 8 + offset_y;
 
-        paint_tile(tile_addr, tl_x, tl_y, palette, name_t, render_to_main_window);
+        paint_tile(tile_addr, tl_x, tl_y, palette, name_t);
       }
     };
 

@@ -498,7 +498,7 @@ void EmuModule::WideNES::samplePPU() {
 #undef mk_tile
 
   const u8* framebuffer;
-  self->nes.getFramebuff(framebuffer);
+  self->nes.get_PPU().getFramebuffBgr(framebuffer);
 
 #define update_tile(px,py,w,h,dx,dy,sx,sy)                                     \
   for (int x = 0; x < w; x++) {                                                \

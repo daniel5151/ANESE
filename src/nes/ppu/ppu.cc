@@ -88,29 +88,15 @@ void PPU::nmiChange() { // hack
 
 uint PPU::getNumFrames() const { return this->frames; }
 void PPU::getFramebuff(const u8*& framebuffer) const {
-  framebuffer = this->framebuff;
+  framebuffer = this->framebuffer;
 }
 
-void PPU::draw_dot(Color color, uint x, uint y) {
-  assert(x < 256 && y < 240);
+void PPU::getFramebuffSpr(const u8*& framebuffer) const {
+  framebuffer = this->framebuffer_spr;
+}
 
-  const uint offset = (256 * 4 * y) + x * 4;
-  assert(offset + 3 < 240 * 256 * 4);
-  // This array caused me a lot of heartache and headache.
-  //
-  // I spent ~1h trying to debug why this->scan.line and this->scan.cycle were
-  // being overwritten with bogus values, and in the end, I figured out why...
-  //
-  // I was indexing into this pixels array incorrectly, writing past the end of
-  // it, but lucky for me, the way that the PPU class is laid out in memory,
-  // this->scan immediately followed the pixels array, and was writable.
-  //
-  // Why the hell did I decide to write this in C++ again?
-
-  /* b */ this->framebuff[offset + 0] = color.b;
-  /* g */ this->framebuff[offset + 1] = color.g;
-  /* r */ this->framebuff[offset + 2] = color.r;
-  /* a */ this->framebuff[offset + 3] = color.a;
+void PPU::getFramebuffBgr(const u8*& framebuffer) const {
+  framebuffer = this->framebuffer_bgr;
 }
 
 /*----------------------------  Memory Interface  ----------------------------*/
@@ -770,7 +756,29 @@ void PPU::cycle() {
 
     const uint x = (this->scan.cycle - 2);
     if (x < 256 && this->scan.line != 261) {
-      this->draw_dot(this->palette[palette % 64], x, this->scan.line);
+      const uint offset = (256 * 4 * this->scan.line) + (4 * x);
+      assert(offset + 3 < 240 * 256 * 4);
+
+    #define draw_dot(buf, color) \
+      /* b */ buf[offset + 0] = color.b; \
+      /* g */ buf[offset + 1] = color.g; \
+      /* r */ buf[offset + 2] = color.r; \
+      /* a */ buf[offset + 3] = color.a;
+
+      // main framebuffer
+      draw_dot(framebuffer, this->palette[palette % 64]);
+
+      // foreground / bg layers
+      Color bgr_color = (!bgr_on && !spr_on)
+        ? this->palette[this->mem.peek(0x3F00) % 64]
+        : this->palette[bgr_pixel.palette % 64];
+      Color spr_color = spr_on
+        ? this->palette[palette % 64]
+        : Color();
+
+      draw_dot(framebuffer_bgr, bgr_color);
+      draw_dot(framebuffer_spr, spr_color);
+    #undef draw_dot
     }
   }
 
