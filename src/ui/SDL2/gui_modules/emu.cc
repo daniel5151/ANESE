@@ -115,6 +115,145 @@ EmuModule::~EmuModule() {
   delete this->cart;
 }
 
+/*----------  Utils  ----------*/
+
+int EmuModule::load_rom(const char* rompath) {
+  delete this->cart;
+  for (uint i = 0; i < 4; i++) {
+    delete this->savestate[i];
+    this->savestate[i] = nullptr;
+  }
+
+  fprintf(stderr, "[Load] Loading '%s'\n", rompath);
+  Cartridge* cart = new Cartridge (ANESE_fs::load::load_rom_file(rompath));
+
+  switch (cart->status()) {
+  case Cartridge::Status::CART_BAD_DATA:
+    fprintf(stderr, "[Cart] ROM file could not be parsed!\n");
+    delete cart;
+    return 1;
+  case Cartridge::Status::CART_BAD_MAPPER:
+    fprintf(stderr, "[Cart] Mapper %u has not been implemented yet!\n",
+      cart->get_rom_file()->meta.mapper);
+    delete cart;
+    return 1;
+  case Cartridge::Status::CART_NO_ERROR:
+    fprintf(stderr, "[Cart] ROM file loaded successfully!\n");
+    strcpy(this->current_rom_file, rompath);
+    this->cart = cart;
+    break;
+  }
+
+  // Try to load battery-backed save
+
+  if (!this->config.cli.no_sav) {
+    u8* data = nullptr;
+    uint len = 0;
+    ANESE_fs::load::load_file((std::string(rompath) + ".sav").c_str(), data, len);
+
+    if (!data) fprintf(stderr, "[Savegame][Load] No save data found.\n");
+    else {
+      fprintf(stderr, "[Savegame][Load] Found save data.\n");
+      const Serializable::Chunk* sav = Serializable::Chunk::parse(data, len);
+      this->cart->get_mapper()->setBatterySave(sav);
+    }
+
+    delete data;
+  }
+
+  // Try to load savestate
+  // kinda jank lol
+  if (!this->config.cli.no_sav) {
+    u8* data = nullptr;
+    uint len = 0;
+    ANESE_fs::load::load_file((std::string(rompath) + ".state").c_str(), data, len);
+
+    u8* og_data = data;
+
+    if (!data) fprintf(stderr, "[Savegame][Load] No savestate data found.\n");
+    else {
+      fprintf(stderr, "[Savegame][Load] Found savestate data.\n");
+      for (const Serializable::Chunk*& savestate : this->savestate) {
+        uint sav_len = ((uint*)data)[0];
+        data += sizeof(uint);
+        if (!sav_len) savestate = nullptr;
+        else {
+          savestate = Serializable::Chunk::parse(data, sav_len);
+          data += sav_len;
+        }
+      }
+    }
+
+    delete og_data;
+  }
+
+  // Slap a cartridge in!
+  this->nes.loadCartridge(this->cart->get_mapper());
+
+  // Power-cycle the NES
+  this->nes.power_cycle();
+
+  return 0;
+}
+
+int EmuModule::unload_rom(Cartridge* cart) {
+  if (!cart) return 0;
+  fprintf(stderr, "[UnLoad] Unloading cart...\n");
+
+  // Save Battey-Backed RAM
+  if (cart != nullptr && !this->config.cli.no_sav) {
+    const Serializable::Chunk* sav = cart->get_mapper()->getBatterySave();
+    if (sav) {
+      const u8* data;
+      uint len;
+      Serializable::Chunk::collate(data, len, sav);
+
+      char buf [256];
+      sprintf(buf, "%s.sav", this->current_rom_file);
+
+      FILE* sav_file = fopen(buf, "wb");
+      if (!sav_file) {
+        fprintf(stderr, "[Savegame][Save] Failed to open save file!\n");
+        return 1;
+      }
+
+      fwrite(data, 1, len, sav_file);
+      fclose(sav_file);
+      fprintf(stderr, "[Savegame][Save] Game saved to '%s'!\n", buf);
+
+      delete sav;
+    }
+  }
+
+  // Save Savestates
+  if (cart != nullptr && !this->config.cli.no_sav) {
+    char buf [256];
+    sprintf(buf, "%s.state", this->current_rom_file);
+    FILE* state_file = fopen(buf, "wb");
+    if (!state_file) {
+      fprintf(stderr, "[Savegame][Save] Failed to open savestate file!\n");
+      return 1;
+    }
+
+    // kinda jank lol
+    for (const Serializable::Chunk* savestate : this->savestate) {
+      const u8* data;
+      uint len;
+      Serializable::Chunk::collate(data, len, savestate);
+
+      fwrite(&len, sizeof(uint), 1, state_file);
+      if (data) fwrite(data, 1, len, state_file);
+    }
+
+    fclose(state_file);
+    fprintf(stderr, "[Savegame][Save] Savestates saved to '%s'!\n", buf);
+  }
+
+  this->nes.removeCartridge();
+
+  return 0;
+}
+
 void EmuModule::input(const SDL_Event& event) {
   // Update from Controllers
   if (event.type == SDL_CONTROLLERBUTTONDOWN ||
@@ -313,93 +452,4 @@ void EmuModule::output() {
   this->nes.getFramebuff(framebuffer);
   SDL_UpdateTexture(this->sdl.screen_texture, nullptr, framebuffer, this->sdl.RES_X * 4);
   SDL_RenderCopy(this->sdl.renderer, this->sdl.screen_texture, nullptr, &this->sdl.screen);
-}
-
-/*----------  Utils  ----------*/
-
-int EmuModule::load_rom(const char* rompath) {
-  delete this->cart;
-  for (uint i = 0; i < 4; i++) {
-    delete this->savestate[i];
-    this->savestate[i] = nullptr;
-  }
-
-  fprintf(stderr, "[Load] Loading '%s'\n", rompath);
-  Cartridge* cart = new Cartridge (ANESE_fs::load::load_rom_file(rompath));
-
-  switch (cart->status()) {
-  case Cartridge::Status::CART_BAD_DATA:
-    fprintf(stderr, "[Cart] ROM file could not be parsed!\n");
-    delete cart;
-    return 1;
-  case Cartridge::Status::CART_BAD_MAPPER:
-    fprintf(stderr, "[Cart] Mapper %u has not been implemented yet!\n",
-      cart->get_rom_file()->meta.mapper);
-    delete cart;
-    return 1;
-  case Cartridge::Status::CART_NO_ERROR:
-    fprintf(stderr, "[Cart] ROM file loaded successfully!\n");
-    strcpy(this->current_rom_file, rompath);
-    this->cart = cart;
-    break;
-  }
-
-  // Try to load battery-backed save
-  const Serializable::Chunk* sav = nullptr;
-
-  if (!this->config.cli.no_sav) {
-    u8* data = nullptr;
-    uint len = 0;
-    ANESE_fs::load::load_file((std::string(rompath) + ".sav").c_str(), data, len);
-    if (data) {
-      fprintf(stderr, "[Savegame][Load] Found save data.\n");
-      sav = Serializable::Chunk::parse(data, len);
-      this->cart->get_mapper()->setBatterySave(sav);
-    } else {
-      fprintf(stderr, "[Savegame][Load] No save data found.\n");
-    }
-    delete data;
-  }
-
-  // Slap a cartridge in!
-  this->nes.loadCartridge(this->cart->get_mapper());
-
-  // Power-cycle the NES
-  this->nes.power_cycle();
-
-  return 0;
-}
-
-int EmuModule::unload_rom(Cartridge* cart) {
-  if (!cart) return 0;
-
-  fprintf(stderr, "[UnLoad] Unloading cart...\n");
-  // Save Battey-Backed RAM
-  if (cart != nullptr && !this->config.cli.no_sav) {
-    const Serializable::Chunk* sav = cart->get_mapper()->getBatterySave();
-    if (sav) {
-      const u8* data;
-      uint len;
-      Serializable::Chunk::collate(data, len, sav);
-
-      char buf [256];
-      sprintf(buf, "%s.sav", this->current_rom_file);
-
-      FILE* sav_file = fopen(buf, "wb");
-      if (!sav_file) {
-        fprintf(stderr, "[Savegame][Save] Failed to open save file!\n");
-        return 1;
-      }
-
-      fwrite(data, 1, len, sav_file);
-      fclose(sav_file);
-      fprintf(stderr, "[Savegame][Save] Game successfully saved to '%s'!\n", buf);
-
-      delete sav;
-    }
-  }
-
-  this->nes.removeCartridge();
-
-  return 0;
 }
