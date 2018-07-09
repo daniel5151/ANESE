@@ -142,20 +142,45 @@ int EmuModule::load_rom(const char* rompath) {
   }
 
   // Try to load battery-backed save
-  const Serializable::Chunk* sav = nullptr;
-
   if (!this->config.cli.no_sav) {
     u8* data = nullptr;
     uint len = 0;
     ANESE_fs::load::load_file((std::string(rompath) + ".sav").c_str(), data, len);
-    if (data) {
+
+    if (!data) fprintf(stderr, "[Savegame][Load] No save data found.\n");
+    else {
       fprintf(stderr, "[Savegame][Load] Found save data.\n");
-      sav = Serializable::Chunk::parse(data, len);
+      const Serializable::Chunk* sav = Serializable::Chunk::parse(data, len);
       this->cart->get_mapper()->setBatterySave(sav);
-    } else {
-      fprintf(stderr, "[Savegame][Load] No save data found.\n");
     }
+
     delete data;
+  }
+
+  // Try to load savestate
+  // kinda jank lol
+  if (!this->config.cli.no_sav) {
+    u8* data = nullptr;
+    uint len = 0;
+    ANESE_fs::load::load_file((std::string(rompath) + ".state").c_str(), data, len);
+
+    u8* og_data = data;
+
+    if (!data) fprintf(stderr, "[Savegame][Load] No savestate data found.\n");
+    else {
+      fprintf(stderr, "[Savegame][Load] Found savestate data.\n");
+      for (const Serializable::Chunk*& savestate : this->savestate) {
+        uint sav_len = ((uint*)data)[0];
+        data += sizeof(uint);
+        if (!sav_len) savestate = nullptr;
+        else {
+          savestate = Serializable::Chunk::parse(data, sav_len);
+          data += sav_len;
+        }
+      }
+    }
+
+    delete og_data;
   }
 
   // Slap a cartridge in!
@@ -169,8 +194,8 @@ int EmuModule::load_rom(const char* rompath) {
 
 int EmuModule::unload_rom(Cartridge* cart) {
   if (!cart) return 0;
-
   fprintf(stderr, "[UnLoad] Unloading cart...\n");
+
   // Save Battey-Backed RAM
   if (cart != nullptr && !this->config.cli.no_sav) {
     const Serializable::Chunk* sav = cart->get_mapper()->getBatterySave();
@@ -190,10 +215,34 @@ int EmuModule::unload_rom(Cartridge* cart) {
 
       fwrite(data, 1, len, sav_file);
       fclose(sav_file);
-      fprintf(stderr, "[Savegame][Save] Game successfully saved to '%s'!\n", buf);
+      fprintf(stderr, "[Savegame][Save] Game saved to '%s'!\n", buf);
 
       delete sav;
     }
+  }
+
+  // Save Savestates
+  if (cart != nullptr && !this->config.cli.no_sav) {
+    char buf [256];
+    sprintf(buf, "%s.state", this->current_rom_file);
+    FILE* state_file = fopen(buf, "wb");
+    if (!state_file) {
+      fprintf(stderr, "[Savegame][Save] Failed to open savestate file!\n");
+      return 1;
+    }
+
+    // kinda jank lol
+    for (const Serializable::Chunk* savestate : this->savestate) {
+      const u8* data;
+      uint len;
+      Serializable::Chunk::collate(data, len, savestate);
+
+      fwrite(&len, sizeof(uint), 1, state_file);
+      if (data) fwrite(data, 1, len, state_file);
+    }
+
+    fclose(state_file);
+    fprintf(stderr, "[Savegame][Save] Savestates saved to '%s'!\n", buf);
   }
 
   this->nes.removeCartridge();
@@ -542,4 +591,3 @@ void EmuModule::output() {
   SDL_SetRenderDrawColor(this->sdl.renderer, 0xff, 0xff, 0xff, 0xff);
   SDL_RenderDrawRect(this->sdl.renderer, &origin);
 }
-

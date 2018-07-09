@@ -18,7 +18,7 @@ void Config::load(int argc, char* argv[]) {
         ("Output CPU execution over STDOUT")
     | clara::Opt(this->cli.no_sav)
         ["--no-sav"]
-        ("Don't load/create sav files")
+        ("Don't load/create sav/savestate files")
     | clara::Opt(this->cli.ppu_timing_hack)
         ["--alt-nmi-timing"]
         ("Enable NMI timing fix \n"
