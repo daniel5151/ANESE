@@ -225,6 +225,22 @@ u8 PPU::peek(u16 addr) const {
   return retval;
 }
 
+
+void PPU::ZeroFilter::set_bias(uint bias) { this->bias = bias; }
+
+void PPU::ZeroFilter::add_val(u8 val) {
+  for (int i = 9; i >= 0; i--)
+    this->past_few[i] = this->past_few[i - 1];
+  this->past_few[0] = val;
+}
+
+bool PPU::ZeroFilter::is_true_0() {
+  bool true_0 = !this->past_few[0];
+  for (uint i = 0; i < this->bias; i++)
+    true_0 = true_0 && !this->past_few[i];
+  return true_0;
+}
+
 void PPU::write(u16 addr, u8 val) {
    //if (!this->reg.ppustatus.V) {
    //  fprintf(stderr, "wr to 0x%04X outside of vblank, at %d : %d\n", addr, this->scan.line, this->scan.cycle);
@@ -282,29 +298,24 @@ void PPU::write(u16 addr, u8 val) {
 
                       /*----------------------  wideNES  ---------------------*/
 
-                      static u8 last_couple_vals [10] = {1};
-
-                      for (int i = 9; i >= 0; i--)
-                        last_couple_vals[i] = last_couple_vals[i - 1];
-                      last_couple_vals[0] = val;
-
-                      // this is very-much just a heuristic...
-                      bool true_0 =
-                        !last_couple_vals[0] &&
-                        !last_couple_vals[1] &&
-                        !last_couple_vals[2] &&
-                        !last_couple_vals[3];
-
-                      if (val || true_0)
+                      this->zf_x.add_val(val);
+                      if (val || this->zf_x.is_true_0())
                         this->last_scroll.x = val;
 
                       /*--------------------  end wideNES  -------------------*/
-
                     }
                     if (this->latch == 1) {
                       // t: .CBA..HG FED..... = d: HGFEDCBA
                       this->reg.t.coarse_y = val >> 3;
                       this->reg.t.fine_y   = val & 0x07;
+
+                      /*----------------------  wideNES  ---------------------*/
+
+                      this->zf_y.add_val(val);
+                      if (val || this->zf_y.is_true_0())
+                        this->last_scroll.y = val;
+
+                      /*--------------------  end wideNES  -------------------*/
                     }
                     this->latch = !this->latch;
   /*   0x2006  */ } return;

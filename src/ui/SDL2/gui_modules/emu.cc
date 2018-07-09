@@ -19,7 +19,7 @@ EmuModule::EmuModule(const SDLCommon& sdl_common, Config& config)
     "anese",
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
     this->sdl.RES_X * this->config.window_scale * 2.25,
-    this->sdl.RES_Y * this->config.window_scale,
+    this->sdl.RES_Y * this->config.window_scale * 2.25,
     SDL_WINDOW_RESIZABLE
   );
 
@@ -266,22 +266,22 @@ void EmuModule::input(const SDL_Event& event) {
   }
 
   // Update from Mouse
-  if (event.type == SDL_MOUSEMOTION) {
-    // getting the light from the screen is a bit trickier...
-    const u8* screen;
-    this->nes.getFramebuff(screen);
-    const uint offset = (256 * 4 * (event.motion.y / this->sdl_common.SCREEN_SCALE))
-                      + (event.motion.x / this->sdl_common.SCREEN_SCALE) * 4;
-    const bool new_light = screen[offset+ 0]  // R
-                         | screen[offset+ 1]  // G
-                         | screen[offset+ 2]; // B
-    this->zap_2.set_light(new_light);
-  }
+  // if (event.type == SDL_MOUSEMOTION) {
+  //   // getting the light from the screen is a bit trickier...
+  //   const u8* screen;
+  //   this->nes.getFramebuff(screen);
+  //   const uint offset = (256 * 4 * (event.motion.y / this->sdl_common.SCREEN_SCALE))
+  //                     + (      4 * (event.motion.x / this->sdl_common.SCREEN_SCALE));
+  //   const bool new_light = screen[offset+ 0]  // R
+  //                        | screen[offset+ 1]  // G
+  //                        | screen[offset+ 2]; // B
+  //   this->zap_2.set_light(new_light);
+  // }
 
-  if (event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP) {
-    bool new_state = (event.type == SDL_MOUSEBUTTONDOWN) ? true : false;
-    this->zap_2.set_trigger(new_state);
-  }
+  // if (event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP) {
+  //   bool new_state = (event.type == SDL_MOUSEBUTTONDOWN) ? true : false;
+  //   this->zap_2.set_trigger(new_state);
+  // }
 
   // Handle Key-events
   if (event.type == SDL_KEYDOWN ||
@@ -411,19 +411,33 @@ EmuModule::WideNES::WideNES(EmuModule& emumod) : self(&emumod) {
 void EmuModule::WideNES::samplePPU() {
   // wideNES
   PPU::Scroll curr_scroll = self->nes.get_PPU().get_scroll();
-  // fprintf(stderr, "%u, %u\n", curr.scroll.x, curr.scroll.y);
+  fprintf(stderr, "%u, %u\n", curr_scroll.x, curr_scroll.y);
 
   const int dx = curr_scroll.x - this->last_scroll.x;
+  const int dy = curr_scroll.y - this->last_scroll.y;
 
   this->last_scroll.x = curr_scroll.x;
   this->last_scroll.y = curr_scroll.y;
 
+  bool need_new_tile = false;
+
   if ((dx < 0 ? -dx : dx) > 100) { // rough heuristic to detect a scroll.x wrap
+    need_new_tile = true;
     if (dx < 0) this->curr.x++; // going left
     else        this->curr.x--; // groing right
+  }
 
+  if ((dy < 0 ? -dy : dy) > 100) { // rough heuristic to detect a scroll.y wrap
+    need_new_tile = true;
+    if (dy < 0) this->curr.y++; // going left
+    else        this->curr.y--; // groing right
+  }
+
+  if (need_new_tile) {
     if (this->curr.x < this->bounds.min_x) this->bounds.min_x = this->curr.x;
     if (this->curr.x > this->bounds.max_x) this->bounds.max_x = this->curr.x;
+    if (this->curr.y < this->bounds.min_y) this->bounds.min_y = this->curr.y;
+    if (this->curr.y > this->bounds.max_y) this->bounds.max_y = this->curr.y;
 
     bool tile_exists = this->tiles.count(this->curr.x)
                     && this->tiles[this->curr.x].count(this->curr.y);
@@ -435,9 +449,9 @@ void EmuModule::WideNES::samplePPU() {
       this->tiles[this->curr.x][this->curr.y] = this->curr.tile;
     } else {
       // tile already exists => update it?
-      // this->curr.tile = this->tiles[this->curr.x][this->curr.y];
+      this->curr.tile = this->tiles[this->curr.x][this->curr.y];
       // tile already exists => leave it be?
-      this->curr.tile = nullptr;
+      // this->curr.tile = nullptr;
     }
   }
 
@@ -445,7 +459,7 @@ void EmuModule::WideNES::samplePPU() {
   if (this->curr.tile) {
     SDL_Rect update_rect;
     update_rect.x = this->last_scroll.x;
-    update_rect.y = 0;
+    update_rect.y = this->last_scroll.y;
     update_rect.h = self->sdl.RES_Y;
     update_rect.w = self->sdl.RES_X;
 
@@ -477,7 +491,8 @@ void EmuModule::output() {
   SDL_GetWindowSize(this->sdl.window, &window_w, &window_h);
 
   const SDL_Rect origin {
-    (window_w - nes_w) / 2, 0,
+    (window_w - nes_w) / 2,
+    (window_h - nes_h) / 2,
     nes_w, nes_h
   };
 
@@ -491,6 +506,9 @@ void EmuModule::output() {
       SDL_Rect offset = origin;
       offset.x -= this->sdl_common.SCREEN_SCALE * (256 * (this->wideNES->curr.x - tile->x));
       offset.x -= this->sdl_common.SCREEN_SCALE * (this->wideNES->last_scroll.x);
+
+      offset.y -= this->sdl_common.SCREEN_SCALE * (240 * (this->wideNES->curr.y - tile->y));
+      offset.y -= this->sdl_common.SCREEN_SCALE * (this->wideNES->last_scroll.y);
 
       SDL_Rect clip { 0, 0, 256, 240 };
       SDL_RenderCopy(this->sdl.renderer, tile->texture, &clip, &offset);
@@ -506,9 +524,14 @@ void EmuModule::output() {
     offset.x -= this->sdl_common.SCREEN_SCALE * (256 * (this->wideNES->curr.x - end_tile->x));
     offset.x -= this->sdl_common.SCREEN_SCALE * (this->wideNES->last_scroll.x);
 
+    offset.y -= this->sdl_common.SCREEN_SCALE * (240 * (this->wideNES->curr.y - end_tile->y));
+    offset.y -= this->sdl_common.SCREEN_SCALE * (this->wideNES->last_scroll.y);
+
     SDL_Rect clip { 0, 0, 256, 240 };
     clip.w *= 2;
+    clip.h *= 2;
     offset.w *= 2;
+    offset.h *= 2;
     SDL_RenderCopy(this->sdl.renderer, end_tile->texture, &clip, &offset);
     SDL_SetRenderDrawColor(this->sdl.renderer, 0xff, 0, 0, 0xff);
     SDL_RenderDrawRect(this->sdl.renderer, &offset);
