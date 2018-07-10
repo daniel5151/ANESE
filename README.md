@@ -30,15 +30,23 @@ is well commented, providing sources and insights for much of the logic.
 
 ## WideNES
 
-This branch adds an experimental feature to ANESE that I'm calling **WideNES**,
-which attempts to automatically "widescreenify" NES games.
+This branch contains an experimental feature called **WideNES**, a technique to
+automatically "widescreenify" / map NES games.
+
+The project is still in it's infancy, and there are many issues to iron out, but
+things are progressing fairly quickly!
+
 
 A GIF is worth a 1000 words:
 
 <p align="center">
-  <a href="https://prilik.com/ANESE">
-    <img src="resources/web/wideNES_smb1.gif" alt="wideNES">
-  </a>
+  <img src="resources/web/wideNES_smb1.gif" alt="wideNES">
+</p>
+
+And here is one of Metroid, showing off 2D mapping.
+
+<p align="center">
+  <img src="resources/web/wideNES_metroid.gif" alt="wideNES">
 </p>
 
 ## Downloads
