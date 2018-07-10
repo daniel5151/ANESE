@@ -33,21 +33,25 @@ is well commented, providing sources and insights for much of the logic.
 This branch contains an experimental feature called **WideNES**, a technique to
 automatically "widescreenify" / map NES games.
 
-The project is still in it's infancy, and there are many issues to iron out, but
-things are progressing fairly quickly!
-
-
 A GIF is worth a 1000 words:
 
 <p align="center">
   <img src="resources/web/wideNES_smb1.gif" alt="wideNES">
 </p>
 
-And here is one of Metroid, showing off 2D mapping.
+And here is a GIF of Metroid, showing how the map is gradually revealed as you
+go from room to room.
 
 <p align="center">
   <img src="resources/web/wideNES_metroid.gif" alt="wideNES">
 </p>
+
+The project is still in it's infancy, and there are many issues to iron out, but
+things are progressing fairly quickly!
+
+### Controls
+
+You can pan and zoom in the wideNES window using the mouse.
 
 ## Downloads
 

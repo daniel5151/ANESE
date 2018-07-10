@@ -24,6 +24,7 @@ int SDL_GUI::init(int argc, char* argv[]) {
 
   /*----------  Init GUI modules  ----------*/
   this->emu  = new EmuModule(this->sdl_common, this->config);
+  this->widenes = new WideNESModule(this->sdl_common, this->config, *this->emu);
   this->menu = new MenuModule(this->sdl_common, this->config, *this->emu);
 
   // Load ROM if one has been passed as param
@@ -43,7 +44,9 @@ SDL_GUI::~SDL_GUI() {
 
   // order matters (menu has ref to emu)
   delete this->menu;
+  delete this->widenes;
   delete this->emu;
+
 
   this->config.save();
 
@@ -97,6 +100,8 @@ int SDL_GUI::run() {
         this->emu->input(event);
       else
         this->menu->input(event);
+
+      this->widenes->input(event);
     }
 
     // Update the NES when not in menu
@@ -105,14 +110,15 @@ int SDL_GUI::run() {
     else
       this->menu->update();
 
+    this->widenes->update();
 
-    SDL_SetRenderDrawColor(this->emu->sdl.renderer, 0, 0, 0, 0xff);
-    SDL_RenderClear(this->emu->sdl.renderer);
     // Render something
     this->emu->output(); // keep showing NES in the background
     if (this->menu->in_menu) {
       this->menu->output();
     }
+
+    this->widenes->output(); // presents for itself
 
     // SHOW ME WHAT YOU GOT
     SDL_RenderPresent(this->emu->sdl.renderer);

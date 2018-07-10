@@ -5,6 +5,7 @@
 #include "gui_modules/module.h"
 #include "gui_modules/emu.h"
 #include "gui_modules/menu.h"
+#include "gui_modules/widenes.h"
 
 class SDL_GUI final {
 private:
@@ -16,8 +17,9 @@ private:
 
   /*----------  Modules  ----------*/
 
-  EmuModule*  emu  = nullptr;
-  MenuModule* menu = nullptr;
+  EmuModule*     emu  = nullptr;
+  WideNESModule* widenes = nullptr;
+  MenuModule*    menu = nullptr;
 
 private:
   void input_global(const SDL_Event&);
