@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/bitfield.h"
+#include "common/callback_manager.h"
 #include "common/serializable.h"
 #include "common/util.h"
 #include "nes/interfaces/memory.h"
@@ -109,8 +110,8 @@ private:
       BitField<5> R; // color emphasis Red
       BitField<4> s; // sprite enable
       BitField<3> b; // background enable
-      BitField<2> M; // sprite left column enable
-      BitField<1> m; // background left column enable
+      BitField<2> M; // sprite left column disable
+      BitField<1> m; // background left column disable
       BitField<0> g; // greyscale
 
       BitField<3, 2> is_rendering;
@@ -272,4 +273,6 @@ private:
   } zf_x, zf_y;
 public:
   Scroll get_scroll() const;
+
+  CallbackManager<PPU&> endframe_callbacks;
 };

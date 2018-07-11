@@ -63,21 +63,6 @@ void SDL_GUI::input_global(const SDL_Event& event) {
     (event.type == SDL_QUIT) ||
     (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE)
   ) this->sdl_common.running = false;
-
-  if (event.type == SDL_KEYDOWN) {
-    switch (event.key.keysym.sym) {
-      case SDLK_ESCAPE:
-        this->menu->in_menu = !this->menu->in_menu; break;
-    }
-  }
-
-  if (event.type == SDL_CONTROLLERBUTTONDOWN ||
-      event.type == SDL_CONTROLLERBUTTONUP) {
-    switch (event.cbutton.button) {
-    case SDL_CONTROLLER_BUTTON_LEFTSTICK:
-      this->menu->in_menu = !this->menu->in_menu; break;
-    }
-  }
 }
 
 int SDL_GUI::run() {
@@ -96,12 +81,19 @@ int SDL_GUI::run() {
     while (SDL_PollEvent(&event) != 0) {
       this->input_global(event);
 
-      if (!this->menu->in_menu)
-        this->emu->input(event);
-      else
-        this->menu->input(event);
+      if (event.window.windowID == this->emu->get_window_id()) {
+        if (!this->menu->in_menu)
+          this->emu->input(event);
+        else
+          this->menu->input(event);
+      }
 
-      this->widenes->input(event);
+      if (event.window.windowID == this->widenes->get_window_id()) {
+        this->widenes->input(event);
+        // send emulator actions too
+        if (!this->menu->in_menu)
+          this->emu->input(event);
+      }
     }
 
     // Update the NES when not in menu

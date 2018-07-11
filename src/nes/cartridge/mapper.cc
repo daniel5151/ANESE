@@ -38,12 +38,13 @@ void Mapper::init_chr_banks(const ROM_File& rom_file, const u16 size) {
 
 /*------------------  Common Mapper Functions / Services  --------------------*/
 
-void Mapper::irq_trigger() const {
+void Mapper::irq_trigger() {
   if (this->interrupt_line)
     this->interrupt_line->request(Interrupts::IRQ);
+  this->irq_callbacks.run(this);
 }
 
-void Mapper::irq_service() const {
+void Mapper::irq_service() {
   if (this->interrupt_line)
     this->interrupt_line->service(Interrupts::IRQ);
 }

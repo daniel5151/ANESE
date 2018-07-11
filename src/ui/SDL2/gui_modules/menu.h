@@ -37,7 +37,10 @@ public:
 public:
   virtual ~MenuModule();
   MenuModule(const SDLCommon&, Config&, EmuModule&);
+
   void input(const SDL_Event&) override;
   void update() override;
   void output() override;
+
+  uint get_window_id() override { return SDL_GetWindowID(this->emu.sdl.window); }
 };

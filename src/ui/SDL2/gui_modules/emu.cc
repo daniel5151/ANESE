@@ -117,10 +117,6 @@ EmuModule::~EmuModule() {
 
 /*----------  Utils  ----------*/
 
-void EmuModule::register_frame_callback(frame_callback cb, void* userdata) {
-  this->frame_callbacks.push_back(EmuModule::cb { cb, userdata });
-}
-
 int EmuModule::load_rom(const char* rompath) {
   delete this->cart;
   for (uint i = 0; i < 4; i++) {
@@ -196,6 +192,8 @@ int EmuModule::load_rom(const char* rompath) {
   // Power-cycle the NES
   this->nes.power_cycle();
 
+  this->cart_changed_callbacks.run(this->cart);
+
   return 0;
 }
 
@@ -253,6 +251,8 @@ int EmuModule::unload_rom(Cartridge* cart) {
   }
 
   this->nes.removeCartridge();
+
+  this->cart_changed_callbacks.run(this->cart);
 
   return 0;
 }
@@ -435,10 +435,6 @@ void EmuModule::update() {
 
     // run the NES for a frame
     this->nes.step_frame();
-
-    // run frame callbacks
-    for (auto cb : this->frame_callbacks)
-      cb.f(cb.userdata, *this);
   }
 
   if (this->nes.isRunning() == false) {

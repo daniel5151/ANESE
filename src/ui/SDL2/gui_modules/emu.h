@@ -5,6 +5,8 @@
 
 #include "module.h"
 
+#include "common/callback_manager.h"
+
 #include "nes/cartridge/cartridge.h"
 #include "nes/joy/controllers/standard.h"
 #include "nes/joy/controllers/zapper.h"
@@ -15,13 +17,8 @@
 
 #include "../util/Sound_Queue.h"
 
-#include <vector>
-
-
 class EmuModule : public GUIModule {
 public:
-  typedef void (*frame_callback)(void* userdata, EmuModule& self);
-
   struct {
     const uint SAMPLE_RATE = 96000;
 
@@ -36,13 +33,6 @@ public:
 
 private:
   int speed_counter = 0;
-
-  struct cb {
-    frame_callback f;
-    void* userdata;
-  };
-
-  std::vector<cb> frame_callbacks;
 
 public:
   NES_Params params;
@@ -68,8 +58,10 @@ public:
   void update() override;
   void output() override;
 
+  uint get_window_id() override { return SDL_GetWindowID(this->sdl.window); }
+
   int load_rom(const char* rompath);
   int unload_rom(Cartridge* cart);
 
-  void register_frame_callback(frame_callback cb, void* userdata);
+  CallbackManager<Cartridge*> cart_changed_callbacks;
 };

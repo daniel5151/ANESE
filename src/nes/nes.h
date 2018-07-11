@@ -98,8 +98,9 @@ public:
 
   bool isRunning() const { return this->is_running; }
 
-  /*-----------  wideNES  ------------*/
-
-  const PPU& get_PPU() const { return this->ppu; }
-
+  /*-----------  debug hooks  ------------*/
+  struct {
+    NES* self;
+    PPU& ppu() const { return self->ppu; }
+  } debug_get { this };
 };

@@ -187,6 +187,8 @@ u8 PPU::peek(u16 addr) const {
                     } else {
                       retval = this->oam.peek(this->reg.oamaddr);
                     }
+  /*   0x2001  */ } break;
+  case PPUMASK:   { retval = this->reg.ppumask.raw;
   /*   0x2007  */ } break;
   case PPUDATA:   { if (this->reg.v.val <= 0x3EFF) {
                       retval = this->reg.ppudata;
@@ -798,6 +800,9 @@ void PPU::cycle() {
     if (this->scan.line == 241) {
       // MAJOR KEY: The vblank flag is _always_ set!
       this->reg.ppustatus.V = true;
+
+      this->endframe_callbacks.run(*this);
+
       this->nmiChange(); // hack
       // Only the interrupt is affected by ppuctrl.V (not the flag!)
       if (this->reg.ppuctrl.V) {

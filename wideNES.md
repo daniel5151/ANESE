@@ -37,8 +37,9 @@ You can **pan** and **zoom** using the mouse + mousewheel.
 #### Padding controls
 
 Many games have static sections of the screen / artifacts at the edge of the
-screen. By default, wideNES samples with 8 pixels of padding, which works well
-for many games, but usually needs a bit of tweaking.
+screen. wideNES uses some heuristics (if the PPUMASK bgr-mask is active, mapper
+IRQs, etc...) to intelligently "guess" padding values, but there are times when
+a little bit of tweaking is needed...
 
  Side   | increase | decrease
 --------|----------|-------
@@ -64,11 +65,7 @@ it, the deltas between values at different frames (plus some heuristics) are
 used to intelligently "sample" the framebuffer. Gradually, as the player moves
 around the world, more and more of the screne is revealed (and saved).
 
-In fact, there are only 2 things wideNES actually knows about the NES at
-any given frame: the current framebuffer, and the last-couple values written to
-the scroll-register. That's it!
-
-It's quite a simple approach, but the results are really impressive!
+That's it really!
 
 ## Caveats
 
@@ -98,11 +95,10 @@ I am not sure if I can work around this, but I might try...
 
 ## Roadmap
 
-- [ ] avoid smearing in some games
-  - Right now, there is a #define in the code that switches b/w 2 different
-  sampling modes, each of which either fixes / breaks smearing in some games...
-  Right now, the #define is set so games like Metroid and SMB2 work fine, but
-  this breaks SMB1...
+- [x] avoid smearing in some games
+- [x] mask-off edges (artifacting / satic menus)
+  - [x] manually
+  - [x] automatically - _using heuristics, not completely perfect_
 - [ ] Save/Load tiles
   - Persistent levels!
 - [ ] Recognize scene-changes
@@ -110,4 +106,6 @@ I am not sure if I can work around this, but I might try...
     - right now, they overwrite tile data
 - [ ] Animated background / tile support
   - only sample in 8 pixel chunks?
-- [ ] Handle non-hardware scrolling
+- [ ] Handle non-hardware scrolling (?)
+
+## Successes

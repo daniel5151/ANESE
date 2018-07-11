@@ -16,7 +16,8 @@
 Emulator written for fun and learning.
 
 Accuracy and performance are long-term goals, but the primary focus is getting
-popular titles up and running.
+popular titles up and running. There are still a lot of bugs, but many games are
+working quite well already.
 
 ANESE is _cross-platform_, and is regularly tested on macOS, Windows, and Linux.
 

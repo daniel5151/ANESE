@@ -165,4 +165,8 @@ public:
   void setBatterySave(const Serializable::Chunk* c) override {
     this->prg_ram.deserialize(c);
   }
+
+  // debug
+  u8   peek_irq_latch()   const { return this->reg.irq_latch;   }
+  bool peek_irq_enabled() const { return this->reg.irq_enabled; }
 };
