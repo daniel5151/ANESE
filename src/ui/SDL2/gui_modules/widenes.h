@@ -22,7 +22,10 @@ private:
     } pos; // position within tile-grid
 
     SDL_Texture* texture = nullptr;
-    u8 framebuffer [256 * 240 * 4];
+    u8 framebuffer [256 * 240 * 4] = {0};
+
+    // misc: not initializing the framebuffer leads to a really cool effect
+    // where any raw memory is visualized as a texture!
 
     ~Tile();
     Tile(SDL_Renderer* renderer, int x, int y);
@@ -40,6 +43,14 @@ private:
 
   // total scroll (offset from origin)
   struct { int x; int y; int dx; int dy; } scroll { 0, 0, 0, 0 };
+
+  // there tend to be graphical artifacts at the edge of the screen, so it's
+  // prudent to sample sliglty away from the edge.
+  // moreover, some games have static menus on screen that impair sampling
+  // (eg: smb3, mc kids)
+  struct {
+    int left, right, top, bottom;
+  } padding { 8, 8, 8, 8 };
 
   // zoom/pan info
   struct {

@@ -82,6 +82,20 @@ void WideNESModule::input(const SDL_Event& event) {
       while (scroll++) this->pan.zoom /= 1.25;
     }
   }
+
+  if (event.type == SDL_KEYDOWN) {
+    bool mod_shift = event.key.keysym.mod & KMOD_SHIFT;
+    switch (event.key.keysym.sym) {
+    case SDLK_e: this->padding.top    += mod_shift ? 1 : 8; break;
+    case SDLK_3: this->padding.top    -= mod_shift ? 1 : 8; break;
+    case SDLK_d: this->padding.bottom += mod_shift ? 1 : 8; break;
+    case SDLK_c: this->padding.bottom -= mod_shift ? 1 : 8; break;
+    case SDLK_s: this->padding.left   += mod_shift ? 1 : 8; break;
+    case SDLK_a: this->padding.left   -= mod_shift ? 1 : 8; break;
+    case SDLK_f: this->padding.right  += mod_shift ? 1 : 8; break;
+    case SDLK_g: this->padding.right  -= mod_shift ? 1 : 8; break;
+    }
+  }
 }
 
 void WideNESModule::update() {
@@ -110,6 +124,11 @@ void WideNESModule::frame_callback(void* self, EmuModule& emu) {
 
 
 void WideNESModule::samplePPU(EmuModule& emu) {
+  // save copy of OG screen
+  const u8* framebuffer_true;
+  emu.nes.get_PPU().getFramebuff(framebuffer_true);
+  SDL_UpdateTexture(nes_screen->texture, nullptr, framebuffer_true, 256 * 4);
+
   // First, calculate the new scroll position
 
   PPU::Scroll curr_scroll = emu.nes.get_PPU().get_scroll();
@@ -148,6 +167,20 @@ void WideNESModule::samplePPU(EmuModule& emu) {
   (void)oldscroll;
 #endif
 
+  // static int last_sample_x = 0;
+  // static int last_sample_y = 0;
+  // last_sample_x += dx;
+  // last_sample_y += dy;
+
+  // static bool do_sample = true;
+  // if (last_sample_x >=  255) { last_sample_x -= 255; do_sample = true; }
+  // if (last_sample_x <= -255) { last_sample_x += 255; do_sample = true; }
+  // if (last_sample_y >=  239) { last_sample_y -= 239; do_sample = true; }
+  // if (last_sample_y <= -239) { last_sample_y += 239; do_sample = true; }
+
+  // if (!do_sample) return;
+  // do_sample = false;
+
   // Next, update the textures / framebuffers of the affected tiles
 
   const int pos_x = ::floor(true_scroll.x / 256.0);
@@ -164,19 +197,16 @@ void WideNESModule::samplePPU(EmuModule& emu) {
   mk_tile(pos_x + 1, pos_y + 1);
 #undef mk_tile
 
-
-  // save copy of OG screen
-  const u8* framebuffer_true;
-  emu.nes.get_PPU().getFramebuff(framebuffer_true);
-  SDL_UpdateTexture(nes_screen->texture, nullptr, framebuffer_true, 256 * 4);
-
-  // then get a copy of only the bg
   const u8* framebuffer;
   emu.nes.get_PPU().getFramebuffBgr(framebuffer);
 
 #define update_tile(px,py,w,h,dx,dy,sx,sy)                                     \
   for (int x = 0; x < w; x++) {                                                \
     for (int y = 0; y < h; y++) {                                              \
+      if (                                                                     \
+        x + sx > 255 - this->padding.right  || x + sx < this->padding.left ||  \
+        y + sy > 239 - this->padding.bottom || y + sy < this->padding.top      \
+      ) continue;                                                              \
       Tile* tile = this->tiles[px][py];                                        \
       const uint src_px_i = (256 * 4 * (y + sy)) + (4 * (x + sx));             \
       const uint dst_px_i = (256 * 4 * (y + dy)) + (4 * (x + dx));             \
@@ -251,9 +281,21 @@ void WideNESModule::output() {
   }
 
   // actual NES screen
-  SDL_RenderCopy(this->sdl.renderer, nes_screen->texture, nullptr, &origin);
+  SDL_Rect padded_origin = origin;
+  padded_origin.x += this->pan.zoom * (this->padding.left);
+  padded_origin.y += this->pan.zoom * (this->padding.top);
+  padded_origin.w -= this->pan.zoom * (this->padding.left + this->padding.right);
+  padded_origin.h -= this->pan.zoom * (this->padding.top + this->padding.bottom);
+
+  SDL_Rect padded_clip;
+  padded_clip.x = (this->padding.left);
+  padded_clip.y = (this->padding.top);
+  padded_clip.w = 256 - (this->padding.left + this->padding.right);
+  padded_clip.h = 240 - (this->padding.top + this->padding.bottom);
+
+  SDL_RenderCopy(this->sdl.renderer, nes_screen->texture, &padded_clip, &padded_origin);
   SDL_SetRenderDrawColor(this->sdl.renderer, 0xff, 0xff, 0xff, 0xff);
-  SDL_RenderDrawRect(this->sdl.renderer, &origin);
+  SDL_RenderDrawRect(this->sdl.renderer, &padded_origin);
 
   SDL_RenderPresent(this->sdl.renderer);
 }
