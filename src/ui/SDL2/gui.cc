@@ -2,8 +2,6 @@
 
 #include <cstdio>
 
-#include <SDL2_inprint.h>
-
 #include "common/util.h"
 
 int SDL_GUI::init(int argc, char* argv[]) {
@@ -62,7 +60,7 @@ void SDL_GUI::input_global(const SDL_Event& event) {
   if (
     (event.type == SDL_QUIT) ||
     (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE)
-  ) this->sdl_common.running = false;
+  ) this->running = false;
 }
 
 int SDL_GUI::run() {
@@ -71,7 +69,7 @@ int SDL_GUI::run() {
   double past_fups [20] = {60.0}; // more samples == less value jitter
   uint past_fups_i = 0;
 
-  while (this->sdl_common.running) {
+  while (this->running) {
     typedef uint time_ms;
     time_ms frame_start_time = SDL_GetTicks();
     past_fups_i++;
@@ -82,10 +80,8 @@ int SDL_GUI::run() {
       this->input_global(event);
 
       if (event.window.windowID == this->emu->get_window_id()) {
-        if (!this->menu->in_menu)
-          this->emu->input(event);
-        else
-          this->menu->input(event);
+        this->emu->input(event);
+        this->menu->input(event);
       }
 
       if (event.window.windowID == this->widenes->get_window_id()) {

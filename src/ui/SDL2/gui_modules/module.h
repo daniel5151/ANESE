@@ -4,10 +4,6 @@
 #include "../config.h"
 
 struct SDLCommon {
-  bool running = true;
-
-  static constexpr uint SCREEN_SCALE = 2; // internal screen scale
-
   SDL_GameController* controller = nullptr;
 };
 

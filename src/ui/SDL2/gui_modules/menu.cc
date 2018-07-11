@@ -29,9 +29,23 @@ MenuModule::MenuModule(const SDLCommon& sdl_common, Config& config, EmuModule& e
 }
 
 void MenuModule::input(const SDL_Event& event) {
+  // First, check if actions should even be recorded...
   if (event.type == SDL_KEYDOWN) {
     switch (event.key.keysym.sym) {
     case SDLK_ESCAPE: this->in_menu = !this->in_menu; break;
+    }
+  }
+  if (event.type == SDL_CONTROLLERBUTTONDOWN ||
+      event.type == SDL_CONTROLLERBUTTONUP) {
+    switch (event.cbutton.button) {
+    case SDL_CONTROLLER_BUTTON_LEFTSTICK: this->in_menu = !this->in_menu; break;
+    }
+  }
+
+  if (!this->in_menu) return;
+
+  if (event.type == SDL_KEYDOWN) {
+    switch (event.key.keysym.sym) {
     case SDLK_RETURN: this->hit.enter = true; break;
     case SDLK_DOWN:   this->hit.down  = true; break;
     case SDLK_UP:     this->hit.up    = true; break;
@@ -52,7 +66,6 @@ void MenuModule::input(const SDL_Event& event) {
   if (event.type == SDL_CONTROLLERBUTTONDOWN ||
       event.type == SDL_CONTROLLERBUTTONUP) {
     switch (event.cbutton.button) {
-    case SDL_CONTROLLER_BUTTON_LEFTSTICK: this->in_menu = !this->in_menu; break;
     case SDL_CONTROLLER_BUTTON_A:         this->hit.enter = true; break;
     case SDL_CONTROLLER_BUTTON_DPAD_UP:   this->hit.up    = true; break;
     case SDL_CONTROLLER_BUTTON_DPAD_DOWN: this->hit.down  = true; break;
@@ -186,7 +199,7 @@ void MenuModule::output() {
 
     SDL2_inprint::incolor(color, /* unused */ 0);
     SDL2_inprint::inprint(this->emu.sdl.renderer, file.name,
-      10, this->bg.h / this->sdl_common.SCREEN_SCALE + (i - this->nav.selected_i) * 12
+      10, this->bg.h / 2 + (i - this->nav.selected_i) * 12
     );
   }
 }

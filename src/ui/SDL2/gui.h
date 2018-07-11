@@ -9,6 +9,8 @@
 
 class SDL_GUI final {
 private:
+  bool running = true;
+
   // Config manager (also has CLI args)
   Config config;
 
