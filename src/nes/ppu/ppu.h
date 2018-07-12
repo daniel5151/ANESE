@@ -260,20 +260,12 @@ public:
   /*---------------  wideNES  --------------*/
 
 public:
-  struct Scroll { u8 x; u8 y; };
-private:
-  Scroll last_scroll { 0, 0 };
-
-  struct ZeroFilter {
-    uint bias = 3;
-    void set_bias(uint bias);
-    u8 past_few [10] = {1};
-    void add_val(u8 val);
-    bool is_true_0();
-  } zf_x, zf_y;
-public:
-  Scroll get_scroll() const;
   uint get_scanline() const { return this->scan.line; }
 
-  CallbackManager<PPU&> endframe_callbacks;
+  struct {
+    CallbackManager<>   frame_start;
+    CallbackManager<>   frame_end;
+    CallbackManager<u8> scrollx;
+    CallbackManager<u8> scrolly;
+  } callbacks;
 };

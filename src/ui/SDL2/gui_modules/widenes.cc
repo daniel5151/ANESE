@@ -6,8 +6,12 @@
 WideNESModule::WideNESModule(SharedState& gui)
 : GUIModule(gui)
 {
+  // register callbacks
   gui.nes.cart_changed_callbacks.add_cb(WideNESModule::cb_mapper_changed, this);
-  gui.nes.debug_get.ppu().endframe_callbacks.add_cb(WideNESModule::cb_endframe, this);
+  gui.nes.debug_get.ppu().callbacks.frame_start.add_cb(WideNESModule::cb_frame_start, this);
+  gui.nes.debug_get.ppu().callbacks.frame_end.add_cb(WideNESModule::cb_frame_end, this);
+  gui.nes.debug_get.ppu().callbacks.scrollx.add_cb(WideNESModule::cb_scrollx_changed, this);
+  gui.nes.debug_get.ppu().callbacks.scrolly.add_cb(WideNESModule::cb_scrolly_changed, this);
 
   /*-------------------------------  SDL init  -------------------------------*/
 
@@ -125,6 +129,14 @@ WideNESModule::Tile::~Tile() {
 
 /*-------------------------------  Callbacks  --------------------------------*/
 
+void WideNESModule::cb_scrollx_changed(void* self, u8 val) {
+  ((WideNESModule*)self)->scrollx_handler(val);
+}
+
+void WideNESModule::cb_scrolly_changed(void* self, u8 val) {
+  ((WideNESModule*)self)->scrolly_handler(val);
+}
+
 void WideNESModule::cb_mapper_changed(void* self, Mapper* mapper) {
   if (mapper && mapper->mapper_number() == 4) {
     Mapper_004* mmc3 = static_cast<Mapper_004*>(mapper);
@@ -136,21 +148,46 @@ void WideNESModule::cb_mmc3_irq(void* self, Mapper_004* mmc3, bool active) {
   ((WideNESModule*)self)->mmc3_irq_handler(mmc3, active);
 }
 
-void WideNESModule::cb_endframe(void* self, PPU& ppu) {
-  (void)ppu;
-  ((WideNESModule*)self)->sampleNES();
+void WideNESModule::cb_frame_end(void* self) {
+  ((WideNESModule*)self)->frame_end_handler();
+}
+
+void WideNESModule::cb_frame_start(void* self) {
+  ((WideNESModule*)self)->frame_start_handler();
 }
 
 /*----------------------------  Callback Handlers  ---------------------------*/
 
+void WideNESModule::scrollx_handler(u8 val) {
+  this->curr_scroll.x = val;
+}
+
+void WideNESModule::scrolly_handler(u8 val) {
+  this->curr_scroll.y = val;
+}
+
 void WideNESModule::mmc3_irq_handler(Mapper_004* mmc3, bool active) {
-  this->heuristics.irq.on_scanline = active
+  this->heuristics.mmc3_irq.curr_scroll_pre_irq = this->curr_scroll;
+
+  this->heuristics.mmc3_irq.happened = true;
+  this->heuristics.mmc3_irq.on_scanline = active
     ? mmc3->peek_irq_latch()
     : 239; // cancels out later, give 0 padding
 }
 
-void WideNESModule::update_padding() {
+void WideNESModule::frame_start_handler() {
+  // nothing for now...
+}
+
+void WideNESModule::frame_end_handler() {
   const PPU& ppu = this->gui.nes.debug_get.ppu();
+
+  // save copy of OG screen
+  const u8* framebuffer_true;
+  ppu.getFramebuff(framebuffer_true);
+  SDL_UpdateTexture(nes_screen->texture, nullptr, framebuffer_true, 256 * 4);
+
+  // update padding / scroll registers (based on heuristics)
 
   // 1) if the left-column bit is enabled, odds are the game is hiding visual
   //    artifacts, so we can slice that bit off.
@@ -166,8 +203,20 @@ void WideNESModule::update_padding() {
 
   // 2) Mappers sometimes use a scanline IRQ to split the screen, many times for
   // making a static status bar at the bottom of the screen (kirby, smb3)
-  // TODO: make this more robut (i.e: check what PPU regs are written to in IRQ)
-  this->pad.guess.b = 239 - this->heuristics.irq.on_scanline;
+  // TODO: make this more robust, i.e: get rid of false positives (Megaman IV)
+  if (this->heuristics.mmc3_irq.happened) {
+    this->pad.guess.b = 239 - this->heuristics.mmc3_irq.on_scanline;
+    // depending on if the menu is at the top / bottom of the screen, different
+    // scroll values should be used
+    if (this->heuristics.mmc3_irq.on_scanline < 240 / 2) {
+      // top of screen
+      this->curr_scroll = this->curr_scroll; // stays the same
+    } else {
+      // bottom of screen
+      this->curr_scroll = this->heuristics.mmc3_irq.curr_scroll_pre_irq;
+    }
+  }
+  this->heuristics.mmc3_irq.happened = false; // reset
 
   // 3) vertically scrolling + vertical mirroring usually leads to artifacting
   //    at the top of the screen
@@ -178,34 +227,25 @@ void WideNESModule::update_padding() {
   this->pad.total.r = this->pad.guess.r + this->pad.offset.r;
   this->pad.total.t = this->pad.guess.t + this->pad.offset.t;
   this->pad.total.b = this->pad.guess.b + this->pad.offset.b;
-}
-
-void WideNESModule::sampleNES() {
-  const PPU& ppu = this->gui.nes.debug_get.ppu();
-
-  // save copy of OG screen
-  const u8* framebuffer_true;
-  ppu.getFramebuff(framebuffer_true);
-  SDL_UpdateTexture(nes_screen->texture, nullptr, framebuffer_true, 256 * 4);
-
-  this->update_padding();
 
   // calculate the new scroll position
 
-  PPU::Scroll curr_scroll = ppu.get_scroll();
+  int dx = this->curr_scroll.x - this->last_scroll.x;
+  int dy = this->curr_scroll.y - this->last_scroll.y;
 
-  int dx = curr_scroll.x - this->last_scroll.x;
-  int dy = curr_scroll.y - this->last_scroll.y;
+  const int fuzz = 10;
+  const int thresh_w = (256 - this->pad.total.l - this->pad.total.r) - fuzz;
+  const int thresh_h = (240 - this->pad.total.t - this->pad.total.b) - fuzz;
 
   // 255 -> 0 | dx is negative | means we are going right
   // 0 -> 255 | dx is positive | means we are going left
-  if (::abs(dx) > 100) {
+  if (::abs(dx) > thresh_w) {
     if (dx < 0) dx += 256; // going right
     else        dx -= 256; // going left
   }
   // 239 -> 0 | dy is negative | means we are going down
   // 0 -> 239 | dy is positive | means we are going up
-  if (::abs(dy) > 100) {
+  if (::abs(dy) > thresh_h) {
     if (dy < 0) dy += 240; // going down
     else        dy -= 240; // going up
   }
@@ -215,8 +255,8 @@ void WideNESModule::sampleNES() {
   this->scroll.dx = dx;
   this->scroll.dy = dy;
 
-  this->last_scroll.x = curr_scroll.x;
-  this->last_scroll.y = curr_scroll.y;
+  this->last_scroll.x = this->curr_scroll.x;
+  this->last_scroll.y = this->curr_scroll.y;
 
   // static int last_sample_x = 0;
   // static int last_sample_y = 0;
@@ -234,25 +274,14 @@ void WideNESModule::sampleNES() {
 
   // Next, update the textures / framebuffers of the affected tiles
 
-  const int pos_x = ::floor(this->scroll.x / 256.0);
-  const int pos_y = ::floor(this->scroll.y / 240.0);
-
-#define mk_tile(x,y)                                                  \
-  if ((this->tiles.count(x) && this->tiles[x].count(y)) == false) {   \
-    this->tiles[x][y] = new Tile (this->sdl.renderer, x, y);          \
-  }
-
-  mk_tile(pos_x + 0, pos_y + 0);
-  mk_tile(pos_x + 1, pos_y + 0);
-  mk_tile(pos_x + 0, pos_y + 1);
-  mk_tile(pos_x + 1, pos_y + 1);
-#undef mk_tile
-
   // use the background framebuffer (sprites leave artifacts)
   const u8* framebuffer;
   ppu.getFramebuffBgr(framebuffer);
 
 #define update_tile(px,py,w,h,dx,dy,sx,sy)                                \
+  if ((this->tiles.count(px) && this->tiles[px].count(py)) == false) {    \
+    this->tiles[px][py] = new Tile (this->sdl.renderer, px, py);          \
+  }                                                                       \
   for (int x = 0; x < w; x++) {                                           \
     for (int y = 0; y < h; y++) {                                         \
       if (                                                                \
@@ -275,6 +304,8 @@ void WideNESModule::sampleNES() {
     256 * 4                                                               \
   );
 
+  const int pos_x = ::floor(this->scroll.x / 256.0);
+  const int pos_y = ::floor(this->scroll.y / 240.0);
   const int tl_w = this->scroll.x - pos_x * 256;
   const int tl_h = this->scroll.y - pos_y * 240;
   const int br_w = 256 - tl_w;
@@ -282,9 +313,15 @@ void WideNESModule::sampleNES() {
 
   // see diagram...
   update_tile(pos_x + 0, pos_y + 0, /**/ br_w, br_h, /**/ tl_w, tl_h, /**/ 0,    0);
-  update_tile(pos_x + 1, pos_y + 0, /**/ tl_w, br_h, /**/    0, tl_h, /**/ br_w, 0);
-  update_tile(pos_x + 0, pos_y + 1, /**/ br_w, tl_h, /**/ tl_w,    0, /**/ 0,    br_h);
-  update_tile(pos_x + 1, pos_y + 1, /**/ tl_w, tl_h, /**/    0,    0, /**/ br_w, br_h);
+  if (this->scroll.x % 256 != 0) {
+    update_tile(pos_x + 1, pos_y + 0, /**/ tl_w, br_h, /**/    0, tl_h, /**/ br_w, 0);
+  }
+  if (this->scroll.y % 240 != 0) {
+    update_tile(pos_x + 0, pos_y + 1, /**/ br_w, tl_h, /**/ tl_w,    0, /**/ 0,    br_h);
+  }
+  if (this->scroll.x % 256 != 0 && this->scroll.y % 240 != 0) {
+    update_tile(pos_x + 1, pos_y + 1, /**/ tl_w, tl_h, /**/    0,    0, /**/ br_w, br_h);
+  }
 #undef update_tile
 }
 
@@ -316,10 +353,10 @@ void WideNESModule::output() {
       offset.y -= this->pan.zoom * (this->scroll.y - tile->pos.y * 240);
 
       SDL_RenderCopy(this->sdl.renderer, tile->texture, nullptr, &offset);
-      SDL_SetRenderDrawColor(this->sdl.renderer, 0, 0xff, 0, 0xff);
+      SDL_SetRenderDrawColor(this->sdl.renderer, 0x60, 0x60, 0x60, 0xff);
       SDL_RenderDrawRect(this->sdl.renderer, &offset);
 
-      this->sdl.inprint->set_color(0xffffff);
+      this->sdl.inprint->set_color(0xff0000);
       char buf [64];
       sprintf(buf, "(%d, %d)", tile->pos.x, tile->pos.y);
       this->sdl.inprint->print(buf, offset.x + 8, offset.y + 8);
@@ -366,13 +403,15 @@ void WideNESModule::output() {
   SDL_SetRenderDrawColor(this->sdl.renderer, 0xff, 0xff, 0xff, 0xff);
   SDL_RenderDrawRect(this->sdl.renderer, &padded_origin);
 
-  // debug
-  this->sdl.inprint->set_color(0xffffff);
-  char buf [64];
+  // debug values
+  this->sdl.inprint->set_color(0xff0000);
+  char buf [128];
   sprintf(buf,
-    "scroll: %d, %d\n"
-    " delta: %d, %d\n",
+    "total scroll: %-3d %-3d\n"
+    " last scroll: %-3d %-3d\n"
+    "       dx/dy: %-3d %-3d\n",
     this->scroll.x, this->scroll.y,
+    this->last_scroll.x, this->last_scroll.y,
     this->scroll.dx, this->scroll.dy
   );
   this->sdl.inprint->print(buf, 8, 8);

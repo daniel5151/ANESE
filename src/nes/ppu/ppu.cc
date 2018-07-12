@@ -213,22 +213,6 @@ u8 PPU::peek(u16 addr) const {
   return retval;
 }
 
-
-void PPU::ZeroFilter::set_bias(uint bias) { this->bias = bias; }
-
-void PPU::ZeroFilter::add_val(u8 val) {
-  for (int i = 9; i >= 0; i--)
-    this->past_few[i] = this->past_few[i - 1];
-  this->past_few[0] = val;
-}
-
-bool PPU::ZeroFilter::is_true_0() {
-  bool true_0 = !this->past_few[0];
-  for (uint i = 0; i < this->bias; i++)
-    true_0 = true_0 && !this->past_few[i];
-  return true_0;
-}
-
 void PPU::write(u16 addr, u8 val) {
    //if (!this->reg.ppustatus.V) {
    //  fprintf(stderr, "wr to 0x%04X outside of vblank, at %d : %d\n", addr, this->scan.line, this->scan.cycle);
@@ -284,26 +268,14 @@ void PPU::write(u16 addr, u8 val) {
                       // x:               CBA = d: .....CBA
                       this->reg.x = val & 0x07;
 
-                      /*----------------------  wideNES  ---------------------*/
-
-                      this->zf_x.add_val(val);
-                      if (val || this->zf_x.is_true_0())
-                        this->last_scroll.x = val;
-
-                      /*--------------------  end wideNES  -------------------*/
+                      this->callbacks.scrollx.run(val); // wideNES
                     }
                     if (this->latch == 1) {
                       // t: .CBA..HG FED..... = d: HGFEDCBA
                       this->reg.t.coarse_y = val >> 3;
                       this->reg.t.fine_y   = val & 0x07;
 
-                      /*----------------------  wideNES  ---------------------*/
-
-                      this->zf_y.add_val(val);
-                      if (val || this->zf_y.is_true_0())
-                        this->last_scroll.y = val;
-
-                      /*--------------------  end wideNES  -------------------*/
+                      this->callbacks.scrolly.run(val); // wideNES
                     }
                     this->latch = !this->latch;
   /*   0x2006  */ } return;
@@ -798,7 +770,7 @@ void PPU::cycle() {
   if (this->scan.cycle == 1) {
     // vblank start on line 241...
     if (this->scan.line == 241) {
-      this->endframe_callbacks.run(*this);
+      this->callbacks.frame_end.run();
 
       // MAJOR KEY: The vblank flag is _always_ set!
       this->reg.ppustatus.V = true;
@@ -812,6 +784,8 @@ void PPU::cycle() {
 
     // ...and is cleared in the pre-render line
     if (this->scan.line == 261) {
+      this->callbacks.frame_start.run();
+
       this->reg.ppustatus.V = false;
       this->reg.ppustatus.S = false;
       this->reg.ppustatus.O = false;
@@ -860,7 +834,3 @@ const Color PPU::palette [64] = {
   0xFFFEFF, 0xC0DFFF, 0xD3D2FF, 0xE8C8FF, 0xFBC2FF, 0xFEC4EA, 0xFECCC5, 0xF7D8A5,
   0xE4E594, 0xCFEF96, 0xBDF4AB, 0xB3F3CC, 0xB5EBF2, 0xB8B8B8, 0x000000, 0x000000,
 };
-
-/*---------------------------------  wideNES  --------------------------------*/
-
-PPU::Scroll PPU::get_scroll() const { return last_scroll; }

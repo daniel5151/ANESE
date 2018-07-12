@@ -21,7 +21,6 @@ private:
     SDL2_inprint* inprint  = nullptr;
   } sdl;
 
-
   struct Tile {
     struct {
       int x, y;
@@ -45,7 +44,10 @@ private:
   Tile* nes_screen;
 
   // used to calculate dx and dy b/w frames
-  struct { u8 x; u8 y; } last_scroll { 0, 0 };
+  struct nes_scroll {
+    u8 x; u8 y;
+  } last_scroll { 0, 0 }
+  , curr_scroll { 0, 0 };
 
   // total scroll (offset from origin)
   struct { int x; int y; int dx; int dy; } scroll { 0, 0, 0, 0 };
@@ -65,8 +67,9 @@ private:
   struct {
     struct {
       bool happened = false;
-      uint on_scanline = 240;
-    } irq;
+      uint on_scanline = 239;
+      nes_scroll curr_scroll_pre_irq = { 0, 0 };
+    } mmc3_irq;
   } heuristics;
 
   // zoom/pan info
@@ -78,13 +81,21 @@ private:
     float zoom = 2.0;
   } pan;
 
-  void sampleNES();
-  void update_padding();
+  void frame_start_handler();
+  void frame_end_handler();
 
   void mmc3_irq_handler(Mapper_004* mapper, bool active);
 
-  static void cb_endframe(void* self, PPU& ppu);
+  void scrollx_handler(u8 val);
+  void scrolly_handler(u8 val);
+
+  static void cb_frame_start(void* self);
+  static void cb_frame_end(void* self);
+
   static void cb_mapper_changed(void* self, Mapper* cart);
+
+  static void cb_scrollx_changed(void* self, u8 val);
+  static void cb_scrolly_changed(void* self, u8 val);
 
   static void cb_mmc3_irq(void* self, Mapper_004* mapper, bool active);
 
