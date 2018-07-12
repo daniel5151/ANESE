@@ -4,7 +4,8 @@
 
 #define CUTE_FILES_IMPLEMENTATION
 #include <cute_files.h>
-#include <SDL2_inprint.h>
+#include <SDL_inprint2.h>
+#include <SDL.h>
 
 #include "../fs/load.h"
 #include "../fs/util.h"
@@ -17,16 +18,17 @@ MenuModule::MenuModule(SharedState& gui, EmuModule& emu)
   strcpy(this->nav.directory, this->gui.config.roms_dir);
 
   // Setup SDL2_inprint font
-  SDL2_inprint::inrenderer(this->emu.sdl.renderer); // use NES's renderer
-  SDL2_inprint::prepare_inline_font();
+  this->inprint = new SDL2_inprint(this->emu.sdl.renderer);
 }
 
 MenuModule::~MenuModule() {
   // Update config
   ANESE_fs::util::get_abs_path(this->gui.config.roms_dir, this->nav.directory, 260);
 
-  SDL2_inprint::kill_inline_font();
+  delete this->inprint;
 
+  // unload ROM
+  this->unload_rom();
 }
 
 void MenuModule::input(const SDL_Event& event) {
@@ -199,16 +201,13 @@ void MenuModule::output() {
     else if (strcmp("zip", file.ext) == 0) color = 0x00ffff; // cyan  - .zip
     else                                   color = 0xffffff; // white - folder
 
-    SDL2_inprint::incolor(color, /* unused */ 0);
-    SDL2_inprint::inprint(this->emu.sdl.renderer, file.name,
-      10, this->bg.h / 2 + (i - this->nav.selected_i) * 12
-    );
+    this->inprint->set_color(color);
+    this->inprint->print(file.name, 10, this->bg.h / 2 + (i - this->nav.selected_i) * 12);
   }
 }
 
 int MenuModule::load_rom(const char* rompath) {
   // cleanup previous cart
-  delete this->gui.cart;
   for (uint i = 0; i < 4; i++) {
     delete this->emu.savestate[i];
     this->emu.savestate[i] = nullptr;
@@ -339,6 +338,8 @@ int MenuModule::unload_rom() {
   }
 
   this->gui.nes.removeCartridge();
+
+  delete this->gui.cart;
 
   return 0;
 }

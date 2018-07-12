@@ -35,8 +35,11 @@ u8 Mapper_004::read(u16 addr) {
         this->reg.irq_counter--;
       }
 
-      if (this->reg.irq_counter == 0 && this->reg.irq_enabled) {
-        this->irq_trigger();
+      if (this->reg.irq_counter == 0) {
+        if (this->reg.irq_enabled)
+          this->irq_trigger();
+
+        this->did_irq_callbacks.run(this, this->reg.irq_enabled);
       }
     }
     this->last_A12 = next;

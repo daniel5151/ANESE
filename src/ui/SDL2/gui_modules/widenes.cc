@@ -32,6 +32,8 @@ WideNESModule::WideNESModule(SharedState& gui)
   // Allow opacity
   SDL_SetRenderDrawBlendMode(this->sdl.renderer, SDL_BLENDMODE_BLEND);
 
+  this->sdl.inprint = new SDL2_inprint(this->sdl.renderer);
+
   // Make base NES screen
   this->nes_screen = new Tile(this->sdl.renderer, 0, 0);
 }
@@ -44,9 +46,11 @@ WideNESModule::~WideNESModule() {
     }
   }
 
+  /*------------------------------  SDL Cleanup  -----------------------------*/
+
   SDL_DestroyTexture(this->nes_screen->texture);
 
-  /*------------------------------  SDL Cleanup  -----------------------------*/
+  delete this->sdl.inprint;
 
   SDL_DestroyRenderer(this->sdl.renderer);
   SDL_DestroyWindow(this->sdl.window);
@@ -98,9 +102,11 @@ void WideNESModule::input(const SDL_Event& event) {
 }
 
 void WideNESModule::update() {
-  // nothing
-  // interesting updates happen in the frame callback
+  // nothing.
+  // updates happen in callbacks
 }
+
+/*----------------------------  Tile Definitions  ----------------------------*/
 
 WideNESModule::Tile::Tile(SDL_Renderer* renderer, int x, int y) {
   this->pos.x = x;
@@ -117,12 +123,17 @@ WideNESModule::Tile::~Tile() {
   SDL_DestroyTexture(this->texture);
 }
 
+/*-------------------------------  Callbacks  --------------------------------*/
+
 void WideNESModule::cb_mapper_changed(void* self, Mapper* mapper) {
-  if (mapper) mapper->irq_callbacks.add_cb(WideNESModule::cb_mapper_irq, self);
+  if (mapper && mapper->mapper_number() == 4) {
+    Mapper_004* mmc3 = static_cast<Mapper_004*>(mapper);
+    mmc3->did_irq_callbacks.add_cb(WideNESModule::cb_mmc3_irq, self);
+  }
 }
 
-void WideNESModule::cb_mapper_irq(void* self, Mapper* mapper) {
-  ((WideNESModule*)self)->update_padding(mapper);
+void WideNESModule::cb_mmc3_irq(void* self, Mapper_004* mmc3, bool active) {
+  ((WideNESModule*)self)->mmc3_irq_handler(mmc3, active);
 }
 
 void WideNESModule::cb_endframe(void* self, PPU& ppu) {
@@ -130,24 +141,15 @@ void WideNESModule::cb_endframe(void* self, PPU& ppu) {
   ((WideNESModule*)self)->sampleNES();
 }
 
-#include "nes/cartridge/mapper.h"
-#include "nes/cartridge/mappers/mapper_004.h"
+/*----------------------------  Callback Handlers  ---------------------------*/
 
-void WideNESModule::update_padding(Mapper* mapper) {
-  // if this was called from a mapper callback, only do mapper-based heuristics
-  if (mapper) {
-    // 1) when using a mapper with a scanline IRQ, detect what line the IRQ fires
-    //    on, and clip off everything past it. (e.g: smb3, kirby)
-    if (mapper && mapper->mapper_number() == 4) { // MMC3
-      const Mapper_004* mmc3 = static_cast<const Mapper_004*>(mapper);
-      this->heuristics.irq.on_scanline = mmc3->peek_irq_latch();
-    }
+void WideNESModule::mmc3_irq_handler(Mapper_004* mmc3, bool active) {
+  this->heuristics.irq.on_scanline = active
+    ? mmc3->peek_irq_latch()
+    : 239; // cancels out later, give 0 padding
+}
 
-    this->heuristics.irq.happened = true;
-    return;
-  }
-
-  // otherwise, do normal end-of-frame heuristics
+void WideNESModule::update_padding() {
   const PPU& ppu = this->gui.nes.debug_get.ppu();
 
   // 1) if the left-column bit is enabled, odds are the game is hiding visual
@@ -162,12 +164,12 @@ void WideNESModule::update_padding(Mapper* mapper) {
     this->pad.guess.r = 0;
   }
 
-  // 2) Only use the IRQ heuristic if the IRQ is being fired every-frame.
-  if (this->heuristics.irq.happened)
-    this->pad.guess.b = 239 - this->heuristics.irq.on_scanline;
-  this->heuristics.irq.happened = false;
+  // 2) Mappers sometimes use a scanline IRQ to split the screen, many times for
+  // making a static status bar at the bottom of the screen (kirby, smb3)
+  // TODO: make this more robut (i.e: check what PPU regs are written to in IRQ)
+  this->pad.guess.b = 239 - this->heuristics.irq.on_scanline;
 
-  // 2) vertically scrolling + vertical mirroring usually leads to artifacting
+  // 3) vertically scrolling + vertical mirroring usually leads to artifacting
   //    at the top of the screen
   // ??? not sure about this one...
 
@@ -186,7 +188,7 @@ void WideNESModule::sampleNES() {
   ppu.getFramebuff(framebuffer_true);
   SDL_UpdateTexture(nes_screen->texture, nullptr, framebuffer_true, 256 * 4);
 
-  this->update_padding(nullptr);
+  this->update_padding();
 
   // calculate the new scroll position
 
@@ -286,6 +288,8 @@ void WideNESModule::sampleNES() {
 #undef update_tile
 }
 
+/*---------------------------------  Output  ---------------------------------*/
+
 void WideNESModule::output() {
   // calculate origin (tile (0,0) / actual NES screen)
   const int nes_w = 256 * this->pan.zoom;
@@ -314,6 +318,11 @@ void WideNESModule::output() {
       SDL_RenderCopy(this->sdl.renderer, tile->texture, nullptr, &offset);
       SDL_SetRenderDrawColor(this->sdl.renderer, 0, 0xff, 0, 0xff);
       SDL_RenderDrawRect(this->sdl.renderer, &offset);
+
+      this->sdl.inprint->set_color(0xffffff);
+      char buf [64];
+      sprintf(buf, "(%d, %d)", tile->pos.x, tile->pos.y);
+      this->sdl.inprint->print(buf, offset.x + 8, offset.y + 8);
     }
   }
 
@@ -356,6 +365,17 @@ void WideNESModule::output() {
   // clipped-screen box
   SDL_SetRenderDrawColor(this->sdl.renderer, 0xff, 0xff, 0xff, 0xff);
   SDL_RenderDrawRect(this->sdl.renderer, &padded_origin);
+
+  // debug
+  this->sdl.inprint->set_color(0xffffff);
+  char buf [64];
+  sprintf(buf,
+    "scroll: %d, %d\n"
+    " delta: %d, %d\n",
+    this->scroll.x, this->scroll.y,
+    this->scroll.dx, this->scroll.dy
+  );
+  this->sdl.inprint->print(buf, 8, 8);
 
   SDL_RenderPresent(this->sdl.renderer);
 }

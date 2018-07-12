@@ -2,8 +2,9 @@
 
 #include <vector>
 
-#include <SDL.h>
 #include <cute_files.h>
+#include <SDL_inprint2.h>
+#include <SDL.h>
 
 #include "module.h"
 #include "emu.h"
@@ -13,6 +14,8 @@
 class MenuModule : public GUIModule {
 private:
   SDL_Rect bg;
+  SDL2_inprint* inprint;
+
   EmuModule& emu;
 
   char current_rom_file [256] = { 0 };

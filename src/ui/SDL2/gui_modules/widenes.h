@@ -1,22 +1,26 @@
 #pragma once
 
+#include <map>
+
 #include <SDL.h>
+#include <SDL_inprint2.h>
 
 #include "../config.h"
 #include "module.h"
 
 #include "emu.h"
 
+#include "nes/cartridge/mappers/mapper_004.h"
 #include "nes/ppu/ppu.h"
-
-#include <map>
 
 class WideNESModule : public GUIModule {
 private:
   struct {
     SDL_Window*   window   = nullptr;
     SDL_Renderer* renderer = nullptr;
+    SDL2_inprint* inprint  = nullptr;
   } sdl;
+
 
   struct Tile {
     struct {
@@ -75,11 +79,14 @@ private:
   } pan;
 
   void sampleNES();
-  void update_padding(Mapper* mapper);
+  void update_padding();
+
+  void mmc3_irq_handler(Mapper_004* mapper, bool active);
 
   static void cb_endframe(void* self, PPU& ppu);
-  static void cb_mapper_irq(void* self, Mapper* mapper);
   static void cb_mapper_changed(void* self, Mapper* cart);
+
+  static void cb_mmc3_irq(void* self, Mapper_004* mapper, bool active);
 
 public:
   virtual ~WideNESModule();

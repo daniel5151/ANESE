@@ -798,10 +798,10 @@ void PPU::cycle() {
   if (this->scan.cycle == 1) {
     // vblank start on line 241...
     if (this->scan.line == 241) {
+      this->endframe_callbacks.run(*this);
+
       // MAJOR KEY: The vblank flag is _always_ set!
       this->reg.ppustatus.V = true;
-
-      this->endframe_callbacks.run(*this);
 
       this->nmiChange(); // hack
       // Only the interrupt is affected by ppuctrl.V (not the flag!)

@@ -80,7 +80,7 @@ include_directories(${SDL2_INCLUDE_DIR})
 
 # ---- SDL_inprint ---- #
 include_directories(thirdparty/SDL_inprint)
-add_library(SDL_inprint STATIC thirdparty/SDL_inprint/inprint2.c)
+add_library(SDL_inprint STATIC thirdparty/SDL_inprint/SDL_inprint2.cc)
 
 # ---- SimpleINI ---- #
 include_directories(thirdparty/SimpleINI)

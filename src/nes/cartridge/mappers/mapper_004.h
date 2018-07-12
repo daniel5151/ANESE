@@ -3,6 +3,7 @@
 #include "nes/generic/ram/ram.h"
 #include "nes/generic/rom/rom.h"
 #include "common/bitfield.h"
+#include "common/callback_manager.h"
 #include "common/util.h"
 #include "../mapper.h"
 
@@ -166,7 +167,7 @@ public:
     this->prg_ram.deserialize(c);
   }
 
-  // debug
-  u8   peek_irq_latch()   const { return this->reg.irq_latch;   }
-  bool peek_irq_enabled() const { return this->reg.irq_enabled; }
+  u8 peek_irq_latch() const { return this->reg.irq_latch; }
+
+  CallbackManager<Mapper_004*, bool> did_irq_callbacks;
 };

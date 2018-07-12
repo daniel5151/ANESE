@@ -273,6 +273,7 @@ private:
   } zf_x, zf_y;
 public:
   Scroll get_scroll() const;
+  uint get_scanline() const { return this->scan.line; }
 
   CallbackManager<PPU&> endframe_callbacks;
 };
