@@ -3,12 +3,11 @@
 #include <cmath>
 #include <cstdio>
 
-WideNESModule::WideNESModule(const SDLCommon& sdl_common, Config& config, EmuModule& emu)
-: GUIModule(sdl_common, config)
-, emu(emu)
+WideNESModule::WideNESModule(SharedState& gui)
+: GUIModule(gui)
 {
-  emu.cart_changed_callbacks.add_cb(WideNESModule::cb_cart_changed, this);
-  emu.nes.debug_get.ppu().endframe_callbacks.add_cb(WideNESModule::cb_endframe, this);
+  gui.nes.cart_changed_callbacks.add_cb(WideNESModule::cb_mapper_changed, this);
+  gui.nes.debug_get.ppu().endframe_callbacks.add_cb(WideNESModule::cb_endframe, this);
 
   /*-------------------------------  SDL init  -------------------------------*/
 
@@ -18,8 +17,8 @@ WideNESModule::WideNESModule(const SDLCommon& sdl_common, Config& config, EmuMod
   this->sdl.window = SDL_CreateWindow(
     "anese",
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-    256 * this->config.window_scale * 2.25,
-    240 * this->config.window_scale * 2.25,
+    256 * this->gui.config.window_scale * 2.25,
+    240 * this->gui.config.window_scale * 2.25,
     SDL_WINDOW_RESIZABLE
   );
 
@@ -118,11 +117,8 @@ WideNESModule::Tile::~Tile() {
   SDL_DestroyTexture(this->texture);
 }
 
-void WideNESModule::cb_cart_changed(void* self, Cartridge* cart) {
-  if (cart) {
-    Mapper* mapper = cart->get_mapper();
-    mapper->irq_callbacks.add_cb(WideNESModule::cb_mapper_irq, self);
-  }
+void WideNESModule::cb_mapper_changed(void* self, Mapper* mapper) {
+  if (mapper) mapper->irq_callbacks.add_cb(WideNESModule::cb_mapper_irq, self);
 }
 
 void WideNESModule::cb_mapper_irq(void* self, Mapper* mapper) {
@@ -152,7 +148,7 @@ void WideNESModule::update_padding(Mapper* mapper) {
   }
 
   // otherwise, do normal end-of-frame heuristics
-  const PPU& ppu = this->emu.nes.debug_get.ppu();
+  const PPU& ppu = this->gui.nes.debug_get.ppu();
 
   // 1) if the left-column bit is enabled, odds are the game is hiding visual
   //    artifacts, so we can slice that bit off.
@@ -183,7 +179,7 @@ void WideNESModule::update_padding(Mapper* mapper) {
 }
 
 void WideNESModule::sampleNES() {
-  const PPU& ppu = this->emu.nes.debug_get.ppu();
+  const PPU& ppu = this->gui.nes.debug_get.ppu();
 
   // save copy of OG screen
   const u8* framebuffer_true;

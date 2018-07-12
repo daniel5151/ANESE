@@ -79,12 +79,11 @@ private:
 
   static void cb_endframe(void* self, PPU& ppu);
   static void cb_mapper_irq(void* self, Mapper* mapper);
-  static void cb_cart_changed(void* self, Cartridge* cart);
+  static void cb_mapper_changed(void* self, Mapper* cart);
 
-  EmuModule& emu;
 public:
   virtual ~WideNESModule();
-  WideNESModule(const SDLCommon& sdl_common, Config& config, EmuModule& emu);
+  WideNESModule(SharedState& gui);
 
   void input(const SDL_Event&) override;
   void update() override;

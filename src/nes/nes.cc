@@ -50,6 +50,8 @@ bool NES::loadCartridge(Mapper* cart) {
   this->cpu_mmu.loadCartridge(this->cart);
   this->ppu_mmu.loadCartridge(this->cart);
 
+  this->cart_changed_callbacks.run(this->cart);
+
   return true;
 }
 
@@ -60,6 +62,8 @@ void NES::removeCartridge() {
 
   this->cpu_mmu.removeCartridge();
   this->ppu_mmu.removeCartridge();
+
+  this->cart_changed_callbacks.run(nullptr);
 }
 
 void NES::attach_joy(uint port, Memory* joy) { this->joy.attach_joy(port, joy); }

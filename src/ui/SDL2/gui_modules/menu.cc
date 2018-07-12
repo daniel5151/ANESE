@@ -6,26 +6,27 @@
 #include <cute_files.h>
 #include <SDL2_inprint.h>
 
+#include "../fs/load.h"
 #include "../fs/util.h"
 
-MenuModule::~MenuModule() {
-  // Update config
-  ANESE_fs::util::get_abs_path(this->config.roms_dir, this->nav.directory, 260);
-
-  SDL2_inprint::kill_inline_font();
-
-}
-
-MenuModule::MenuModule(const SDLCommon& sdl_common, Config& config, EmuModule& emu)
-: GUIModule(sdl_common, config)
+MenuModule::MenuModule(SharedState& gui, EmuModule& emu)
+: GUIModule(gui)
 , emu(emu)
 {
   // Update from config
-  strcpy(this->nav.directory, this->config.roms_dir);
+  strcpy(this->nav.directory, this->gui.config.roms_dir);
 
   // Setup SDL2_inprint font
   SDL2_inprint::inrenderer(this->emu.sdl.renderer); // use NES's renderer
   SDL2_inprint::prepare_inline_font();
+}
+
+MenuModule::~MenuModule() {
+  // Update config
+  ANESE_fs::util::get_abs_path(this->gui.config.roms_dir, this->nav.directory, 260);
+
+  SDL2_inprint::kill_inline_font();
+
 }
 
 void MenuModule::input(const SDL_Event& event) {
@@ -90,8 +91,8 @@ void MenuModule::update() {
     } else {
       // Load-up ROM (and close menu)
       fprintf(stderr, "[Menu] Selected '%s'\n", file.name);
-      this->emu.unload_rom(this->emu.cart);
-      this->emu.load_rom(file.path);
+      this->unload_rom();
+      this->load_rom(file.path);
       this->in_menu = false;
     }
   }
@@ -160,14 +161,14 @@ void MenuModule::update() {
     this->nav.quicksel.timeout = 30;
 
     // buf[15] is always '\0'
-    this->nav.quicksel.buf[this->nav.quicksel.i++ % 15] = tolower(this->hit.last_ascii);
+    this->nav.quicksel.buf[this->nav.quicksel.i++ % 15] = ::tolower(this->hit.last_ascii);
 
     uint new_selection = std::distance(
       files.begin(),
       std::find_if(files.begin(), files.end(),
         [=](const cf_file_t& f){
           std::string fname = std::string(f.name).substr(0, this->nav.quicksel.i);
-          std::transform(fname.begin(), fname.end(), fname.begin(), tolower);
+          std::transform(fname.begin(), fname.end(), fname.begin(), ::tolower);
           return strcmp(fname.c_str(), this->nav.quicksel.buf) == 0;
         })
     );
@@ -179,6 +180,7 @@ void MenuModule::update() {
 }
 
 void MenuModule::output() {
+  if (!this->in_menu) return;
   // menu uses the EmuModule's rendering context
 
   // Paint transparent bg
@@ -202,4 +204,141 @@ void MenuModule::output() {
       10, this->bg.h / 2 + (i - this->nav.selected_i) * 12
     );
   }
+}
+
+int MenuModule::load_rom(const char* rompath) {
+  // cleanup previous cart
+  delete this->gui.cart;
+  for (uint i = 0; i < 4; i++) {
+    delete this->emu.savestate[i];
+    this->emu.savestate[i] = nullptr;
+  }
+
+  fprintf(stderr, "[Load] Loading '%s'\n", rompath);
+  Cartridge* cart = new Cartridge (ANESE_fs::load::load_rom_file(rompath));
+
+  switch (cart->status()) {
+  case Cartridge::Status::CART_BAD_DATA:
+    fprintf(stderr, "[Cart] ROM file could not be parsed!\n");
+    delete cart;
+    return 1;
+  case Cartridge::Status::CART_BAD_MAPPER:
+    fprintf(stderr, "[Cart] Mapper %u has not been implemented yet!\n",
+      cart->get_rom_file()->meta.mapper);
+    delete cart;
+    return 1;
+  case Cartridge::Status::CART_NO_ERROR:
+    fprintf(stderr, "[Cart] ROM file loaded successfully!\n");
+    strcpy(this->current_rom_file, rompath);
+    this->gui.cart = cart;
+    break;
+  }
+
+  // Try to load battery-backed save
+  if (!this->gui.config.cli.no_sav) {
+    u8* data = nullptr;
+    uint len = 0;
+    ANESE_fs::load::load_file((std::string(rompath) + ".sav").c_str(), data, len);
+
+    if (!data) fprintf(stderr, "[Savegame][Load] No save data found.\n");
+    else {
+      fprintf(stderr, "[Savegame][Load] Found save data.\n");
+      const Serializable::Chunk* sav = Serializable::Chunk::parse(data, len);
+      this->gui.cart->get_mapper()->setBatterySave(sav);
+    }
+
+    delete data;
+  }
+
+  // Try to load savestate
+  // kinda jank lol
+  if (!this->gui.config.cli.no_sav) {
+    u8* data = nullptr;
+    uint len = 0;
+    ANESE_fs::load::load_file((std::string(rompath) + ".state").c_str(), data, len);
+
+    u8* og_data = data;
+
+    if (!data) fprintf(stderr, "[Savegame][Load] No savestate data found.\n");
+    else {
+      fprintf(stderr, "[Savegame][Load] Found savestate data.\n");
+      for (const Serializable::Chunk*& savestate : this->emu.savestate) {
+        uint sav_len = ((uint*)data)[0];
+        data += sizeof(uint);
+        if (!sav_len) savestate = nullptr;
+        else {
+          savestate = Serializable::Chunk::parse(data, sav_len);
+          data += sav_len;
+        }
+      }
+    }
+
+    delete og_data;
+  }
+
+  // Slap a cartridge in!
+  this->gui.nes.loadCartridge(this->gui.cart->get_mapper());
+
+  // Power-cycle the NES
+  this->gui.nes.power_cycle();
+
+  return 0;
+}
+
+int MenuModule::unload_rom() {
+  if (!this->gui.cart) return 0;
+  fprintf(stderr, "[UnLoad] Unloading cart...\n");
+
+  // Save Battey-Backed RAM
+  if (this->gui.cart != nullptr && !this->gui.config.cli.no_sav) {
+    const Serializable::Chunk* sav = this->gui.cart->get_mapper()->getBatterySave();
+    if (sav) {
+      const u8* data;
+      uint len;
+      Serializable::Chunk::collate(data, len, sav);
+
+      char buf [256];
+      sprintf(buf, "%s.sav", this->current_rom_file);
+
+      FILE* sav_file = fopen(buf, "wb");
+      if (!sav_file) {
+        fprintf(stderr, "[Savegame][Save] Failed to open save file!\n");
+        return 1;
+      }
+
+      fwrite(data, 1, len, sav_file);
+      fclose(sav_file);
+      fprintf(stderr, "[Savegame][Save] Game saved to '%s'!\n", buf);
+
+      delete sav;
+    }
+  }
+
+  // Save Savestates
+  if (this->gui.cart != nullptr && !this->gui.config.cli.no_sav) {
+    char buf [256];
+    sprintf(buf, "%s.state", this->current_rom_file);
+    FILE* state_file = fopen(buf, "wb");
+    if (!state_file) {
+      fprintf(stderr, "[Savegame][Save] Failed to open savestate file!\n");
+      return 1;
+    }
+
+    // kinda jank lol
+    for (const Serializable::Chunk* savestate : this->emu.savestate) {
+      const u8* data;
+      uint len;
+      Serializable::Chunk::collate(data, len, savestate);
+
+      fwrite(&len, sizeof(uint), 1, state_file);
+      if (data) fwrite(data, 1, len, state_file);
+    }
+
+    fclose(state_file);
+    fprintf(stderr, "[Savegame][Save] Savestates saved to '%s'!\n", buf);
+  }
+
+  this->gui.nes.removeCartridge();
+
+  return 0;
 }

@@ -3,16 +3,16 @@
 #include "common/serializable.h"
 #include "common/util.h"
 
-#include "cartridge/mapper.h"
-#include "nes/generic/ram/ram.h"
-#include "joy/joy.h"
 #include "apu/apu.h"
+#include "cartridge/mapper.h"
 #include "cpu/cpu.h"
+#include "generic/ram/ram.h"
+#include "joy/joy.h"
 #include "ppu/dma.h"
 #include "ppu/ppu.h"
 #include "wiring/cpu_mmu.h"
-#include "wiring/ppu_mmu.h"
 #include "wiring/interrupt_lines.h"
+#include "wiring/ppu_mmu.h"
 
 #include "params.h"
 
@@ -103,4 +103,6 @@ public:
     NES* self;
     PPU& ppu() const { return self->ppu; }
   } debug_get { this };
+
+  CallbackManager<Mapper*> cart_changed_callbacks;
 };

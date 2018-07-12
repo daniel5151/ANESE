@@ -15,6 +15,8 @@ private:
   SDL_Rect bg;
   EmuModule& emu;
 
+  char current_rom_file [256] = { 0 };
+
 public:
   bool in_menu = true;
   struct {
@@ -36,11 +38,14 @@ public:
 
 public:
   virtual ~MenuModule();
-  MenuModule(const SDLCommon&, Config&, EmuModule&);
+  MenuModule(SharedState& gui, EmuModule& emu);
 
   void input(const SDL_Event&) override;
   void update() override;
   void output() override;
+
+  int load_rom(const char* rompath);
+  int unload_rom();
 
   uint get_window_id() override { return SDL_GetWindowID(this->emu.sdl.window); }
 };

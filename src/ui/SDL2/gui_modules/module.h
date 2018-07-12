@@ -1,21 +1,49 @@
 #pragma once
 
 #include <SDL.h>
+
 #include "../config.h"
 
-struct SDLCommon {
+#include "nes/cartridge/cartridge.h"
+#include "nes/nes.h"
+#include "nes/params.h"
+
+struct SDL_Common {
   SDL_GameController* controller = nullptr;
+};
+
+struct SharedState {
+  SDL_Common& sdl;
+
+  Config& config;
+
+  NES_Params& nes_params;
+  NES& nes;
+  Cartridge*& cart;
+
+  SharedState(
+    SDL_Common& sdl,
+    Config& config,
+    NES_Params& nes_params,
+    NES& nes,
+    Cartridge*& cart
+  )
+  : sdl(sdl)
+  , config(config)
+  , nes_params(nes_params)
+  , nes(nes)
+  , cart(cart)
+  {}
 };
 
 class GUIModule {
 protected:
-  const SDLCommon& sdl_common;
-  Config& config;
+  SharedState& gui;
+
 public:
   virtual ~GUIModule() = default;
-  GUIModule(const SDLCommon& sdl_common, Config& config)
-  : sdl_common(sdl_common)
-  , config(config)
+  GUIModule(SharedState& gui)
+  : gui(gui)
   {}
 
   virtual void input(const SDL_Event&) = 0;

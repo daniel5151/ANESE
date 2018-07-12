@@ -20,8 +20,6 @@
 class EmuModule : public GUIModule {
 public:
   struct {
-    const uint SAMPLE_RATE = 96000;
-
     SDL_Renderer* renderer = nullptr;
     SDL_Window*   window   = nullptr;
 
@@ -35,11 +33,6 @@ private:
   int speed_counter = 0;
 
 public:
-  NES_Params params;
-  NES nes;
-  char current_rom_file [256] = { 0 };
-  Cartridge* cart = nullptr;
-
   JOY_Standard joy_1 { "P1" };
   JOY_Standard joy_2 { "P2" };
   JOY_Zapper   zap_2 { "Z2" };
@@ -52,16 +45,11 @@ public:
 
 public:
   virtual ~EmuModule();
-  EmuModule(const SDLCommon& sdl_common, Config& config);
+  EmuModule(SharedState& gui);
 
   void input(const SDL_Event&) override;
   void update() override;
   void output() override;
 
   uint get_window_id() override { return SDL_GetWindowID(this->sdl.window); }
-
-  int load_rom(const char* rompath);
-  int unload_rom(Cartridge* cart);
-
-  CallbackManager<Cartridge*> cart_changed_callbacks;
 };
