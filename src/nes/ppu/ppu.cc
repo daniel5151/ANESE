@@ -18,10 +18,6 @@ PPU::PPU(
   fogleman_nmi_hack(params.ppu_timing_hack)
 {
   this->power_cycle();
-
-#ifdef DEBUG_PPU
-  this->init_debug_windows();
-#endif
 }
 
 void PPU::power_cycle() {
@@ -690,11 +686,7 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
 /*----------------------------  Core Render Loop  ----------------------------*/
 
 void PPU::cycle() {
-#ifdef DEBUG_PPU
-  this->update_debug_windows();
-#endif
-
-  // ---- Core Loop ---- //
+  this->callbacks.cycle_start.run();
 
   if (this->scan.line < 240 || this->scan.line == 261) {
     // Calculate Pixels
@@ -809,6 +801,7 @@ void PPU::cycle() {
 
   // Check to see if the cycle has finished
   if (this->scan.cycle > 340) {
+    this->callbacks.scanline.run();
     // update scanline tracking vars
     this->scan.cycle = 0;
     this->scan.line += 1;
@@ -820,6 +813,8 @@ void PPU::cycle() {
       this->frames++;
     }
   }
+
+  this->callbacks.cycle_end.run();
 }
 
 /*---------------------------------  Palette  --------------------------------*/

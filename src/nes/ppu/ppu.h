@@ -31,6 +31,8 @@ namespace PPURegisters {
 // _Should_ be cycle-accurate
 // http://wiki.nesdev.com/w/index.php/PPU_programmer_reference
 class PPU final : public Memory, public Serializable {
+  friend class PPUDebugModule;
+
 private:
 
   /*----------  "Hardware"  ----------*/
@@ -221,12 +223,6 @@ private:
 
   const bool& fogleman_nmi_hack;
 
-#ifdef DEBUG_PPU
-  // Implementation in debug.cc
-  void   init_debug_windows();
-  void update_debug_windows();
-#endif // DEBUG_PPU
-
   /*---------------  Public  --------------*/
 
 public:
@@ -250,19 +246,22 @@ public:
 
   void getFramebuffSpr(const u8*& framebuffer) const;
   void getFramebuffBgr(const u8*& framebuffer) const;
-
   void getFramebuff(const u8*& framebuffer) const;
+
   uint getNumFrames() const;
 
   // NES color palette (static, for the time being)
   static const Color palette [64];
 
-  /*---------------  wideNES  --------------*/
+  /*---------------  Debugging  --------------*/
 
 public:
   uint get_scanline() const { return this->scan.line; }
 
   struct {
+    CallbackManager<>   cycle_start;
+    CallbackManager<>   cycle_end;
+    CallbackManager<>   scanline;
     CallbackManager<>   frame_start;
     CallbackManager<>   frame_end;
     CallbackManager<u8> scrollx;

@@ -100,9 +100,6 @@ cmake ..
 msbuild anese.sln /p:Configuration=Release
 ```
 
-Note: If you're interested in looking under the hood of the PPU, you can pass
-the `-DDEBUG_PPU` flag to cmake and have ANESE display some PPU debug windows.
-
 ## Running
 
 ANESE opens to a directory-browser, from which ROMs can be launched.

@@ -32,6 +32,12 @@ void Config::load(int argc, char* argv[]) {
     | clara::Opt(this->cli.config_file, "path")
         ["--config"]
         ("Use custom config file")
+    | clara::Opt(this->cli.ppu_debug)
+        ["--ppu-debug"]
+        ("show ppu debug windows")
+    | clara::Opt(this->cli.widenes)
+        ["--widenes"]
+        ("enable wideNES")
     | clara::Arg(this->cli.rom, "rom")
         ("an iNES rom");
 

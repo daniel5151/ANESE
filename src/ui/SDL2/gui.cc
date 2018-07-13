@@ -36,9 +36,14 @@ SDL_GUI::SDL_GUI(int argc, char* argv[]) {
     this->cart
   );
 
-  this->emu     = new EmuModule(*this->shared);
-  this->widenes = new WideNESModule(*this->shared);
-  this->menu    = new MenuModule(*this->shared, *this->emu);
+  this->emu  = new EmuModule(*this->shared);
+  this->menu = new MenuModule(*this->shared, *this->emu);
+
+  if (this->config.cli.ppu_debug)
+    this->ppu_debug = new PPUDebugModule(*this->shared);
+
+  if (this->config.cli.widenes)
+    this->widenes = new WideNESModule(*this->shared);
 }
 
 SDL_GUI::~SDL_GUI() {
@@ -100,12 +105,15 @@ int SDL_GUI::run() {
         this->menu->input(event);
       }
 
-      if (event.window.windowID == this->widenes->get_window_id()) {
+      if (this->widenes && event.window.windowID == this->widenes->get_window_id()) {
         this->widenes->input(event);
         // send emulator actions too
         if (!this->menu->in_menu)
           this->emu->input(event);
       }
+
+      if (this->ppu_debug && event.window.windowID == this->ppu_debug->get_window_id())
+        this->ppu_debug->input(event);
     }
 
     // Calculate the number of frames to render
@@ -123,21 +131,23 @@ int SDL_GUI::run() {
       if (!this->menu->in_menu)
         this->nes->step_frame();
 
-      // Update modules each frame
+      // Update modules
 
       if (!this->menu->in_menu)
         this->emu->update();
       else
         this->menu->update();
 
-      this->widenes->update();
+      if (this->ppu_debug) this->ppu_debug->update();
+      if (this->widenes) this->widenes->update();
     }
 
     // Render stuff!
     this->emu->output();
     this->menu->output();
     SDL_RenderPresent(this->emu->sdl.renderer);
-    this->widenes->output(); // presents for itself
+    if (this->ppu_debug) this->ppu_debug->output(); // presents for itself
+    if (this->widenes) this->widenes->output(); // presents for itself
 
     // time how long all-that took
     time_ms frame_end_time = SDL_GetTicks();

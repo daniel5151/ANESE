@@ -7,6 +7,7 @@
 #include "gui_modules/emu.h"
 #include "gui_modules/menu.h"
 #include "gui_modules/widenes.h"
+#include "gui_modules/ppu_debug.h"
 
 #include "nes/cartridge/cartridge.h"
 #include "nes/nes.h"
@@ -33,9 +34,10 @@ private:
 
   /*----------  Modules  ----------*/
 
-  EmuModule*     emu     = nullptr;
-  WideNESModule* widenes = nullptr;
-  MenuModule*    menu    = nullptr;
+  EmuModule*      emu       = nullptr;
+  MenuModule*     menu      = nullptr;
+  PPUDebugModule* ppu_debug = nullptr;
+  WideNESModule*  widenes   = nullptr;
 
 private:
   void input_global(const SDL_Event&);

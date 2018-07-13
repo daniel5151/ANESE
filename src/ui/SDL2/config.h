@@ -29,6 +29,9 @@ public:
     bool no_sav  = false;
     bool ppu_timing_hack = false;
 
+    bool ppu_debug = false;
+    bool widenes = false;
+
     std::string record_fm2_path;
     std::string replay_fm2_path;
 

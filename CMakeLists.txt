@@ -61,11 +61,6 @@ if (NESTEST)
   target_compile_definitions(anese PRIVATE NESTEST)
 endif()
 
-option(DEBUG_PPU "Display PPU debug windows" OFF)
-if (DEBUG_PPU)
-  target_compile_definitions(anese PRIVATE DEBUG_PPU)
-endif()
-
 # And now, for some shit-tier dependency management
 
 # ---- header only libs ---- #
