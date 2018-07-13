@@ -6,22 +6,16 @@
 #include <SDL_inprint2.h>
 #include <SDL.h>
 
-#include "module.h"
-#include "emu.h"
+#include "submodule.h"
 
-#include "../config.h"
+#include "../../config.h"
 
-class MenuModule : public GUIModule {
+class MenuSubModule : public GUISubModule {
 private:
   SDL_Rect bg;
   SDL2_inprint* inprint;
 
-  EmuModule& emu;
-
-  char current_rom_file [256] = { 0 };
-
 public:
-  bool in_menu = true;
   struct {
     std::vector<cf_file_t> files;
     uint selected_i = 0;
@@ -40,15 +34,10 @@ public:
   } hit = {0, 0, 0, 0, 0, 0};
 
 public:
-  virtual ~MenuModule();
-  MenuModule(SharedState& gui, EmuModule& emu);
+  virtual ~MenuSubModule();
+  MenuSubModule(SharedState& gui, SDL_Renderer* renderer);
 
   void input(const SDL_Event&) override;
   void update() override;
   void output() override;
-
-  int load_rom(const char* rompath);
-  int unload_rom();
-
-  uint get_window_id() override { return SDL_GetWindowID(this->emu.sdl.window); }
 };

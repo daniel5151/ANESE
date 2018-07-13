@@ -87,7 +87,7 @@ struct PPUDebugModule::DebugPixelbuffWindow {
 };
 
 PPUDebugModule::PPUDebugModule(SharedState& gui) : GUIModule(gui) {
-  fprintf(stderr, "[GUI] Initializing PPU Debug Module\n");
+  fprintf(stderr, "[GUI][PPU Debug] Initializing...\n");
 
   // Pattern Table
   patt_t = new DebugPixelbuffWindow(
@@ -125,6 +125,8 @@ PPUDebugModule::PPUDebugModule(SharedState& gui) : GUIModule(gui) {
 }
 
 PPUDebugModule::~PPUDebugModule() {
+  fprintf(stderr, "[GUI][PPU Debug] Shutting down...\n");
+
   delete name_t;
   delete nes_palette;
   delete palette_t;
@@ -135,7 +137,7 @@ void PPUDebugModule::input(const SDL_Event& event) {
   if (event.type == SDL_KEYDOWN) {
     switch (event.key.keysym.sym) {
     case SDLK_SPACE: this->nametable = !this->nametable;          break;
-    case SDLK_DOWN:  if (this->scanline != 240) this->scanline++; break;
+    case SDLK_DOWN:  if (this->scanline != 239) this->scanline++; break;
     case SDLK_UP:    if (this->scanline !=   0) this->scanline--; break;
     }
   }

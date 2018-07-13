@@ -1,13 +1,13 @@
 #pragma once
 
+#include <vector>
+
 #include "config.h"
 
+#include "shared_state.h"
 #include "gui_modules/module.h"
 
 #include "gui_modules/emu.h"
-#include "gui_modules/menu.h"
-#include "gui_modules/widenes.h"
-#include "gui_modules/ppu_debug.h"
 
 #include "nes/cartridge/cartridge.h"
 #include "nes/nes.h"
@@ -18,6 +18,8 @@ private:
   bool running = true;
 
   /*----------  Shared State  ----------*/
+
+  GUIStatus status;
 
   Config config;
   SDL_Common sdl_common;
@@ -34,10 +36,8 @@ private:
 
   /*----------  Modules  ----------*/
 
-  EmuModule*      emu       = nullptr;
-  MenuModule*     menu      = nullptr;
-  PPUDebugModule* ppu_debug = nullptr;
-  WideNESModule*  widenes   = nullptr;
+  EmuModule* emu = nullptr;
+  std::vector<GUIModule*> modules;
 
 private:
   void input_global(const SDL_Event&);

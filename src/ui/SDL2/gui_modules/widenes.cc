@@ -15,7 +15,7 @@ WideNESModule::WideNESModule(SharedState& gui)
 
   /*-------------------------------  SDL init  -------------------------------*/
 
-  fprintf(stderr, "[SDL2] Initializing wideNES GUI\n");
+  fprintf(stderr, "[GUI][wideNES] Initializing...\n");
 
   // make window
   this->sdl.window = SDL_CreateWindow(
@@ -43,6 +43,8 @@ WideNESModule::WideNESModule(SharedState& gui)
 }
 
 WideNESModule::~WideNESModule() {
+  fprintf(stderr, "[GUI][wideNES] Shutting down...\n");
+
   for (auto col : this->tiles) {
     for (auto row : col.second) {
       const Tile* tile = row.second;

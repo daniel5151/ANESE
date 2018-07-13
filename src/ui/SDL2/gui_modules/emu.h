@@ -5,6 +5,8 @@
 
 #include "module.h"
 
+#include "submodules/menu.h"
+
 #include "common/callback_manager.h"
 
 #include "nes/cartridge/cartridge.h"
@@ -18,7 +20,7 @@
 #include "../util/Sound_Queue.h"
 
 class EmuModule : public GUIModule {
-public:
+private:
   struct {
     SDL_Renderer* renderer = nullptr;
     SDL_Window*   window   = nullptr;
@@ -29,10 +31,8 @@ public:
     Sound_Queue  sound_queue;
   } sdl;
 
-private:
   int speed_counter = 0;
 
-public:
   JOY_Standard joy_1 { "P1" };
   JOY_Standard joy_2 { "P2" };
   JOY_Zapper   zap_2 { "Z2" };
@@ -41,7 +41,7 @@ public:
   FM2_Replay fm2_replay;
   FM2_Record fm2_record;
 
-  const Serializable::Chunk* savestate [4] = { nullptr };
+  MenuSubModule* menu_submodule;
 
 public:
   virtual ~EmuModule();

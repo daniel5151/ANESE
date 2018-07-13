@@ -29,7 +29,7 @@ dependency free (aside from stdlib), making it easy to embed in other projects.
 ## WideNES
 
 **wideNES** is a novel technique that can automatically "map-out" levels and
-worlds in NES games. Check out the [wideNES Readme](/wideNES) for details.
+worlds in NES games. Check out the [wideNES Readme](/ANESE/wideNES) for details.
 
 A GIF is worth a 1000 words:
 

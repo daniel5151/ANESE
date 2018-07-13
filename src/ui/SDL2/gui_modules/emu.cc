@@ -10,7 +10,7 @@ EmuModule::EmuModule(SharedState& gui)
 {
   /*-------------------------------  SDL init  -------------------------------*/
 
-  fprintf(stderr, "[SDL2] Initializing ANESE core GUI\n");
+  fprintf(stderr, "[GUI][Emu] Initializing...\n");
 
   // make window
   this->sdl.window = SDL_CreateWindow(
@@ -61,7 +61,11 @@ EmuModule::EmuModule(SharedState& gui)
 
   this->sdl.sound_queue.init(this->gui.nes_params.apu_sample_rate);
 
-  /*----------  NES init  ----------*/
+  /*----------  Submodule Init  ----------*/
+
+  this->menu_submodule = new MenuSubModule(gui, this->sdl.renderer);
+
+  /*----------  NES Init  ----------*/
 
   this->gui.nes.attach_joy(0, &this->joy_1);
   this->gui.nes.attach_joy(1, &this->zap_2);
@@ -96,6 +100,10 @@ EmuModule::EmuModule(SharedState& gui)
 }
 
 EmuModule::~EmuModule() {
+  fprintf(stderr, "[GUI][Emu] Shutting down...\n");
+
+  delete this->menu_submodule;
+
   /*------------------------------  SDL Cleanup  -----------------------------*/
 
   SDL_DestroyTexture(this->sdl.screen_texture);
@@ -104,6 +112,9 @@ EmuModule::~EmuModule() {
 }
 
 void EmuModule::input(const SDL_Event& event) {
+  this->menu_submodule->input(event);
+  if (this->gui.status.in_menu) return;
+
   // Update from Controllers
   if (event.type == SDL_CONTROLLERBUTTONDOWN ||
       event.type == SDL_CONTROLLERBUTTONUP) {
@@ -219,11 +230,11 @@ void EmuModule::input(const SDL_Event& event) {
 
     // Meta Modified keys
     if (event.type == SDL_KEYDOWN && mod_ctrl) {
-      #define SAVESTATE(i) do {                               \
-        if (mod_shift) {                                      \
-          delete this->savestate[i];                          \
-          this->savestate[i] = this->gui.nes.serialize();     \
-        } else this->gui.nes.deserialize(this->savestate[i]); \
+      #define SAVESTATE(i) do {                                   \
+        if (mod_shift) {                                          \
+          delete this->gui.savestate[i];                          \
+          this->gui.savestate[i] = this->gui.nes.serialize();     \
+        } else this->gui.nes.deserialize(this->gui.savestate[i]); \
       } while(0);
 
       switch (event.key.keysym.sym) {
@@ -260,6 +271,9 @@ void EmuModule::input(const SDL_Event& event) {
 }
 
 void EmuModule::update() {
+  this->menu_submodule->update();
+  if (this->gui.status.in_menu) return;
+
   // log frame to fm2
   if (this->fm2_record.is_enabled())
     this->fm2_record.step_frame();
@@ -286,4 +300,14 @@ void EmuModule::output() {
   SDL_SetRenderDrawColor(this->sdl.renderer, 0, 0, 0, 0xff);
   SDL_RenderClear(this->sdl.renderer);
   SDL_RenderCopy(this->sdl.renderer, this->sdl.screen_texture, nullptr, &this->sdl.screen_rect);
+
+  this->menu_submodule->output();
+
+  SDL_RenderPresent(this->sdl.renderer);
+
+  // Present fups though the title of the main window
+  char window_title [64];
+  sprintf(window_title, "anese - %u fups - %u%% speed",
+    uint(this->gui.status.avg_fps), this->gui.nes_params.speed);
+  SDL_SetWindowTitle(this->sdl.window, window_title);
 }

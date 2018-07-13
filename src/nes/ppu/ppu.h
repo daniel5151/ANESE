@@ -31,10 +31,9 @@ namespace PPURegisters {
 // _Should_ be cycle-accurate
 // http://wiki.nesdev.com/w/index.php/PPU_programmer_reference
 class PPU final : public Memory, public Serializable {
-  friend class PPUDebugModule;
+  friend class PPUDebugModule; // TODO: expose more of PPU, this is ugly...
 
 private:
-
   /*----------  "Hardware"  ----------*/
   // In quotes because technically, these things aren't located on the PPU, but
   // by coupling them with the PPU, it makes the emulator code cleaner

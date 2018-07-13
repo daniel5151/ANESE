@@ -2,39 +2,7 @@
 
 #include <SDL.h>
 
-#include "../config.h"
-
-#include "nes/cartridge/cartridge.h"
-#include "nes/nes.h"
-#include "nes/params.h"
-
-struct SDL_Common {
-  SDL_GameController* controller = nullptr;
-};
-
-struct SharedState {
-  SDL_Common& sdl;
-
-  Config& config;
-
-  NES_Params& nes_params;
-  NES& nes;
-  Cartridge*& cart;
-
-  SharedState(
-    SDL_Common& sdl,
-    Config& config,
-    NES_Params& nes_params,
-    NES& nes,
-    Cartridge*& cart
-  )
-  : sdl(sdl)
-  , config(config)
-  , nes_params(nes_params)
-  , nes(nes)
-  , cart(cart)
-  {}
-};
+#include "../shared_state.h"
 
 class GUIModule {
 protected:
