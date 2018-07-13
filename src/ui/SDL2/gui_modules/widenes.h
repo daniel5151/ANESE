@@ -8,7 +8,7 @@
 #include "../config.h"
 #include "module.h"
 
-#include "emu.h"
+#include "submodules/menu.h"
 
 #include "nes/cartridge/mappers/mapper_004.h"
 #include "nes/ppu/ppu.h"
@@ -98,6 +98,8 @@ private:
   static void cb_scrolly_changed(void* self, u8 val);
 
   static void cb_mmc3_irq(void* self, Mapper_004* mapper, bool active);
+
+  MenuSubModule* menu_submodule;
 
 public:
   virtual ~WideNESModule();

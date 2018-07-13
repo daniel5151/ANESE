@@ -63,7 +63,7 @@ EmuModule::EmuModule(SharedState& gui)
 
   /*----------  Submodule Init  ----------*/
 
-  this->menu_submodule = new MenuSubModule(gui, this->sdl.renderer);
+  this->menu_submodule = new MenuSubModule(gui, this->sdl.window, this->sdl.renderer);
 
   /*----------  NES Init  ----------*/
 

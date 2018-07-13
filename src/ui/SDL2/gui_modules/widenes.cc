@@ -40,6 +40,9 @@ WideNESModule::WideNESModule(SharedState& gui)
 
   // Make base NES screen
   this->nes_screen = new Tile(this->sdl.renderer, 0, 0);
+
+  // make menu submodule
+  this->menu_submodule = new MenuSubModule(gui, this->sdl.window, this->sdl.renderer);
 }
 
 WideNESModule::~WideNESModule() {
@@ -63,6 +66,9 @@ WideNESModule::~WideNESModule() {
 }
 
 void WideNESModule::input(const SDL_Event& event) {
+  this->menu_submodule->input(event);
+  if (this->gui.status.in_menu) return;
+
   // Update from Mouse
   if (event.type == SDL_MOUSEBUTTONDOWN) {
     this->pan.last_mouse_pos.x = event.button.x;
@@ -114,7 +120,8 @@ void WideNESModule::input(const SDL_Event& event) {
 }
 
 void WideNESModule::update() {
-  // nothing.
+  this->menu_submodule->update();
+  // aside from that, nothing.
   // updates happen in callbacks
 }
 
@@ -423,6 +430,8 @@ void WideNESModule::output() {
     this->scroll.dx, this->scroll.dy
   );
   this->sdl.inprint->print(buf, 8, 8);
+
+  this->menu_submodule->output();
 
   SDL_RenderPresent(this->sdl.renderer);
 }

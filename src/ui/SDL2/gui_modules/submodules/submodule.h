@@ -7,12 +7,14 @@
 class GUISubModule {
 protected:
   SharedState& gui;
+  SDL_Window* window;
   SDL_Renderer* renderer;
 
 public:
   virtual ~GUISubModule() = default;
-  GUISubModule(SharedState& gui, SDL_Renderer* renderer)
+  GUISubModule(SharedState& gui, SDL_Window* window, SDL_Renderer* renderer)
   : gui(gui)
+  , window(window)
   , renderer(renderer)
   {}
 

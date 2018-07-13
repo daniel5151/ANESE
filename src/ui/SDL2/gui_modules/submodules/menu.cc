@@ -9,8 +9,8 @@
 
 #include "../../fs/util.h"
 
-MenuSubModule::MenuSubModule(SharedState& gui, SDL_Renderer* renderer)
-: GUISubModule(gui, renderer)
+MenuSubModule::MenuSubModule(SharedState& gui, SDL_Window* window, SDL_Renderer* renderer)
+: GUISubModule(gui, window, renderer)
 {
   fprintf(stderr, "[GUI][Menu] Initializing...\n");
 
@@ -192,6 +192,8 @@ void MenuSubModule::output() {
   // Paint transparent bg
   this->bg.x = this->bg.y = 0;
   SDL_RenderGetLogicalSize(this->renderer, &this->bg.w, &this->bg.h);
+  if (this->bg.w == 0 && this->bg.h == 0)
+    SDL_GetWindowSize(this->window, &this->bg.w, &this->bg.h);
   SDL_SetRenderDrawColor(this->renderer, 0, 0, 0, 200);
   SDL_RenderFillRect(this->renderer, &this->bg);
 

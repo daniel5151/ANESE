@@ -4,6 +4,7 @@
 
 #include "common/util.h"
 
+#include "gui_modules/emu.h"
 #include "gui_modules/widenes.h"
 #include "gui_modules/ppu_debug.h"
 

@@ -35,7 +35,7 @@ public:
 
 public:
   virtual ~MenuSubModule();
-  MenuSubModule(SharedState& gui, SDL_Renderer* renderer);
+  MenuSubModule(SharedState& gui, SDL_Window* window, SDL_Renderer* renderer);
 
   void input(const SDL_Event&) override;
   void update() override;
