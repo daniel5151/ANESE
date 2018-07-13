@@ -191,7 +191,7 @@ void MenuSubModule::output() {
 
   // Paint transparent bg
   this->bg.x = this->bg.y = 0;
-  SDL_GetRendererOutputSize(this->renderer, &this->bg.w, &this->bg.h);
+  SDL_RenderGetLogicalSize(this->renderer, &this->bg.w, &this->bg.h);
   SDL_SetRenderDrawColor(this->renderer, 0, 0, 0, 200);
   SDL_RenderFillRect(this->renderer, &this->bg);
 

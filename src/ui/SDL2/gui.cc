@@ -32,30 +32,28 @@ SDL_GUI::SDL_GUI(int argc, char* argv[]) {
 
   /*----------  Init GUI modules  ----------*/
   this->shared = new SharedState(
+    this->modules,
     this->status,
     this->sdl_common,
     this->config,
     this->nes_params,
-    *this->nes,
-    this->cart
+    *this->nes
   );
 
-  this->emu = new EmuModule(*this->shared);
-  this->modules.push_back(this->emu);
+  this->modules["emu"] = (GUIModule*)new EmuModule(*this->shared);
 
   if (this->config.cli.ppu_debug)
-    this->modules.push_back(new PPUDebugModule(*this->shared));
+    this->modules["ppu_debug"] = (GUIModule*)new PPUDebugModule(*this->shared);
 
   if (this->config.cli.widenes)
-    this->modules.push_back(new WideNESModule(*this->shared));
+    this->modules["widenes"] = (GUIModule*)new WideNESModule(*this->shared);
 }
 
 SDL_GUI::~SDL_GUI() {
   fprintf(stderr, "[SDL2] Stopping SDL2 GUI\n");
 
-  for (GUIModule* module : this->modules)
-    delete module;
-  delete this->emu;
+  for (auto& p : this->modules)
+    delete p.second;
 
   this->config.save();
 
@@ -101,13 +99,9 @@ int SDL_GUI::run() {
     while (SDL_PollEvent(&event) != 0) {
       this->input_global(event);
 
-      // TODO: always send input to emu window. this is ugly.
-      this->emu->input(event);
-      for (GUIModule* module : this->modules) {
-        if (module == this->emu) continue;
-
-        if (event.window.windowID == module->get_window_id())
-          module->input(event);
+      for (auto& p : this->modules) {
+        if (event.window.windowID == p.second->get_window_id())
+          p.second->input(event);
       }
     }
 
@@ -127,13 +121,13 @@ int SDL_GUI::run() {
         this->nes->step_frame();
 
       // Update modules
-      for (GUIModule* module : this->modules)
-        module->update();
+      for (auto& p : this->modules)
+        p.second->update();
     }
 
     // Render stuff!
-    for (GUIModule* module : this->modules)
-      module->output();
+    for (auto& p : this->modules)
+      p.second->output();
 
     // time how long all-that took
     time_ms frame_end_time = SDL_GetTicks();

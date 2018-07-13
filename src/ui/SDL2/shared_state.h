@@ -10,6 +10,8 @@
 #include "nes/nes.h"
 #include "nes/params.h"
 
+class GUIModule;
+
 struct SDL_Common {
   SDL_GameController* controller = nullptr;
 };
@@ -20,16 +22,14 @@ struct GUIStatus {
 };
 
 struct SharedState {
+  const std::map<std::string, GUIModule*>& modules;
   GUIStatus& status;
-
   SDL_Common& sdl;
-
   Config& config;
-
   NES_Params& nes_params;
   NES& nes;
-  Cartridge*& cart;
 
+  Cartridge* cart = nullptr;
   const Serializable::Chunk* savestate [4] = { nullptr };
 
   std::string current_rom_file;
@@ -37,18 +37,18 @@ struct SharedState {
   int unload_rom();
 
   SharedState(
+    const std::map<std::string, GUIModule*>& modules,
     GUIStatus& status,
     SDL_Common& sdl,
     Config& config,
     NES_Params& nes_params,
-    NES& nes,
-    Cartridge*& cart
+    NES& nes
   )
-  : status(status)
+  : modules(modules)
+  , status(status)
   , sdl(sdl)
   , config(config)
   , nes_params(nes_params)
   , nes(nes)
-  , cart(cart)
   {}
 };

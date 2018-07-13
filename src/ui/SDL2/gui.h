@@ -1,13 +1,12 @@
 #pragma once
 
 #include <vector>
+#include <map>
 
 #include "config.h"
 
 #include "shared_state.h"
 #include "gui_modules/module.h"
-
-#include "gui_modules/emu.h"
 
 #include "nes/cartridge/cartridge.h"
 #include "nes/nes.h"
@@ -19,25 +18,19 @@ private:
 
   /*----------  Shared State  ----------*/
 
+  std::map<std::string, GUIModule*> modules;
   GUIStatus status;
-
   Config config;
   SDL_Common sdl_common;
-
   NES_Params nes_params;
   NES* nes; // never null
-  Cartridge* cart = nullptr;
 
-  SharedState* shared; // passed to modules
+  SharedState* shared; // passed to evey module
 
   /*----------  NES Support  ----------*/
 
   int speed_counter = 0;
 
-  /*----------  Modules  ----------*/
-
-  EmuModule* emu = nullptr;
-  std::vector<GUIModule*> modules;
 
 private:
   void input_global(const SDL_Event&);

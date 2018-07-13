@@ -92,9 +92,12 @@ void WideNESModule::input(const SDL_Event& event) {
     }
   }
 
+  bool forward_to_emu_module = true;
+
   if (event.type == SDL_KEYDOWN) {
     bool mod_shift = event.key.keysym.mod & KMOD_SHIFT;
     switch (event.key.keysym.sym) {
+    case SDLK_ESCAPE: forward_to_emu_module = false; break;
     case SDLK_e: this->pad.offset.t += mod_shift ? 1 : 8; break;
     case SDLK_3: this->pad.offset.t -= mod_shift ? 1 : 8; break;
     case SDLK_d: this->pad.offset.b += mod_shift ? 1 : 8; break;
@@ -105,6 +108,9 @@ void WideNESModule::input(const SDL_Event& event) {
     case SDLK_g: this->pad.offset.r -= mod_shift ? 1 : 8; break;
     }
   }
+
+  if (forward_to_emu_module)
+    this->gui.modules.at("emu")->input(event);
 }
 
 void WideNESModule::update() {
