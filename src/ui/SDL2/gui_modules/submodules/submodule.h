@@ -16,7 +16,7 @@ public:
   , renderer(renderer)
   {}
 
-  virtual void input(const SDL_Event&);
-  virtual void update();
-  virtual void output();
+  virtual void input(const SDL_Event&) = 0;
+  virtual void update() = 0;
+  virtual void output() = 0;
 };
