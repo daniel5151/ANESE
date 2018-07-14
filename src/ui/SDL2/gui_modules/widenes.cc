@@ -193,7 +193,7 @@ void WideNESModule::ppu_frame_end_handler() {
 
   // save copy of OG screen
   const u8* framebuffer_true;
-  ppu.getFramebuff(framebuffer_true);
+  ppu.getFramebuff(&framebuffer_true);
   SDL_UpdateTexture(nes_screen->texture, nullptr, framebuffer_true, 256 * 4);
 
   // update padding / scroll registers (based on heuristics)
@@ -285,7 +285,7 @@ void WideNESModule::ppu_frame_end_handler() {
 
   // use the background framebuffer (sprites leave artifacts)
   const u8* framebuffer;
-  ppu.getFramebuffBgr(framebuffer);
+  ppu.getFramebuffBgr(&framebuffer);
 
 #define update_tile(px,py,w,h,dx,dy,sx,sy)                                \
   if ((this->tiles.count(px) && this->tiles[px].count(py)) == false) {    \

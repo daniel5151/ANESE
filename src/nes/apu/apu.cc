@@ -561,10 +561,10 @@ void APU::cycle() {
   }
 }
 
-void APU::getAudiobuff(float*& samples, uint& len) {
-  // fprintf(stderr, "%u\n", this->audiobuff.i);
-  samples = this->audiobuff.data;
-  len = this->audiobuff.i;
+void APU::getAudiobuff(float** samples, uint* len) {
+  if (samples == nullptr || len == nullptr) return;
+  *samples = this->audiobuff.data;
+  *len = this->audiobuff.i;
   this->audiobuff.i = 0;
 }
 

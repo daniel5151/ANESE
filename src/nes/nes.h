@@ -93,8 +93,8 @@ public:
   void cycle();      // Run a single clock cycle
   void step_frame(); // Cycle the NES until there is a new frame to display
 
-  void getFramebuff(const u8*& framebuffer) const;
-  void getAudiobuff(float*& samples, uint& len);
+  void getFramebuff(const u8** framebuffer) const;
+  void getAudiobuff(float** samples, uint* len);
 
   bool isRunning() const { return this->is_running; }
 

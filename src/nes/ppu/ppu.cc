@@ -81,9 +81,9 @@ void PPU::nmiChange() { // hack
 
 uint PPU::getNumFrames() const { return this->frames; }
 
-void PPU::getFramebuff   (const u8*& fb) const { fb = this->framebuffer;     }
-void PPU::getFramebuffSpr(const u8*& fb) const { fb = this->framebuffer_spr; }
-void PPU::getFramebuffBgr(const u8*& fb) const { fb = this->framebuffer_bgr; }
+void PPU::getFramebuff   (const u8** fb) const { if (fb) *fb = this->framebuffer;     }
+void PPU::getFramebuffSpr(const u8** fb) const { if (fb) *fb = this->framebuffer_spr; }
+void PPU::getFramebuffBgr(const u8** fb) const { if (fb) *fb = this->framebuffer_bgr; }
 
 /*----------------------------  Memory Interface  ----------------------------*/
 
@@ -567,7 +567,11 @@ PPU::Pixel PPU::get_bgr_pixel() {
   if (this->reg.ppumask.b == false || this->scan.line >= 240)
     return Pixel();
 
-  return Pixel { pixel_type != 0, this->mem[0x3F00 + palette * 4 + pixel_type], 0 };
+  return Pixel {
+    pixel_type != 0,
+    this->mem[0x3F00 + palette * 4 + pixel_type],
+    0
+  };
 }
 
 // TODO: make this more "hardware" accurate.

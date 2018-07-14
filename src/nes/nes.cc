@@ -147,10 +147,10 @@ void NES::step_frame() {
   }
 }
 
-void NES::getFramebuff(const u8*& framebuffer) const {
+void NES::getFramebuff(const u8** framebuffer) const {
   this->ppu.getFramebuff(framebuffer);
 }
 
-void NES::getAudiobuff(float*& samples, uint& len) {
+void NES::getAudiobuff(float** samples, uint* len) {
   this->apu.getAudiobuff(samples, len);
 }

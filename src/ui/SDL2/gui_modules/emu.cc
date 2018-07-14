@@ -287,13 +287,13 @@ void EmuModule::output() {
   // output audio!
   float* samples = nullptr;
   uint   count = 0;
-  this->gui.nes.getAudiobuff(samples, count);
+  this->gui.nes.getAudiobuff(&samples, &count);
   // SDL_QueueAudio(this->gui.sdl.nes_audiodev, samples, count * sizeof(float));
   if (count) this->sdl.sound_queue.write(samples, count);
 
   // output video!
   const u8* framebuffer;
-  this->gui.nes.getFramebuff(framebuffer);
+  this->gui.nes.getFramebuff(&framebuffer);
   SDL_UpdateTexture(this->sdl.screen_texture, nullptr, framebuffer, 256 * 4);
 
   // actual NES screen

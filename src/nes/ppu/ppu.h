@@ -242,9 +242,9 @@ public:
 
   void cycle();
 
-  void getFramebuffSpr(const u8*& framebuffer) const;
-  void getFramebuffBgr(const u8*& framebuffer) const;
-  void getFramebuff(const u8*& framebuffer) const;
+  void getFramebuffSpr(const u8** framebuffer) const;
+  void getFramebuffBgr(const u8** framebuffer) const;
+  void getFramebuff   (const u8** framebuffer) const;
 
   uint getNumFrames() const;
 
