@@ -31,8 +31,6 @@ namespace PPURegisters {
 // _Should_ be cycle-accurate
 // http://wiki.nesdev.com/w/index.php/PPU_programmer_reference
 class PPU final : public Memory, public Serializable {
-  friend class PPUDebugModule; // TODO: expose more of PPU, this is ugly...
-
 private:
   /*----------  "Hardware"  ----------*/
   // In quotes because technically, these things aren't located on the PPU, but
@@ -84,13 +82,10 @@ private:
 
   u8 cpu_data_bus; // PPU <-> CPU data bus (filled on any register write)
 
-  bool odd_frame_latch;
-  bool latch; // Controls which byte to write to in PPUADDR and PPUSCROLL
-              // 0 = write to hi, 1 = write to lo
+  // ---- Registers ---- //
 
-  // ---- Memory Mapped Registers ---- //
-
-  struct { // Registers
+public:
+  struct Registers {
     // PPUCTRL - 0x2000 - PPU control register
     union {
       u8 raw;
@@ -148,7 +143,6 @@ private:
       BitField<10, 2> nametable;
       BitField<12, 3> fine_y;
     } v, t;
-
     // v is the true vram address
     // t is the temp vram address
 
@@ -156,7 +150,14 @@ private:
       u8 _x_val;
       BitField<0, 3> x; // fine x-scroll register
     };
-  } reg;
+
+    bool odd_frame_latch;
+    bool scroll_latch; // Which byte to write to in PPUADDR and PPUSCROLL
+                       // 0 = write to hi, 1 = write to lo
+  };
+
+private:
+  Registers reg;
 
   // What about OAMDMA - 0x4014 - PPU DMA register?
   //
@@ -185,11 +186,6 @@ private:
 
   /*----  Emulation Vars and Methods  ----*/
 
-  // fogleman NMI hack - gets some games to boot (eg: Bad Dudes)
-  int nmi_delay;
-  int nmi_previous;
-  void nmiChange();
-
   // framebuffers
   u8 framebuffer     [240 * 256 * 4] = {0};
   u8 framebuffer_spr [240 * 256 * 4] = {0};
@@ -204,21 +200,24 @@ private:
   uint cycles; // total PPU cycles
   uint frames; // total frames rendered
 
-  SERIALIZE_START(11, "PPU")
+  SERIALIZE_START(9, "PPU")
     SERIALIZE_SERIALIZABLE(oam)
     SERIALIZE_SERIALIZABLE(oam2)
     SERIALIZE_POD(spr)
     SERIALIZE_POD(bgr)
     SERIALIZE_POD(cpu_data_bus)
-    SERIALIZE_POD(odd_frame_latch)
-    SERIALIZE_POD(latch)
     SERIALIZE_POD(reg)
     SERIALIZE_POD(scan)
     SERIALIZE_POD(cycles)
     SERIALIZE_POD(frames)
-  SERIALIZE_END(11)
+  SERIALIZE_END(9)
 
   /*---------------  Hacks  --------------*/
+
+  // fogleman NMI hack - gets some games to boot (eg: Bad Dudes)
+  int nmi_delay;
+  int nmi_previous;
+  void nmiChange();
 
   const bool& fogleman_nmi_hack;
 
@@ -252,18 +251,24 @@ public:
   // NES color palette (static, for the time being)
   static const Color palette [64];
 
-  /*---------------  Debugging  --------------*/
+  /*---------------  Debugging / Instrumentation  --------------*/
 
 public:
-  uint get_scanline() const { return this->scan.line; }
+  uint             _scancycle() const { return this->scan.cycle; }
+  uint             _scanline()  const { return this->scan.line;  }
+  Memory&          _mem()             { return this->mem;        }
+  const Memory&    _mem()       const { return this->mem;        }
+  const Registers& _reg()       const { return this->reg;        }
 
   struct {
-    CallbackManager<>   cycle_start;
-    CallbackManager<>   cycle_end;
-    CallbackManager<>   scanline;
-    CallbackManager<>   frame_start;
-    CallbackManager<>   frame_end;
-    CallbackManager<u8> scrollx;
-    CallbackManager<u8> scrolly;
-  } callbacks;
+    CallbackManager<> cycle_start;
+    CallbackManager<> cycle_end;
+    CallbackManager<> scanline;
+    CallbackManager<> frame_start;
+    CallbackManager<> frame_end;
+    CallbackManager<u16>     read_start;
+    CallbackManager<u16, u8> read_end;
+    CallbackManager<u16, u8> write_start;
+    CallbackManager<u16, u8> write_end;
+  } _callbacks;
 };

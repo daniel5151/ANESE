@@ -7,11 +7,9 @@ WideNESModule::WideNESModule(SharedState& gui)
 : GUIModule(gui)
 {
   // register callbacks
-  gui.nes.cart_changed_callbacks.add_cb(WideNESModule::cb_mapper_changed, this);
-  gui.nes.debug_get.ppu().callbacks.frame_start.add_cb(WideNESModule::cb_frame_start, this);
-  gui.nes.debug_get.ppu().callbacks.frame_end.add_cb(WideNESModule::cb_frame_end, this);
-  gui.nes.debug_get.ppu().callbacks.scrollx.add_cb(WideNESModule::cb_scrollx_changed, this);
-  gui.nes.debug_get.ppu().callbacks.scrolly.add_cb(WideNESModule::cb_scrolly_changed, this);
+  gui.nes._callbacks.cart_changed.add_cb(WideNESModule::cb_mapper_changed, this);
+  gui.nes._ppu()._callbacks.frame_end.add_cb(WideNESModule::cb_ppu_frame_end, this);
+  gui.nes._ppu()._callbacks.write_start.add_cb(WideNESModule::cb_ppu_write_start, this);
 
   /*-------------------------------  SDL init  -------------------------------*/
 
@@ -144,12 +142,8 @@ WideNESModule::Tile::~Tile() {
 
 /*-------------------------------  Callbacks  --------------------------------*/
 
-void WideNESModule::cb_scrollx_changed(void* self, u8 val) {
-  ((WideNESModule*)self)->scrollx_handler(val);
-}
-
-void WideNESModule::cb_scrolly_changed(void* self, u8 val) {
-  ((WideNESModule*)self)->scrolly_handler(val);
+void WideNESModule::cb_ppu_write_start(void* self, u16 addr, u8 val) {
+  ((WideNESModule*)self)->ppu_write_start_handler(addr, val);
 }
 
 void WideNESModule::cb_mapper_changed(void* self, Mapper* mapper) {
@@ -163,22 +157,26 @@ void WideNESModule::cb_mmc3_irq(void* self, Mapper_004* mmc3, bool active) {
   ((WideNESModule*)self)->mmc3_irq_handler(mmc3, active);
 }
 
-void WideNESModule::cb_frame_end(void* self) {
-  ((WideNESModule*)self)->frame_end_handler();
-}
-
-void WideNESModule::cb_frame_start(void* self) {
-  ((WideNESModule*)self)->frame_start_handler();
+void WideNESModule::cb_ppu_frame_end(void* self) {
+  ((WideNESModule*)self)->ppu_frame_end_handler();
 }
 
 /*----------------------------  Callback Handlers  ---------------------------*/
 
-void WideNESModule::scrollx_handler(u8 val) {
-  this->curr_scroll.x = val;
-}
+#include "nes/ppu/ppu.h"
 
-void WideNESModule::scrolly_handler(u8 val) {
-  this->curr_scroll.y = val;
+void WideNESModule::ppu_write_start_handler(u16 addr, u8 val) {
+  const PPU& ppu = this->gui.nes._ppu();
+  const PPU::Registers& ppu_reg = ppu._reg();
+
+  using namespace PPURegisters;
+
+  switch (addr) {
+  case PPUSCROLL: {
+    if (ppu_reg.scroll_latch == 0) this->curr_scroll.x = val;
+    if (ppu_reg.scroll_latch == 1) this->curr_scroll.y = val;
+  }
+  }
 }
 
 void WideNESModule::mmc3_irq_handler(Mapper_004* mmc3, bool active) {
@@ -190,12 +188,8 @@ void WideNESModule::mmc3_irq_handler(Mapper_004* mmc3, bool active) {
     : 239; // cancels out later, give 0 padding
 }
 
-void WideNESModule::frame_start_handler() {
-  // nothing for now...
-}
-
-void WideNESModule::frame_end_handler() {
-  const PPU& ppu = this->gui.nes.debug_get.ppu();
+void WideNESModule::ppu_frame_end_handler() {
+  const PPU& ppu = this->gui.nes._ppu();
 
   // save copy of OG screen
   const u8* framebuffer_true;

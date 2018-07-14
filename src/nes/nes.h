@@ -98,11 +98,13 @@ public:
 
   bool isRunning() const { return this->is_running; }
 
-  /*-----------  debug hooks  ------------*/
-  struct {
-    NES* self;
-    PPU& ppu() const { return self->ppu; }
-  } debug_get { this };
+  /*---------------  Debugging / Instrumentation  --------------*/
 
-  CallbackManager<Mapper*> cart_changed_callbacks;
+  APU& _apu() { return this->apu; }
+  CPU& _cpu() { return this->cpu; }
+  PPU& _ppu() { return this->ppu; }
+
+  struct {
+    CallbackManager<Mapper*> cart_changed;
+  } _callbacks;
 };

@@ -29,9 +29,6 @@ void PPU::power_cycle() {
 
   this->cpu_data_bus = 0x00;
 
-  this->odd_frame_latch = 0; // ?
-  this->latch = 0;
-
   memset(&this->bgr, 0, sizeof this->bgr);
   memset(&this->spr, 0, sizeof this->spr);
 
@@ -59,8 +56,8 @@ void PPU::reset() {
   // this->reg.oamaddr   is unchanged
   // this->reg.oamdata   is unchanged?
 
-  this->odd_frame_latch = 0; // ?
-  this->latch = 0;
+  this->reg.odd_frame_latch = 0; // ?
+  this->reg.scroll_latch = 0;
   // this->reg.v is unchanged
   // this->reg.t is unchanged?
   // this->reg.x is unchanged?
@@ -83,22 +80,17 @@ void PPU::nmiChange() { // hack
 /*--------------------------  Framebuffer Methods  ---------------------------*/
 
 uint PPU::getNumFrames() const { return this->frames; }
-void PPU::getFramebuff(const u8*& framebuffer) const {
-  framebuffer = this->framebuffer;
-}
 
-void PPU::getFramebuffSpr(const u8*& framebuffer) const {
-  framebuffer = this->framebuffer_spr;
-}
-
-void PPU::getFramebuffBgr(const u8*& framebuffer) const {
-  framebuffer = this->framebuffer_bgr;
-}
+void PPU::getFramebuff   (const u8*& fb) const { fb = this->framebuffer;     }
+void PPU::getFramebuffSpr(const u8*& fb) const { fb = this->framebuffer_spr; }
+void PPU::getFramebuffBgr(const u8*& fb) const { fb = this->framebuffer_bgr; }
 
 /*----------------------------  Memory Interface  ----------------------------*/
 
 u8 PPU::read(u16 addr) {
   assert((addr >= 0x2000 && addr <= 0x2007) || addr == 0x4014);
+
+  _callbacks.read_start.run(addr);
 
   using namespace PPURegisters;
 
@@ -112,7 +104,7 @@ u8 PPU::read(u16 addr) {
                            | (this->cpu_data_bus      & 0x1F);
                     this->reg.ppustatus.V = false;
                     this->nmiChange(); // hack
-                    this->latch = false;
+                    this->reg.scroll_latch = false;
   /*   0x2004  */ } break;
   case OAMDATA:   { // Extra logic for handling reads during sprite evaluation
                     // https://wiki.nesdev.com/w/index.php/PPU_sprite_evaluation
@@ -157,6 +149,8 @@ u8 PPU::read(u16 addr) {
                     // );
                   } break;
   }
+
+  _callbacks.read_end.run(addr, retval);
 
   return retval;
 }
@@ -210,12 +204,9 @@ u8 PPU::peek(u16 addr) const {
 }
 
 void PPU::write(u16 addr, u8 val) {
-   //if (!this->reg.ppustatus.V) {
-   //  fprintf(stderr, "wr to 0x%04X outside of vblank, at %d : %d\n", addr, this->scan.line, this->scan.cycle);
-   //  this->draw_dot(Color(0x00FF00));
-   //}
-
   assert((addr >= 0x2000 && addr <= 0x2007) || addr == 0x4014);
+
+  _callbacks.write_start.run(addr, val);
 
   using namespace PPURegisters;
 
@@ -249,50 +240,46 @@ void PPU::write(u16 addr, u8 val) {
                     this->nmiChange(); // hack
                     // t: ....BA.. ........ = d: ......BA
                     this->reg.t.nametable = val & 0x03;
-  /*   0x2001  */ } return;
+  /*   0x2001  */ } break;
   case PPUMASK:   { this->reg.ppumask.raw = val;
-  /*   0x2002  */ } return;
+  /*   0x2002  */ } break;
   case PPUSTATUS: { fprintf(stderr, "[PPU] Write to PPUSTATUS is undefined!\n");
-  /*   0x2003  */ } return;
+  /*   0x2003  */ } break;
   case OAMADDR:   { this->reg.oamaddr = val;
-  /*   0x2004  */ } return;
+  /*   0x2004  */ } break;
   case OAMDATA:   { this->oam[this->reg.oamaddr++] = val;
-  /*   0x2005  */ } return;
-  case PPUSCROLL: { if (this->latch == 0) {
+  /*   0x2005  */ } break;
+  case PPUSCROLL: { if (this->reg.scroll_latch == 0) {
                       // t: ........ ...HGFED = d: HGFED...
                       this->reg.t.coarse_x = val >> 3;
                       // x:               CBA = d: .....CBA
                       this->reg.x = val & 0x07;
-
-                      this->callbacks.scrollx.run(val); // wideNES
                     }
-                    if (this->latch == 1) {
+                    if (this->reg.scroll_latch == 1) {
                       // t: .CBA..HG FED..... = d: HGFEDCBA
                       this->reg.t.coarse_y = val >> 3;
                       this->reg.t.fine_y   = val & 0x07;
-
-                      this->callbacks.scrolly.run(val); // wideNES
                     }
-                    this->latch = !this->latch;
-  /*   0x2006  */ } return;
-  case PPUADDR:   { if (this->latch == 0) {
+                    this->reg.scroll_latch = !this->reg.scroll_latch;
+  /*   0x2006  */ } break;
+  case PPUADDR:   { if (this->reg.scroll_latch == 0) {
                       // t: ..FEDCBA ........ = d: ..FEDCBA
                       // t: .X...... ........ = 0
                       this->reg.t.hi = val & 0x3F;
                     }
-                    if (this->latch == 1) {
+                    if (this->reg.scroll_latch == 1) {
                       // t: ........ HGFEDCBA = d: HGFEDCBA
                       this->reg.t.lo = val;
                       // v                    = t
                       this->reg.v.val = this->reg.t.val;
                     }
-                    this->latch = !this->latch;
-  /*   0x2007  */ } return;
+                    this->reg.scroll_latch = !this->reg.scroll_latch;
+  /*   0x2007  */ } break;
   case PPUDATA:   { this->mem[this->reg.v.val] = val;
                     // (0: add 1, going across; 1: add 32, going down)
                     if (this->reg.ppuctrl.I == 0) this->reg.v.val += 1;
                     if (this->reg.ppuctrl.I == 1) this->reg.v.val += 32;
-  /*   0x4014  */ } return;
+  /*   0x4014  */ } break;
   case OAMDMA:    { // The CPU stalls during DMA, but the PPU keeps running!
                     // DMA takes 513 / 514 CPU cycles:
                     #define CPU_CYCLE() \
@@ -312,14 +299,16 @@ void PPU::write(u16 addr, u8 val) {
                       this->oam[this->reg.oamaddr++] = cpu_val; CPU_CYCLE();
                     }
                     #undef CPU_CYCLE
-                  } return;
+                  } break;
   default:        { fprintf(stderr,
                       "[PPU] Unhandled Write to addr: 0x%04X\n <- 0x%02X",
                       addr,
                       val
                     );
-                  } return;
+                  } break;
   }
+
+  _callbacks.write_end.run(addr, val);
 }
 
 /*----------------------------  Helper Functions  ----------------------------*/
@@ -686,7 +675,7 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
 /*----------------------------  Core Render Loop  ----------------------------*/
 
 void PPU::cycle() {
-  this->callbacks.cycle_start.run();
+  _callbacks.cycle_start.run();
 
   if (this->scan.line < 240 || this->scan.line == 261) {
     // Calculate Pixels
@@ -762,7 +751,7 @@ void PPU::cycle() {
   if (this->scan.cycle == 1) {
     // vblank start on line 241...
     if (this->scan.line == 241) {
-      this->callbacks.frame_end.run();
+      _callbacks.frame_end.run();
 
       // MAJOR KEY: The vblank flag is _always_ set!
       this->reg.ppustatus.V = true;
@@ -776,7 +765,7 @@ void PPU::cycle() {
 
     // ...and is cleared in the pre-render line
     if (this->scan.line == 261) {
-      this->callbacks.frame_start.run();
+      _callbacks.frame_start.run();
 
       this->reg.ppustatus.V = false;
       this->reg.ppustatus.S = false;
@@ -793,7 +782,7 @@ void PPU::cycle() {
 
   // Odd-Frame skip cycle
   if (
-    this->odd_frame_latch &&
+    this->reg.odd_frame_latch &&
     this->scan.cycle == 340 &&
     this->scan.line == 261 &&
     this->reg.ppumask.is_rendering
@@ -801,20 +790,20 @@ void PPU::cycle() {
 
   // Check to see if the cycle has finished
   if (this->scan.cycle > 340) {
-    this->callbacks.scanline.run();
+    _callbacks.scanline.run();
     // update scanline tracking vars
     this->scan.cycle = 0;
     this->scan.line += 1;
     // check for rollover
     if (this->scan.line > 261) {
       this->scan.line = 0;
-      this->odd_frame_latch ^= 1;
+      this->reg.odd_frame_latch ^= 1;
 
       this->frames++;
     }
   }
 
-  this->callbacks.cycle_end.run();
+  _callbacks.cycle_end.run();
 }
 
 /*---------------------------------  Palette  --------------------------------*/

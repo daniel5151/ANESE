@@ -12,6 +12,8 @@ private:
   DebugPixelbuffWindow* nes_palette;
   DebugPixelbuffWindow* name_t;
 
+  uint sample_which_nt_counter = 60;
+
   bool nametable = 0;
   uint scanline = 0;
 

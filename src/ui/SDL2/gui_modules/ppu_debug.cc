@@ -121,7 +121,7 @@ PPUDebugModule::PPUDebugModule(SharedState& gui) : GUIModule(gui) {
     0, 324
   );
 
-  this->gui.nes.debug_get.ppu().callbacks.scanline.add_cb(PPUDebugModule::cb_scanline, this);
+  this->gui.nes._ppu()._callbacks.scanline.add_cb(PPUDebugModule::cb_scanline, this);
 }
 
 PPUDebugModule::~PPUDebugModule() {
@@ -152,9 +152,15 @@ void PPUDebugModule::cb_scanline(void* self) {
 }
 
 void PPUDebugModule::sample_ppu() {
-  const PPU& ppu = this->gui.nes.debug_get.ppu();
+  const PPU& ppu = this->gui.nes._ppu();
 
-  if (ppu.scan.line != this->scanline) return;
+  if (ppu._scanline() != this->scanline) return;
+
+  if (this->sample_which_nt_counter == 1) {
+    this->nametable = ppu._reg().ppuctrl.B;
+    this->sample_which_nt_counter--;
+  }
+  else if (this->sample_which_nt_counter) this->sample_which_nt_counter--;
 
   auto paint_tile = [&](
     u16 tile_addr,
@@ -163,14 +169,14 @@ void PPUDebugModule::sample_ppu() {
     DebugPixelbuffWindow* window
   ) {
     for (uint y = 0; y < 8; y++) {
-      u8 lo_bp = ppu.mem.peek(tile_addr + y + 0);
-      u8 hi_bp = ppu.mem.peek(tile_addr + y + 8);
+      u8 lo_bp = ppu._mem().peek(tile_addr + y + 0);
+      u8 hi_bp = ppu._mem().peek(tile_addr + y + 8);
 
       for (uint x = 0; x < 8; x++) {
         uint pixel_type = nth_bit(lo_bp, x) + (nth_bit(hi_bp, x) << 1);
 
         Color color = ppu.palette[
-          ppu.mem.peek(0x3F00 + palette * 4 + pixel_type) % 64
+          ppu._mem().peek(0x3F00 + palette * 4 + pixel_type) % 64
         ];
 
         window->set_pixel(
@@ -212,7 +218,7 @@ void PPUDebugModule::sample_ppu() {
       // Getting which tile to render is easy...
 
       u16 tile_addr = (this->nametable * 0x1000)
-                    + ppu.mem.peek(addr.val) * 16;
+                    + ppu._mem().peek(addr.val) * 16;
 
       // ...The hard part is figuring out the palette for it :)
       // http://wiki.nesdev.com/w/index.php/PPU_attribute_tables
@@ -227,7 +233,7 @@ void PPUDebugModule::sample_ppu() {
 
       // Nice! Now we can pull data from the attribute table!
       // Now, to decipher which of the 4 palettes to use...
-      const u8 attribute = ppu.mem[nt_base_addr + 0x3C0 + supertile_no];
+      const u8 attribute = ppu._mem()[nt_base_addr + 0x3C0 + supertile_no];
 
       // What corner is this particular 8x8 tile in?
       //
@@ -283,8 +289,8 @@ void PPUDebugModule::sample_ppu() {
   // Background palette - from 0x3F00 to 0x3F0F
   // Sprite palette     - from 0x3F10 to 0x3F1F
   for (u16 addr = 0x3F00; addr < 0x3F20; addr++) {
-    Color color = ppu.palette[ppu.mem.peek(addr) % 64];
-    // printf("0x%04X\n", ppu.mem.peek(addr));
+    Color color = ppu.palette[ppu._mem().peek(addr) % 64];
+    // printf("0x%04X\n", ppu._mem().peek(addr));
     palette_t->set_pixel(
       (addr % 4) + ((addr >= 0x3F10) ? 5 : 0),
       (addr - ((addr >= 0x3F10) ? 0x3F10 : 0x3F00)) / 4,

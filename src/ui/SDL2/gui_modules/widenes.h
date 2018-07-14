@@ -11,7 +11,6 @@
 #include "submodules/menu.h"
 
 #include "nes/cartridge/mappers/mapper_004.h"
-#include "nes/ppu/ppu.h"
 
 class WideNESModule : public GUIModule {
 private:
@@ -50,7 +49,10 @@ private:
   , curr_scroll { 0, 0 };
 
   // total scroll (offset from origin)
-  struct { int x; int y; int dx; int dy; } scroll { 0, 0, 0, 0 };
+  struct {
+    int x, y;
+    int dx, dy;
+  } scroll { 0, 0, 0, 0 };
 
   // there tend to be graphical artifacts at the edge of the screen, so it's
   // prudent to sample sliglty away from the edge.
@@ -81,21 +83,15 @@ private:
     float zoom = 2.0;
   } pan;
 
-  void frame_start_handler();
-  void frame_end_handler();
+  void ppu_frame_end_handler();
+  void ppu_write_start_handler(u16 addr, u8 val);
 
   void mmc3_irq_handler(Mapper_004* mapper, bool active);
 
-  void scrollx_handler(u8 val);
-  void scrolly_handler(u8 val);
-
-  static void cb_frame_start(void* self);
-  static void cb_frame_end(void* self);
-
   static void cb_mapper_changed(void* self, Mapper* cart);
 
-  static void cb_scrollx_changed(void* self, u8 val);
-  static void cb_scrolly_changed(void* self, u8 val);
+  static void cb_ppu_frame_end(void* self);
+  static void cb_ppu_write_start(void* self, u16 addr, u8 val);
 
   static void cb_mmc3_irq(void* self, Mapper_004* mapper, bool active);
 
