@@ -31,13 +31,17 @@ WideNESModule::WideNESModule(SharedState& gui)
     SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
   );
 
+  this->nes_screen = SDL_CreateTexture(
+    this->sdl.renderer,
+    SDL_PIXELFORMAT_ARGB8888,
+    SDL_TEXTUREACCESS_STREAMING,
+    256, 240
+  );
+
   // Allow opacity
   SDL_SetRenderDrawBlendMode(this->sdl.renderer, SDL_BLENDMODE_BLEND);
 
   this->sdl.inprint = new SDL2_inprint(this->sdl.renderer);
-
-  // Make base NES screen
-  this->nes_screen = new Tile(this->sdl.renderer, 0, 0);
 
   // make menu submodule
   this->menu_submodule = new MenuSubModule(gui, this->sdl.window, this->sdl.renderer);
@@ -55,7 +59,7 @@ WideNESModule::~WideNESModule() {
 
   /*------------------------------  SDL Cleanup  -----------------------------*/
 
-  SDL_DestroyTexture(this->nes_screen->texture);
+  SDL_DestroyTexture(this->nes_screen);
 
   delete this->sdl.inprint;
 
@@ -102,6 +106,12 @@ void WideNESModule::input(const SDL_Event& event) {
     bool mod_shift = event.key.keysym.mod & KMOD_SHIFT;
     switch (event.key.keysym.sym) {
     case SDLK_ESCAPE: forward_to_emu_module = false; break;
+    case SDLK_k: {
+      for (auto col : this->tiles)
+        for (auto row : col.second)
+          delete row.second;
+      this->tiles.clear();
+    } break;
     case SDLK_e: this->pad.offset.t += mod_shift ? 1 : 8; break;
     case SDLK_3: this->pad.offset.t -= mod_shift ? 1 : 8; break;
     case SDLK_d: this->pad.offset.b += mod_shift ? 1 : 8; break;
@@ -126,18 +136,28 @@ void WideNESModule::update() {
 /*----------------------------  Tile Definitions  ----------------------------*/
 
 WideNESModule::Tile::Tile(SDL_Renderer* renderer, int x, int y) {
-  this->pos.x = x;
-  this->pos.y = y;
-  this->texture = SDL_CreateTexture(
+  this->x = x;
+  this->y = y;
+  this->texture_done = SDL_CreateTexture(
     renderer,
     SDL_PIXELFORMAT_ARGB8888,
     SDL_TEXTUREACCESS_STREAMING,
     256, 240
   );
+  this->texture_curr = SDL_CreateTexture(
+    renderer,
+    SDL_PIXELFORMAT_ARGB8888,
+    SDL_TEXTUREACCESS_STREAMING,
+    256, 240
+  );
+
+  SDL_SetTextureBlendMode(this->texture_done, SDL_BLENDMODE_BLEND);
+  SDL_SetTextureBlendMode(this->texture_curr, SDL_BLENDMODE_BLEND);
 }
 
 WideNESModule::Tile::~Tile() {
-  SDL_DestroyTexture(this->texture);
+  SDL_DestroyTexture(this->texture_done);
+  SDL_DestroyTexture(this->texture_curr);
 }
 
 /*-------------------------------  Callbacks  --------------------------------*/
@@ -194,9 +214,9 @@ void WideNESModule::ppu_frame_end_handler() {
   // save copy of OG screen
   const u8* framebuffer_true;
   ppu.getFramebuff(&framebuffer_true);
-  SDL_UpdateTexture(nes_screen->texture, nullptr, framebuffer_true, 256 * 4);
+  SDL_UpdateTexture(this->nes_screen, nullptr, framebuffer_true, 256 * 4);
 
-  // update padding / scroll registers (based on heuristics)
+  /*-----------------------------  Heuristics  -----------------------------*/
 
   // 1) if the left-column bit is enabled, odds are the game is hiding visual
   //    artifacts, so we can slice that bit off.
@@ -230,6 +250,8 @@ void WideNESModule::ppu_frame_end_handler() {
   // 3) vertically scrolling + vertical mirroring usually leads to artifacting
   //    at the top of the screen
   // ??? not sure about this one...
+
+  /*------------------  Padding / Scrolling Calculations  ------------------*/
 
   // calculate final padding
   this->pad.total.l = this->pad.guess.l + this->pad.offset.l;
@@ -267,77 +289,109 @@ void WideNESModule::ppu_frame_end_handler() {
   this->last_scroll.x = this->curr_scroll.x;
   this->last_scroll.y = this->curr_scroll.y;
 
-  // static int last_sample_x = 0;
-  // static int last_sample_y = 0;
-  // last_sample_x += dx;
-  // last_sample_y += dy;
-
-  // static bool do_sample = true;
-  // if (last_sample_x >=  255) { last_sample_x -= 255; do_sample = true; }
-  // if (last_sample_x <= -255) { last_sample_x += 255; do_sample = true; }
-  // if (last_sample_y >=  239) { last_sample_y -= 239; do_sample = true; }
-  // if (last_sample_y <= -239) { last_sample_y += 239; do_sample = true; }
-
-  // if (!do_sample) return;
-  // do_sample = false;
-
-  // Next, update the textures / framebuffers of the affected tiles
+  /*----------------------------  Tile Updates  ----------------------------*/
 
   // use the background framebuffer (sprites leave artifacts)
   const u8* framebuffer;
   ppu.getFramebuffBgr(&framebuffer);
 
-#define update_tile(px,py,w,h,dx,dy,sx,sy)                                \
-  if ((this->tiles.count(px) && this->tiles[px].count(py)) == false) {    \
-    this->tiles[px][py] = new Tile (this->sdl.renderer, px, py);          \
-  }                                                                       \
-  for (int x = 0; x < w; x++) {                                           \
-    for (int y = 0; y < h; y++) {                                         \
-      if (                                                                \
-        x + sx > 255 - this->pad.total.r || x + sx < this->pad.total.l || \
-        y + sy > 239 - this->pad.total.b || y + sy < this->pad.total.t    \
-      ) continue;                                                         \
-      Tile* tile = this->tiles[px][py];                                   \
-      const uint src_px_i = (256 * 4 * (y + sy)) + (4 * (x + sx));        \
-      const uint dst_px_i = (256 * 4 * (y + dy)) + (4 * (x + dx));        \
-      tile->framebuffer[dst_px_i + 0] = framebuffer[src_px_i + 0];        \
-      tile->framebuffer[dst_px_i + 1] = framebuffer[src_px_i + 1];        \
-      tile->framebuffer[dst_px_i + 2] = framebuffer[src_px_i + 2];        \
-      tile->framebuffer[dst_px_i + 3] = framebuffer[src_px_i + 3];        \
-    }                                                                     \
-  }                                                                       \
-  SDL_UpdateTexture(                                                      \
-    this->tiles[px][py]->texture,                                         \
-    nullptr,                                                              \
-    this->tiles[px][py]->framebuffer,                                     \
-    256 * 4                                                               \
-  );
+  // 1) For every source-pixel on the NES screen, update the associated pixel
+  //    within the appropriate tile
+  // - also keep track of how many pixels are written to every 16x16 segment of
+  //   the screen, as we want to sample on a 16x16 tile basis. This prevents
+  //   smearing on animated tiles
 
-  const int pos_x = ::floor(this->scroll.x / 256.0);
-  const int pos_y = ::floor(this->scroll.y / 240.0);
-  const int tl_w = this->scroll.x - pos_x * 256;
-  const int tl_h = this->scroll.y - pos_y * 240;
-  const int br_w = 256 - tl_w;
-  const int br_h = 240 - tl_h;
+  // sx/sy = soruce pixel (from NES screen)
+  for (int sx = this->pad.total.l; sx < 256 - this->pad.total.r; sx++) {
+    for (int sy = this->pad.total.t; sy < 240 - this->pad.total.b; sy++) {
+      // tx/ty = "big tile" that sx/sy is currently in
+      const int tx = ::floor((this->scroll.x + sx) / 256.0);
+      const int ty = ::floor((this->scroll.y + sy) / 240.0);
+      Tile* tile = this->tiles[tx][ty];
+      if (!tile)
+        tile = this->tiles[tx][ty] = new Tile (this->sdl.renderer, tx, ty);
 
-  // see diagram...
-  update_tile(pos_x + 0, pos_y + 0, /**/ br_w, br_h, /**/ tl_w, tl_h, /**/ 0,    0);
-  if (this->scroll.x % 256 != 0) {
-    update_tile(pos_x + 1, pos_y + 0, /**/ tl_w, br_h, /**/    0, tl_h, /**/ br_w, 0);
+      // dx/dy = destination pixel within big-tile
+      const uint dx = (this->scroll.x - tx * 256) + sx;
+      const uint dy = (this->scroll.y - ty * 240) + sy;
+
+      // bx/by = block index dx/dy is currently in
+      // i.e: NES screen is made of 16x16 blocks, 16 wide 15 tall
+      const int bx = ::floor(dx / 16.0);
+      const int by = ::floor(dy / 16.0);
+
+      // There are 2 ways to recrod the screen: sample the _first_ thing that
+      //  appears, or sample the _last_ thing that appears.
+      // Sampling the _first_ thing that appears is cool beacause the generated
+      //  scene is representative of the "initial state" of the map
+      // Sampling the _last_ thing that appears is cool because that matches the
+      //  progress you (as a player) have made.
+      // There is no clear answer which is "better," so i'm leaving both options
+      // TODO: make this toggleable with a flag
+
+      // if (tile->done[bx][by]) continue; // comment out to sample _last_ thing
+
+      tile->fill[bx][by] += 1;
+
+      const uint spx_i = (256 * 4 * sy) + (4 * sx);
+      const uint dpx_i = (256 * 4 * dy) + (4 * dx);
+      tile->fb_new[dpx_i + 0] = framebuffer[spx_i + 0];
+      tile->fb_new[dpx_i + 1] = framebuffer[spx_i + 1];
+      tile->fb_new[dpx_i + 2] = framebuffer[spx_i + 2];
+      tile->fb_new[dpx_i + 3] = framebuffer[spx_i + 3];
+    }
   }
-  if (this->scroll.y % 240 != 0) {
-    update_tile(pos_x + 0, pos_y + 1, /**/ br_w, tl_h, /**/ tl_w,    0, /**/ 0,    br_h);
+
+  // 2) Save any 16x16 blocks that have been captured this frame
+  // Note: there can be 4 big tiles that intersect the screen at any given time,
+  // so all of them should be updated.
+  const int tx = ::floor(this->scroll.x / 256.0);
+  const int ty = ::floor(this->scroll.y / 240.0);
+  for (int dx : {0, 1}) {
+    for (int dy : {0, 1}) {
+      Tile* tile = this->tiles[tx + dx][ty + dy];
+      if (tile == nullptr) continue;
+
+      for (int bx = 0; bx < 16; bx++) {
+        for (int by = 0; by < 15; by++) {
+          if (tile->fill[bx][by] == 256) {
+            tile->done[bx][by] = true; // mark block as fully filled-in
+
+            // update the framebuffer with the captured 16x16 tile
+            for (int x = 0; x < 16; x++) {
+              for (int y = 0; y < 16; y++) {
+                const uint px_i = (256 * 4 * (by * 16 + y))
+                                +       (4 * (bx * 16 + x));
+                tile->fb[px_i + 0] = tile->fb_new[px_i + 0];
+                tile->fb[px_i + 1] = tile->fb_new[px_i + 1];
+                tile->fb[px_i + 2] = tile->fb_new[px_i + 2];
+                tile->fb[px_i + 3] = tile->fb_new[px_i + 3];
+              }
+            }
+          }
+
+          tile->fill[bx][by] = 0; // clear fill state on every iter
+        }
+      }
+    }
   }
-  if (this->scroll.x % 256 != 0 && this->scroll.y % 240 != 0) {
-    update_tile(pos_x + 1, pos_y + 1, /**/ tl_w, tl_h, /**/    0,    0, /**/ br_w, br_h);
+
+  // 3) Actually update the textures
+  for (int dx : {0, 1}) {
+    for (int dy : {0, 1}) {
+      Tile* tile = this->tiles[tx + dx][ty + dy];
+      if (tile == nullptr) continue;
+
+      SDL_UpdateTexture(tile->texture_curr, nullptr, tile->fb_new, 256 * 4);
+      SDL_UpdateTexture(tile->texture_done, nullptr, tile->fb,     256 * 4);
+    }
   }
-#undef update_tile
 }
 
 /*---------------------------------  Output  ---------------------------------*/
 
 void WideNESModule::output() {
-  // calculate origin (tile (0,0) / actual NES screen)
+  // calculate origin (where to render NES screen / where to offset tiles from)
   const int nes_w = 256 * this->pan.zoom;
   const int nes_h = 240 * this->pan.zoom;
   int window_w, window_h;
@@ -357,17 +411,24 @@ void WideNESModule::output() {
     for (auto row : col.second) {
       const Tile* tile = row.second;
 
-      SDL_Rect offset = origin;
-      offset.x -= this->pan.zoom * (this->scroll.x - tile->pos.x * 256);
-      offset.y -= this->pan.zoom * (this->scroll.y - tile->pos.y * 240);
+      if (tile == nullptr) continue;
 
-      SDL_RenderCopy(this->sdl.renderer, tile->texture, nullptr, &offset);
+      SDL_Rect offset = origin;
+      offset.x -= this->pan.zoom * (this->scroll.x - tile->x * 256);
+      offset.y -= this->pan.zoom * (this->scroll.y - tile->y * 240);
+
+      // render the latest state for the tile first, but then overlay the 16x16
+      // block version over that.
+      // thus, we get "smooth" edges, but also clean blocks (except at edges)
+      SDL_RenderCopy(this->sdl.renderer, tile->texture_curr, nullptr, &offset);
+      SDL_RenderCopy(this->sdl.renderer, tile->texture_done, nullptr, &offset);
+
       SDL_SetRenderDrawColor(this->sdl.renderer, 0x60, 0x60, 0x60, 0xff);
       SDL_RenderDrawRect(this->sdl.renderer, &offset);
 
       this->sdl.inprint->set_color(0xff0000);
       char buf [64];
-      sprintf(buf, "(%d, %d)", tile->pos.x, tile->pos.y);
+      sprintf(buf, "(%d, %d)", tile->x, tile->y);
       this->sdl.inprint->print(buf, offset.x + 8, offset.y + 8);
     }
   }
@@ -384,9 +445,9 @@ void WideNESModule::output() {
   col_clip.y = 0;
   col_clip.w = 256 - (this->pad.total.l + this->pad.total.r);
   col_clip.h = 240;
-  SDL_SetTextureBlendMode(nes_screen->texture, SDL_BLENDMODE_BLEND);
-  SDL_SetTextureAlphaMod(nes_screen->texture, 100);
-  SDL_RenderCopy(this->sdl.renderer, nes_screen->texture, &col_clip, &col_origin);
+  SDL_SetTextureBlendMode(this->nes_screen, SDL_BLENDMODE_BLEND);
+  SDL_SetTextureAlphaMod(this->nes_screen, 100);
+  SDL_RenderCopy(this->sdl.renderer, this->nes_screen, &col_clip, &col_origin);
 
   // draw clipped part of the screen with no transparency
   SDL_Rect padded_origin = origin;
@@ -401,8 +462,8 @@ void WideNESModule::output() {
   padded_clip.w = 256 - (this->pad.total.l + this->pad.total.r);
   padded_clip.h = 240 - (this->pad.total.t + this->pad.total.b);
 
-  SDL_SetTextureAlphaMod(nes_screen->texture, 255);
-  SDL_RenderCopy(this->sdl.renderer, nes_screen->texture, &padded_clip, &padded_origin);
+  SDL_SetTextureAlphaMod(this->nes_screen, 255);
+  SDL_RenderCopy(this->sdl.renderer, this->nes_screen, &padded_clip, &padded_origin);
 
   // full-screen box
   // SDL_SetRenderDrawColor(this->sdl.renderer, 0xff, 0, 0, 0xff);

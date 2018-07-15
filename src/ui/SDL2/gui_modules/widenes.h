@@ -21,12 +21,16 @@ private:
   } sdl;
 
   struct Tile {
-    struct {
-      int x, y;
-    } pos; // position within tile-grid
+    int x, y;
 
-    SDL_Texture* texture = nullptr;
-    u8 framebuffer [256 * 240 * 4] = {0};
+    bool done [16][15] = {{false}};
+    int  fill [16][15] = {{0}};
+
+    SDL_Texture* texture_done = nullptr;
+    SDL_Texture* texture_curr = nullptr;
+
+    u8 fb     [256 * 240 * 4] = {0};
+    u8 fb_new [256 * 240 * 4] = {0};
 
     // misc: not initializing the framebuffer leads to a really cool effect
     // where any raw memory is visualized as a texture!
@@ -38,9 +42,7 @@ private:
   // tilemap
   std::map<int, std::map<int, Tile*>> tiles;
 
-  // not part of the tilemap, it's just convenient to have a copy of the current
-  // nes screen
-  Tile* nes_screen;
+  SDL_Texture* nes_screen;
 
   // used to calculate dx and dy b/w frames
   struct nes_scroll {
