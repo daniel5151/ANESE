@@ -148,7 +148,7 @@ void CPU::nestest(const CPU& cpu, const Instructions::Opcode& opcode) {
     cpu.reg.y,
     cpu.reg.p.raw & ~0x10, // 0b11101111, match nestest "golden" log
     cpu.reg.s,
-    cpu.cycles * 3 % 341 // CYC measures PPU X coordinates
+    (cpu.cycles - 7) * 3 % 341 // CYC measures PPU X coordinates
                          // PPU does 1 x coordinate per cycle
                          // PPU runs 3x as fast as CPU
                          // ergo, multiply cycles by 3 should be fineee

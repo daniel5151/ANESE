@@ -102,6 +102,9 @@ u8 PPU::read(u16 addr) {
                     // on the cpu data line
                     retval = (this->reg.ppustatus.raw & 0xE0)
                            | (this->cpu_data_bus      & 0x1F);
+                    // race condition
+                    if (this->scan.line == 241 && this->scan.cycle == 0)
+                      retval &= ~0x80; // set V to 0 in the retval
                     this->reg.ppustatus.V = false;
                     this->nmiChange(); // hack
                     this->reg.scroll_latch = false;
@@ -149,6 +152,8 @@ u8 PPU::read(u16 addr) {
                     // );
                   } break;
   }
+
+  this->cpu_data_bus = retval;
 
   _callbacks.read_end.run(addr, retval);
 

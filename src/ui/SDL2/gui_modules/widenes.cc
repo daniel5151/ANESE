@@ -1,5 +1,6 @@
 #include "widenes.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 
@@ -169,7 +170,7 @@ void WideNESModule::cb_ppu_write_start(void* self, u16 addr, u8 val) {
 void WideNESModule::cb_mapper_changed(void* self, Mapper* mapper) {
   if (mapper && mapper->mapper_number() == 4) {
     Mapper_004* mmc3 = static_cast<Mapper_004*>(mapper);
-    mmc3->did_irq_callbacks.add_cb(WideNESModule::cb_mmc3_irq, self);
+    mmc3->_did_irq_callbacks.add_cb(WideNESModule::cb_mmc3_irq, self);
   }
 }
 
@@ -254,10 +255,10 @@ void WideNESModule::ppu_frame_end_handler() {
   /*------------------  Padding / Scrolling Calculations  ------------------*/
 
   // calculate final padding
-  this->pad.total.l = this->pad.guess.l + this->pad.offset.l;
-  this->pad.total.r = this->pad.guess.r + this->pad.offset.r;
-  this->pad.total.t = this->pad.guess.t + this->pad.offset.t;
-  this->pad.total.b = this->pad.guess.b + this->pad.offset.b;
+  this->pad.total.l = std::max(0, this->pad.guess.l + this->pad.offset.l);
+  this->pad.total.r = std::max(0, this->pad.guess.r + this->pad.offset.r);
+  this->pad.total.t = std::max(0, this->pad.guess.t + this->pad.offset.t);
+  this->pad.total.b = std::max(0, this->pad.guess.b + this->pad.offset.b);
 
   // calculate the new scroll position
 
@@ -304,6 +305,8 @@ void WideNESModule::ppu_frame_end_handler() {
   // sx/sy = soruce pixel (from NES screen)
   for (int sx = this->pad.total.l; sx < 256 - this->pad.total.r; sx++) {
     for (int sy = this->pad.total.t; sy < 240 - this->pad.total.b; sy++) {
+      assert(sx >= 0 && sx < 256 && sy >= 0 && sy < 240);
+
       // tx/ty = "big tile" that sx/sy is currently in
       const int tx = ::floor((this->scroll.x + sx) / 256.0);
       const int ty = ::floor((this->scroll.y + sy) / 240.0);

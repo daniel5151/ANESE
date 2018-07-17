@@ -169,5 +169,5 @@ public:
 
   u8 peek_irq_latch() const { return this->reg.irq_latch; }
 
-  CallbackManager<Mapper_004*, bool> did_irq_callbacks;
+  CallbackManager<Mapper_004*, bool> _did_irq_callbacks;
 };
