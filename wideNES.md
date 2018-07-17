@@ -8,7 +8,7 @@ That's a lot of work.
 
 Wouldn't it be cool to automate that?
 
-Enter **WideNES**, a novel method to map-out NES games automatically.
+Enter **wideNES**, a novel method to map-out NES games automatically.
 
 <p align="center">
   <img src="resources/web/wideNES_smb1.gif" alt="wideNES on SMB1">
@@ -22,13 +22,11 @@ Pretty cool huh? Here's another one:
 
 ## Enabling wideNES
 
-At the moment, wideNES is activated by default.
-
-_this is not final_
+You can enable wideNES by passing the `--widenes` flag from the command-line.
 
 ## Controls
 
-wideNES inherits all controls from ANESE, and adds a few more:
+wideNES inherits all controls from ANESE, and adds a few additional ones:
 
 #### Pan and Zoom
 
@@ -36,10 +34,9 @@ You can **pan** and **zoom** using the mouse + mousewheel.
 
 #### Padding controls
 
-Many games have static sections of the screen / artifacts at the edge of the
-screen. wideNES uses some heuristics (if the PPUMASK bgr-mask is active, mapper
-IRQs, etc...) to intelligently "guess" padding values, but there are times when
-a little bit of tweaking is needed...
+wideNES has many built-in heuristics that are used to "guess" what parts of the
+screen are not part of the level (i.e: status bars / leave artifacts), and while
+these work pretty well, there are times some manual tweaking might be preferred.
 
  Side   | increase | decrease
 --------|----------|-------
@@ -63,7 +60,7 @@ entire screen scroll by a certain amount.
 WideNES watches the scroll register for changes, and when values are written to
 it, the deltas between values at different frames (plus some heuristics) are
 used to intelligently "sample" the framebuffer. Gradually, as the player moves
-around the world, more and more of the screne is revealed (and saved).
+around the world, more and more of the screen is revealed (and saved).
 
 That's it really!
 
@@ -76,8 +73,10 @@ _The Legend of Zelda_. Although it does in fact use the scroll register to do
 left-and-right screen transitions, it uses a custom technique to do up-and-down
 screen transitions, never touching the scroll register.
 
-With it's limited knowledge of the NES, wideNES cannot account for such cases
-at the moment. (although it is something I would like to look into)
+I have implemented a heuristic for getting _The Legend of Zelda_ working, but it
+involved a non-trivial amount of work. Moreover, I have not tested enough games
+to confidently say the heuristic is game-agnostic (although it is written to
+apply to a wide-variety of games... in theory)
 
 #### Sprites as Background Elements
 
@@ -91,12 +90,12 @@ wideNES assumes that if you go in a circle, you end up where you started.
 Most games follow this rule, but there are exceptions. For example, the Lost
 Woods in _The Legend of Zelda_.
 
-I am not sure if I can work around this, but I might try...
+I haven't looked into this yet, so I cannot be sure if there is a work-around.
 
 ## Roadmap
 
 - [x] avoid smearing in some games
-- [x] mask-off edges (artifacting / satic menus)
+- [x] mask-off edges (artifacting / static menus)
   - [x] manually
   - [x] automatically - _using heuristics, not completely perfect_
 - [ ] Save/Load tiles
@@ -106,6 +105,5 @@ I am not sure if I can work around this, but I might try...
     - right now, they overwrite tile data
 - [ ] Animated background / tile support
   - only sample in 8 pixel chunks?
-- [ ] Handle non-hardware scrolling (?)
-
-## Successes
+- [x] Handle non-hardware scrolling
+  - Partially, works with _TLOZ_

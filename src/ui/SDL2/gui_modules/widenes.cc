@@ -11,6 +11,7 @@ WideNESModule::WideNESModule(SharedState& gui)
   gui.nes._callbacks.cart_changed.add_cb(WideNESModule::cb_mapper_changed, this);
   gui.nes._ppu()._callbacks.frame_end.add_cb(WideNESModule::cb_ppu_frame_end, this);
   gui.nes._ppu()._callbacks.write_start.add_cb(WideNESModule::cb_ppu_write_start, this);
+  gui.nes._ppu()._callbacks.write_end.add_cb(WideNESModule::cb_ppu_write_end, this);
 
   /*-------------------------------  SDL init  -------------------------------*/
 
@@ -167,6 +168,10 @@ void WideNESModule::cb_ppu_write_start(void* self, u16 addr, u8 val) {
   ((WideNESModule*)self)->ppu_write_start_handler(addr, val);
 }
 
+void WideNESModule::cb_ppu_write_end(void* self, u16 addr, u8 val) {
+  ((WideNESModule*)self)->ppu_write_end_handler(addr, val);
+}
+
 void WideNESModule::cb_mapper_changed(void* self, Mapper* mapper) {
   if (mapper && mapper->mapper_number() == 4) {
     Mapper_004* mmc3 = static_cast<Mapper_004*>(mapper);
@@ -174,8 +179,8 @@ void WideNESModule::cb_mapper_changed(void* self, Mapper* mapper) {
   }
 }
 
-void WideNESModule::cb_mmc3_irq(void* self, Mapper_004* mmc3, bool active) {
-  ((WideNESModule*)self)->mmc3_irq_handler(mmc3, active);
+void WideNESModule::cb_mmc3_irq(void* self, Mapper_004* mmc3, bool irq_enabled) {
+  ((WideNESModule*)self)->mmc3_irq_handler(mmc3, irq_enabled);
 }
 
 void WideNESModule::cb_ppu_frame_end(void* self) {
@@ -187,6 +192,12 @@ void WideNESModule::cb_ppu_frame_end(void* self) {
 #include "nes/ppu/ppu.h"
 
 void WideNESModule::ppu_write_start_handler(u16 addr, u8 val) {
+  (void)addr;
+  (void)val;
+  // nothing... for now
+}
+
+void WideNESModule::ppu_write_end_handler(u16 addr, u8 val) {
   const PPU& ppu = this->gui.nes._ppu();
   const PPU::Registers& ppu_reg = ppu._reg();
 
@@ -194,17 +205,29 @@ void WideNESModule::ppu_write_start_handler(u16 addr, u8 val) {
 
   switch (addr) {
   case PPUSCROLL: {
-    if (ppu_reg.scroll_latch == 0) this->curr_scroll.x = val;
-    if (ppu_reg.scroll_latch == 1) this->curr_scroll.y = val;
-  }
+    if (ppu_reg.scroll_latch == 1) this->h.ppuscroll.curr.x = val;
+    if (ppu_reg.scroll_latch == 0) this->h.ppuscroll.curr.y = val;
+  } break;
+  case PPUADDR: {
+    this->h.ppuaddr.did_change = true;
+
+    if (ppu._scanline() < 241 && ppu_reg.ppumask.is_rendering)
+      fprintf(stderr, "%3u | 0x%04X <- 0x%02X\n", ppu._scanline(), addr, val);
+
+    this->h.ppuaddr.changed.while_rendering = ppu_reg.ppumask.is_rendering;
+    this->h.ppuaddr.changed.on_scanline = ppu._scanline();
+
+    if (ppu_reg.scroll_latch == 1) this->h.ppuaddr.new_scroll.x = 8 * ppu_reg.t.coarse_x;
+    if (ppu_reg.scroll_latch == 0) this->h.ppuaddr.new_scroll.y = 8 * ppu_reg.t.coarse_y;
+  } break;
   }
 }
 
-void WideNESModule::mmc3_irq_handler(Mapper_004* mmc3, bool active) {
-  this->heuristics.mmc3_irq.curr_scroll_pre_irq = this->curr_scroll;
+void WideNESModule::mmc3_irq_handler(Mapper_004* mmc3, bool irq_enabled) {
+  this->h.mmc3_irq.scroll_pre_irq = this->h.ppuscroll.curr;
 
-  this->heuristics.mmc3_irq.happened = true;
-  this->heuristics.mmc3_irq.on_scanline = active
+  this->h.mmc3_irq.happened = true;
+  this->h.mmc3_irq.on_scanline = irq_enabled
     ? mmc3->peek_irq_latch()
     : 239; // cancels out later, give 0 padding
 }
@@ -219,38 +242,64 @@ void WideNESModule::ppu_frame_end_handler() {
 
   /*-----------------------------  Heuristics  -----------------------------*/
 
-  // 1) if the left-column bit is enabled, odds are the game is hiding visual
-  //    artifacts, so we can slice that bit off.
-  const u8 ppumask = ppu.peek(0x2001);
-  bool bgr_left_col_mask_disabled = ppumask & 0x02;
-  if (!bgr_left_col_mask_disabled) {
-    this->pad.guess.l = 8;
-    this->pad.guess.r = 8;
-  } else {
-    this->pad.guess.l = 0;
-    this->pad.guess.r = 0;
-  }
+  // - the OG - set current scroll values based off of the PPUSCROLL register
+  this->curr_scroll.x = this->h.ppuscroll.curr.x;
+  this->curr_scroll.y = this->h.ppuscroll.curr.y;
 
-  // 2) Mappers sometimes use a scanline IRQ to split the screen, many times for
-  // making a static status bar at the bottom of the screen (kirby, smb3)
-  // TODO: make this more robust, i.e: get rid of false positives (Megaman IV)
-  if (this->heuristics.mmc3_irq.happened) {
-    this->pad.guess.b = 239 - this->heuristics.mmc3_irq.on_scanline;
-    // depending on if the menu is at the top / bottom of the screen, different
-    // scroll values should be used
-    if (this->heuristics.mmc3_irq.on_scanline < 240 / 2) {
-      // top of screen
-      this->curr_scroll = this->curr_scroll; // stays the same
-    } else {
-      // bottom of screen
-      this->curr_scroll = this->heuristics.mmc3_irq.curr_scroll_pre_irq;
+  // - if the left-column bit is enabled, odds are the game is hiding visual
+  // artifacts, so we can slice that bit off.
+  this->pad.guess.l = ppu._reg().ppumask.m ? 0 : 8;
+
+  // - Zelda scrolling: writes to PPUADDR midframe are probably some creative
+  // scroll implementation?
+  if (this->h.ppuaddr.did_change) {
+    // ppuaddr is written to a lot, but we only care about writes that occur
+    // mid-frame, since those are the one that lead to scrolling / status bars.
+    if (this->h.ppuaddr.changed.on_scanline < 241 &&
+        this->h.ppuaddr.changed.while_rendering) {
+      // note that this heuristic is in-play, and mark the scanline...
+      this->h.ppuaddr.active = true;
+      this->h.ppuaddr.cut_scanline = this->h.ppuaddr.changed.on_scanline;
+
+      // lob off the chunk of the screen not being scrolled...
+      if (this->h.ppuaddr.cut_scanline < 240 / 2) {
+        // top of screen
+        this->pad.guess.t = this->h.ppuaddr.cut_scanline;
+      } else {
+        // bottom of screen
+        this->pad.guess.b = 239 - this->h.mmc3_irq.on_scanline;
+      }
+
+      // set the scroll...
+      this->curr_scroll.y = this->h.ppuaddr.new_scroll.y;
     }
   }
-  this->heuristics.mmc3_irq.happened = false; // reset
+  this->h.ppuaddr.did_change = false; // reset each frame
 
-  // 3) vertically scrolling + vertical mirroring usually leads to artifacting
-  //    at the top of the screen
-  // ??? not sure about this one...
+
+  // - Mappers sometimes use a scanline IRQ to split the screen, many times for
+  // making a static status bar at the bottom of the screen (kirby, smb3)
+  // TODO: make this more robust, i.e: get rid of false positives (Megaman IV)
+  if (this->h.mmc3_irq.happened) {
+    // depending on if the menu is at the top / bottom of the screen, different
+    // scroll values should be used, and different parts of the screen should be
+    // cut-off
+    if (this->h.mmc3_irq.on_scanline < 240 / 2) {
+      // top of screen
+      this->pad.guess.t = this->h.mmc3_irq.on_scanline;
+      // this->curr_scroll stays the same
+    } else {
+      // bottom of screen
+      this->pad.guess.b = 239 - this->h.mmc3_irq.on_scanline;
+      this->curr_scroll = this->h.mmc3_irq.scroll_pre_irq;
+    }
+  }
+  this->h.mmc3_irq.happened = false; // reset each frame
+
+  // - vertically scrolling + vertical mirroring usually leads to artifacting
+  // at the top of the screen
+  // TODO: implement me
+  // TODO: implement inverse
 
   /*------------------  Padding / Scrolling Calculations  ------------------*/
 
@@ -262,30 +311,38 @@ void WideNESModule::ppu_frame_end_handler() {
 
   // calculate the new scroll position
 
-  int dx = this->curr_scroll.x - this->last_scroll.x;
-  int dy = this->curr_scroll.y - this->last_scroll.y;
+  int scroll_dx = this->curr_scroll.x - this->last_scroll.x;
+  int scroll_dy = this->curr_scroll.y - this->last_scroll.y;
 
   const int fuzz = 10;
   const int thresh_w = (256 - this->pad.total.l - this->pad.total.r) - fuzz;
   const int thresh_h = (240 - this->pad.total.t - this->pad.total.b) - fuzz;
 
-  // 255 -> 0 | dx is negative | means we are going right
-  // 0 -> 255 | dx is positive | means we are going left
-  if (::abs(dx) > thresh_w) {
-    if (dx < 0) dx += 256; // going right
-    else        dx -= 256; // going left
+  // 255 -> 0 | scroll_dx is negative | means we are going right
+  // 0 -> 255 | scroll_dx is positive | means we are going left
+  if (::abs(scroll_dx) > thresh_w) {
+    if (scroll_dx < 0) scroll_dx += 256; // going right
+    else               scroll_dx -= 256; // going left
   }
-  // 239 -> 0 | dy is negative | means we are going down
-  // 0 -> 239 | dy is positive | means we are going up
-  if (::abs(dy) > thresh_h) {
-    if (dy < 0) dy += 240; // going down
-    else        dy -= 240; // going up
+  // 239 -> 0 | scroll_dy is negative | means we are going down
+  // 0 -> 239 | scroll_dy is positive | means we are going up
+  if (::abs(scroll_dy) > thresh_h) {
+    if (scroll_dy < 0) scroll_dy += 240; // going down
+    else               scroll_dy -= 240; // going up
   }
 
-  this->scroll.x += dx;
-  this->scroll.y += dy;
-  this->scroll.dx = dx;
-  this->scroll.dy = dy;
+  // Zelda scroll heuristic
+  // not entirely sure why this jump happens... but this fixes it?
+  if (this->h.ppuaddr.active) {
+    if (::abs(scroll_dy) > (int)this->h.ppuaddr.cut_scanline) {
+      scroll_dy = 0;
+    }
+  }
+
+  this->scroll.x += scroll_dx;
+  this->scroll.y += scroll_dy;
+  this->scroll.dx = scroll_dx;
+  this->scroll.dy = scroll_dy;
 
   this->last_scroll.x = this->curr_scroll.x;
   this->last_scroll.y = this->curr_scroll.y;
@@ -482,7 +539,7 @@ void WideNESModule::output() {
   sprintf(buf,
     "total scroll: %-3d %-3d\n"
     " last scroll: %-3d %-3d\n"
-    "       dx/dy: %-3d %-3d\n",
+    "       dx dy: %-3d %-3d\n",
     this->scroll.x, this->scroll.y,
     this->last_scroll.x, this->last_scroll.y,
     this->scroll.dx, this->scroll.dy

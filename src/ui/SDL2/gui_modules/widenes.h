@@ -14,11 +14,26 @@
 
 class WideNESModule : public GUIModule {
 private:
+  /*---------------------------  SDL / GUI stuff  ----------------------------*/
+
   struct {
     SDL_Window*   window   = nullptr;
     SDL_Renderer* renderer = nullptr;
     SDL2_inprint* inprint  = nullptr;
   } sdl;
+
+  SDL_Texture* nes_screen; // copy of actual NES screen
+
+  // zoom/pan info
+  struct {
+    bool active = false;
+    struct { int x; int y; } last_mouse_pos { 0, 0 };
+    int dx = 0;
+    int dy = 0;
+    float zoom = 2.0;
+  } pan;
+
+  /*----------------------------  Tile Rendering  ----------------------------*/
 
   struct Tile {
     int x, y;
@@ -42,20 +57,6 @@ private:
   // tilemap
   std::map<int, std::map<int, Tile*>> tiles;
 
-  SDL_Texture* nes_screen;
-
-  // used to calculate dx and dy b/w frames
-  struct nes_scroll {
-    u8 x; u8 y;
-  } last_scroll { 0, 0 }
-  , curr_scroll { 0, 0 };
-
-  // total scroll (offset from origin)
-  struct {
-    int x, y;
-    int dx, dy;
-  } scroll { 0, 0, 0, 0 };
-
   // there tend to be graphical artifacts at the edge of the screen, so it's
   // prudent to sample sliglty away from the edge.
   // moreover, some games have static menus on screen that impair sampling
@@ -64,29 +65,59 @@ private:
     struct {
       int l, r, t, b;
     } guess  { 0, 0, 0, 0 }  // intelligent guess
-    , offset { 0, 0, 0, 0 }  // manual offset
+    , offset { 0, 0, 0, 0 }  // user offset
     , total  { 0, 0, 0, 0 }; // sum of the two
   } pad;
 
+  struct nes_scroll { u8 x; u8 y; };
+  nes_scroll last_scroll { 0, 0 };
+  nes_scroll curr_scroll { 0, 0 };
+
+  // total scroll (offset from origin)
   struct {
+    int x, y;
+    int dx, dy;
+  } scroll { 0, 0, 0, 0 };
+
+  /*------------------------------  Heuristics  ------------------------------*/
+
+  struct {
+    // The OG heuristic: Sniffing the PPUSCROLL registers for changes
+    struct {
+      nes_scroll curr { 0, 0 };
+    } ppuscroll;
+
+    // MMC3 Interrupt handling (i.e: intelligently chopping the screen)
+    // (SMB3, M.C Kids)
     struct {
       bool happened = false;
       uint on_scanline = 239;
-      nes_scroll curr_scroll_pre_irq = { 0, 0 };
+      nes_scroll scroll_pre_irq = { 0, 0 };
     } mmc3_irq;
-  } heuristics;
 
-  // zoom/pan info
-  struct {
-    bool active = false;
-    struct { int x; int y; } last_mouse_pos { 0, 0 };
-    int dx = 0;
-    int dy = 0;
-    float zoom = 2.0;
-  } pan;
+    // PPUADDR mid-frame changes
+    // (Zelda)
+    struct {
+      bool did_change = false;
+      struct {
+        uint on_scanline = 0;
+        bool while_rendering = 0;
+      } changed;
+
+      bool active = false;
+
+      uint frame_counter = 0; // TEMP: should not be needed with scene detection
+
+      uint cut_scanline = 0;
+      nes_scroll new_scroll = { 0, 0 };
+    } ppuaddr;
+  } h;
+
+  /*---------------------------  Callback Handlers  --------------------------*/
 
   void ppu_frame_end_handler();
   void ppu_write_start_handler(u16 addr, u8 val);
+  void ppu_write_end_handler(u16 addr, u8 val);
 
   void mmc3_irq_handler(Mapper_004* mapper, bool active);
 
@@ -94,6 +125,7 @@ private:
 
   static void cb_ppu_frame_end(void* self);
   static void cb_ppu_write_start(void* self, u16 addr, u8 val);
+  static void cb_ppu_write_end(void* self, u16 addr, u8 val);
 
   static void cb_mmc3_irq(void* self, Mapper_004* mapper, bool active);
 
