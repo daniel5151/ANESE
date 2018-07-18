@@ -211,9 +211,6 @@ void WideNESModule::ppu_write_end_handler(u16 addr, u8 val) {
   case PPUADDR: {
     this->h.ppuaddr.did_change = true;
 
-    if (ppu._scanline() < 241 && ppu_reg.ppumask.is_rendering)
-      fprintf(stderr, "%3u | 0x%04X <- 0x%02X\n", ppu._scanline(), addr, val);
-
     this->h.ppuaddr.changed.while_rendering = ppu_reg.ppumask.is_rendering;
     this->h.ppuaddr.changed.on_scanline = ppu._scanline();
 
