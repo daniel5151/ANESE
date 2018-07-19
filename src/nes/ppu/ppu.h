@@ -14,7 +14,7 @@
 #include "nes/params.h"
 
 namespace PPURegisters {
-  enum Reg {
+  enum Reg : unsigned {
     PPUCTRL   = 0x2000,
     PPUMASK   = 0x2001,
     PPUSTATUS = 0x2002,
@@ -25,6 +25,21 @@ namespace PPURegisters {
     PPUDATA   = 0x2007,
     OAMDMA    = 0x4014,
   };
+
+  inline const char* toString(unsigned reg) {
+    switch(Reg(reg)) {
+      case PPUCTRL:   return "PPUCTRL";
+      case PPUMASK:   return "PPUMASK";
+      case PPUSTATUS: return "PPUSTATUS";
+      case OAMADDR:   return "OAMADDR";
+      case OAMDATA:   return "OAMDATA";
+      case PPUSCROLL: return "PPUSCROLL";
+      case PPUADDR:   return "PPUADDR";
+      case PPUDATA:   return "PPUDATA";
+      case OAMDMA:    return "OAMDMA";
+    }
+    return "INVALID";
+  }
 } // PPURegisters
 
 // Picture Processing Unit

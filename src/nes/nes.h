@@ -74,6 +74,18 @@ private:
     SERIALIZE_SERIALIZABLE(interrupts)
   SERIALIZE_END(10)
 
+public:
+  virtual Serializable::Chunk* serialize() const override {
+    Serializable::Chunk* c = this->Serializable::serialize();
+    _callbacks.savestate_created.run();
+    return c;
+  }
+  virtual const Serializable::Chunk* deserialize(const Serializable::Chunk* c) override {
+    c = this->Serializable::deserialize(c);
+    _callbacks.savestate_loaded.run();
+    return c;
+  }
+private:
   const NES_Params& params;
 public:
   NES(const NES_Params& new_params);
@@ -106,5 +118,7 @@ public:
 
   struct {
     CallbackManager<Mapper*> cart_changed;
+    CallbackManager<> savestate_created;
+    CallbackManager<> savestate_loaded;
   } _callbacks;
 };

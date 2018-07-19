@@ -14,7 +14,7 @@
 
 class WideNESModule : public GUIModule {
 private:
-  /*---------------------------  SDL / GUI stuff  ----------------------------*/
+  /*--------------------------  SDL / GUI stuff  ---------------------------*/
 
   struct {
     SDL_Window*   window   = nullptr;
@@ -33,7 +33,7 @@ private:
     float zoom = 2.0;
   } pan;
 
-  /*----------------------------  Tile Rendering  ----------------------------*/
+  /*---------------------------  Tile Rendering  ---------------------------*/
 
   struct Tile {
     int x, y;
@@ -57,16 +57,18 @@ private:
   // tilemap
   std::map<int, std::map<int, Tile*>> tiles;
 
-  // there tend to be graphical artifacts at the edge of the screen, so it's
-  // prudent to sample sliglty away from the edge.
-  // moreover, some games have static menus on screen that impair sampling
-  // (eg: smb3, mc kids)
+  // Many games restrict the play-area to a limited subset of the screen, and
+  //   as such, parts of the screen unrelated to the map should be masked-off
+  // Moreover, there are times when the limitations of the NES hardware lead to
+  //   nasty artifacting near the edges of the screen, and it would be nice to
+  //   mask those off too.
   struct {
     struct {
       int l, r, t, b;
-    } guess  { 0, 0, 0, 0 }  // intelligent guess
-    , offset { 0, 0, 0, 0 }  // user offset
-    , total  { 0, 0, 0, 0 }; // sum of the two
+    } guess  { 0, 0, 0, 0 }  //   intelligent guess
+    , offset { 0, 0, 0, 0 }  // + user offset
+                             // -------------------
+    , total  { 0, 0, 0, 0 }; //   total
   } pad;
 
   struct nes_scroll { u8 x; u8 y; };
@@ -74,12 +76,42 @@ private:
   nes_scroll curr_scroll { 0, 0 };
 
   // total scroll (offset from origin)
-  struct {
+  struct total_scroll {
     int x, y;
     int dx, dy;
   } scroll { 0, 0, 0, 0 };
 
-  /*------------------------------  Heuristics  ------------------------------*/
+  /*---------------------------  Scene Detection  --------------------------*/
+
+  int frame_hash_unique(const u8* fb) const;
+  int frame_hash_percept(const u8* fb) const;
+
+  struct Scene {
+    int id;
+    std::map<int, std::pair<total_scroll, nes_scroll>> scroll_hash;
+    std::map<int, std::pair<total_scroll, nes_scroll>> scroll_phash;
+  };
+
+  int gen_scene_id() { static int id = 0; return ++id; }
+
+  int scene_id = 0;
+  std::map<int, Scene> scenes;
+
+  struct {
+    int last;
+
+    int vals [60];
+    int vals_i = 0;
+    int total = 0;
+
+    int min;
+    int max;
+  } phash;
+
+  /*-----------------------------  Heuristics  -----------------------------*/
+
+  void fix_padding();
+  void fix_scrolling();
 
   struct {
     // The OG heuristic: Sniffing the PPUSCROLL registers for changes
@@ -90,30 +122,31 @@ private:
     // MMC3 Interrupt handling (i.e: intelligently chopping the screen)
     // (SMB3, M.C Kids)
     struct {
-      bool happened = false;
-      uint on_scanline = 239;
+      bool active = false;
+
+      uint on_scanline = 0;
       nes_scroll scroll_pre_irq = { 0, 0 };
     } mmc3_irq;
 
     // PPUADDR mid-frame changes
     // (Zelda)
     struct {
+      bool active = false;
+
       bool did_change = false;
       struct {
         uint on_scanline = 0;
         bool while_rendering = 0;
       } changed;
 
-      bool active = false;
-
-      uint frame_counter = 0; // TEMP: should not be needed with scene detection
-
       uint cut_scanline = 0;
       nes_scroll new_scroll = { 0, 0 };
     } ppuaddr;
   } h;
 
-  /*---------------------------  Callback Handlers  --------------------------*/
+  /*--------------------------  Callback Handlers  -------------------------*/
+
+  void savestate_loaded_handler();
 
   void ppu_frame_end_handler();
   void ppu_write_start_handler(u16 addr, u8 val);
@@ -121,6 +154,7 @@ private:
 
   void mmc3_irq_handler(Mapper_004* mapper, bool active);
 
+  static void cb_savestate_loaded(void* self);
   static void cb_mapper_changed(void* self, Mapper* cart);
 
   static void cb_ppu_frame_end(void* self);

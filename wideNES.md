@@ -73,10 +73,10 @@ _The Legend of Zelda_. Although it does in fact use the scroll register to do
 left-and-right screen transitions, it uses a custom technique to do up-and-down
 screen transitions, never touching the scroll register.
 
-I have implemented a heuristic for getting _The Legend of Zelda_ working, but it
-involved a non-trivial amount of work. Moreover, I have not tested enough games
-to confidently say the heuristic is game-agnostic (although it is written to
-apply to a wide-variety of games... in theory)
+I have implemented a heuristic that has _The Legend of Zelda_ kind-of working,
+but it involved a non-trivial amount of work sniffing memory values and such.
+Moreover, I have not tested enough games to confidently say the heuristic is
+game-agnostic (although it is written quite generally)
 
 #### Sprites as Background Elements
 
@@ -97,13 +97,19 @@ I haven't looked into this yet, so I cannot be sure if there is a work-around.
 - [x] avoid smearing in some games
 - [x] mask-off edges (artifacting / static menus)
   - [x] manually
-  - [x] automatically - _using heuristics, not completely perfect_
-- [ ] Save/Load tiles
-  - Persistent levels!
-- [ ] Recognize scene-changes
-  - i.e: smb1 level transitions, game over screens, etc...
-    - right now, they overwrite tile data
+  - [x] automatically, _using heuristics_
+    - [x] bgr mask (many games)
+    - [x] MMC3 IRQ (SMB3, M.C Kids)
+    - [x] mid-frame PPUADDR changes (TLOZ)
+    - [ ] scrolling/mirroring mode mismatch
+- [x] Handle "non-traditional" scrolling
+  - Partially, seems to works with _TLOZ_
+- [ ] remembering what's been seen
+  - [x] Recognize scene-changes
+    - using _very_ basic perceptual hashing
+  - [ ] Scene change -> finds scene if exists
+  - [ ] Save/Load tiles / scenes
 - [ ] Animated background / tile support
-  - only sample in 8 pixel chunks?
-- [x] Handle non-hardware scrolling
-  - Partially, works with _TLOZ_
+  - [ ] Normalize wrt. current palette
+  - [ ] Normalize wrt. tiles (might have to inspect RAM, eew)
+
