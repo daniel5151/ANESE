@@ -189,8 +189,8 @@ private:
 
   struct Pixel {
     bool is_on;
-    u8   palette;  // pixel color - by palette
-    bool priority; // sprite priority bit (always 0 for bgr pixels)
+    u8   nes_color; // internal pixel color
+    bool priority;  // sprite priority bit (always 0 for bgr pixels)
   };
 
   Pixel get_bgr_pixel();
@@ -201,10 +201,16 @@ private:
 
   /*----  Emulation Vars and Methods  ----*/
 
-  // framebuffers
-  u8 framebuffer     [240 * 256 * 4] = {0};
-  u8 framebuffer_spr [240 * 256 * 4] = {0};
-  u8 framebuffer_bgr [240 * 256 * 4] = {0};
+  // RGBA framebuffers - easily passed to rendering layer
+  u8 framebuffer     [256 * 4 * 240] = {0};
+  u8 framebuffer_spr [256 * 4 * 240] = {0};
+  u8 framebuffer_bgr [256 * 4 * 240] = {0};
+
+  // nes color framebuffers
+  u8 framebuffer_nes_color     [256 * 240] = {0};
+  u8 framebuffer_nes_color_bgr [256 * 240] = {0};
+  u8 framebuffer_nes_color_spr [256 * 240] = {0};
+
 
   // scanline tracker
   struct {
@@ -260,6 +266,10 @@ public:
   void getFramebuffSpr(const u8** framebuffer) const;
   void getFramebuffBgr(const u8** framebuffer) const;
   void getFramebuff   (const u8** framebuffer) const;
+
+  void getFramebuffNESColorSpr(const u8** framebuffer) const;
+  void getFramebuffNESColorBgr(const u8** framebuffer) const;
+  void getFramebuffNESColor   (const u8** framebuffer) const;
 
   uint getNumFrames() const;
 

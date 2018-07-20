@@ -85,6 +85,10 @@ void PPU::getFramebuff   (const u8** fb) const { if (fb) *fb = this->framebuffer
 void PPU::getFramebuffSpr(const u8** fb) const { if (fb) *fb = this->framebuffer_spr; }
 void PPU::getFramebuffBgr(const u8** fb) const { if (fb) *fb = this->framebuffer_bgr; }
 
+void PPU::getFramebuffNESColor   (const u8** fb) const { if (fb) *fb = this->framebuffer_nes_color;     }
+void PPU::getFramebuffNESColorSpr(const u8** fb) const { if (fb) *fb = this->framebuffer_nes_color_spr; }
+void PPU::getFramebuffNESColorBgr(const u8** fb) const { if (fb) *fb = this->framebuffer_nes_color_bgr; }
+
 /*----------------------------  Memory Interface  ----------------------------*/
 
 u8 PPU::read(u16 addr) {
@@ -382,7 +386,7 @@ void PPU::spr_fetch() {
       BitField<6> flip_horizontal;
       BitField<7> flip_vertical;
     } attributes  { this->oam2[sprite * 4 + 2] };
-    u8 x_pos      = this->oam2[sprite * 4 + 4];
+    u8 x_pos      = this->oam2[sprite * 4 + 3];
 
     const bool is_dummy = (
       0xFF == y_pos &&
@@ -671,9 +675,9 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
 
     // Otherwise, fetch which pallete color to use, and return the pixel!
     return Pixel {
-      /* is_on    */ true,
-      /* palette  */ this->mem.peek(0x3F10 + attributes.palette * 4 + pixel_type),
-      /* priority */ bool(attributes.priority)
+      true,
+      this->mem.peek(0x3F10 + attributes.palette * 4 + pixel_type),
+      bool(attributes.priority)
     };
   }
 
@@ -710,39 +714,38 @@ void PPU::cycle() {
     const bool bgr_on = bgr_pixel.is_on;
     const bool spr_on = spr_pixel.is_on;
 
-    u8 palette = 0x00;
-    /**/ if (!bgr_on && !spr_on) palette = this->mem[0x3F00];
-    else if (!bgr_on &&  spr_on) palette = spr_pixel.palette;
-    else if ( bgr_on && !spr_on) palette = bgr_pixel.palette;
-    else if ( bgr_on &&  spr_on) palette = spr_pixel.priority
-                                              ? bgr_pixel.palette
-                                              : spr_pixel.palette;
+    u8 nes_color = 0x00;
+    /**/ if (!bgr_on && !spr_on) nes_color = this->mem[0x3F00];
+    else if (!bgr_on &&  spr_on) nes_color = spr_pixel.nes_color;
+    else if ( bgr_on && !spr_on) nes_color = bgr_pixel.nes_color;
+    else if ( bgr_on &&  spr_on) nes_color = spr_pixel.priority
+                                              ? bgr_pixel.nes_color
+                                              : spr_pixel.nes_color;
+
+    u8 nes_color_bgr = bgr_on ? bgr_pixel.nes_color : this->mem.peek(0x3F00);
+    u8 nes_color_spr = spr_on ? spr_pixel.nes_color : this->mem.peek(0x3F00);
 
     const uint x = (this->scan.cycle - 2);
-    if (x < 256 && this->scan.line != 261) {
-      const uint offset = (256 * 4 * this->scan.line) + (4 * x);
-      assert(offset + 3 < 240 * 256 * 4);
+    const uint y = this->scan.line;
 
-    #define draw_dot(buf, color) \
-      /* b */ buf[offset + 0] = color.b; \
-      /* g */ buf[offset + 1] = color.g; \
-      /* r */ buf[offset + 2] = color.r; \
-      /* a */ buf[offset + 3] = color.a;
+    if (x < 256 && y != 261) {
+      framebuffer_nes_color    [y * 256 + x] = nes_color;
+      framebuffer_nes_color_bgr[y * 256 + x] = nes_color_bgr;
+      framebuffer_nes_color_spr[y * 256 + x] = nes_color_spr;
 
-      // main framebuffer
-      draw_dot(framebuffer, this->palette[palette % 64]);
+      // raw NES colors are hard to render, so let's also do RGB translation.
+      // that way, we can directly pass the framebuffer to our rendering layer
+      const uint offset = (256 * 4 * y) + (4 * x);
+      #define draw_dot(buf, color) \
+        /* b */ buf[offset + 0] = color.b; \
+        /* g */ buf[offset + 1] = color.g; \
+        /* r */ buf[offset + 2] = color.r; \
+        /* a */ buf[offset + 3] = color.a;
 
-      // foreground / bg layers
-      Color bgr_color = (!bgr_on && !spr_on)
-        ? this->palette[this->mem.peek(0x3F00) % 64]
-        : this->palette[bgr_pixel.palette % 64];
-      Color spr_color = spr_on
-        ? this->palette[palette % 64]
-        : Color();
-
-      draw_dot(framebuffer_bgr, bgr_color);
-      draw_dot(framebuffer_spr, spr_color);
-    #undef draw_dot
+      draw_dot(framebuffer,     this->palette[nes_color     % 64]);
+      draw_dot(framebuffer_bgr, this->palette[nes_color_bgr % 64]);
+      draw_dot(framebuffer_spr, this->palette[nes_color_spr % 64]);
+      #undef draw_dot
     }
   }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <map>
+#include <unordered_map>
 
 #include <SDL.h>
 #include <SDL_inprint2.h>
@@ -54,8 +54,7 @@ private:
     Tile(SDL_Renderer* renderer, int x, int y);
   };
 
-  // tilemap
-  std::map<int, std::map<int, Tile*>> tiles;
+  /*---------------------------  Recording state  --------------------------*/
 
   // Many games restrict the play-area to a limited subset of the screen, and
   //   as such, parts of the screen unrelated to the map should be masked-off
@@ -87,15 +86,22 @@ private:
   int frame_hash_percept(const u8* fb) const;
 
   struct Scene {
-    int id;
-    std::map<int, std::pair<total_scroll, nes_scroll>> scroll_hash;
-    std::map<int, std::pair<total_scroll, nes_scroll>> scroll_phash;
+    struct _scroll_data {
+      total_scroll scroll;
+      nes_scroll last_scroll;
+    };
+
+    std::unordered_map<int, _scroll_data> scroll_hash;
+
+    std::unordered_map<int, std::unordered_map<int, Tile*>> tiles;
   };
 
   int gen_scene_id() { static int id = 0; return ++id; }
 
   int scene_id = 0;
-  std::map<int, Scene> scenes;
+  std::unordered_map<int, Scene> scenes;
+
+  uint stitch_timer = 0;
 
   struct {
     int last;
@@ -114,10 +120,20 @@ private:
   void fix_scrolling();
 
   struct {
-    // The OG heuristic: Sniffing the PPUSCROLL registers for changes
+    // The OG heuristic: Sniffing the PPUSCROLL/PPUADDR register for changes
     struct {
-      nes_scroll curr { 0, 0 };
-    } ppuscroll;
+      bool active;
+
+      bool did_change = false;
+      struct {
+        uint on_scanline = 0;
+        uint on_scancycle = 0;
+        bool while_rendering = 0;
+      } changed;
+
+      uint cut_scanline = 0;
+      nes_scroll new_scroll { 0, 0 };
+    } ppuscroll, ppuaddr;
 
     // MMC3 Interrupt handling (i.e: intelligently chopping the screen)
     // (SMB3, M.C Kids)
@@ -127,21 +143,6 @@ private:
       uint on_scanline = 0;
       nes_scroll scroll_pre_irq = { 0, 0 };
     } mmc3_irq;
-
-    // PPUADDR mid-frame changes
-    // (Zelda)
-    struct {
-      bool active = false;
-
-      bool did_change = false;
-      struct {
-        uint on_scanline = 0;
-        bool while_rendering = 0;
-      } changed;
-
-      uint cut_scanline = 0;
-      nes_scroll new_scroll = { 0, 0 };
-    } ppuaddr;
   } h;
 
   /*--------------------------  Callback Handlers  -------------------------*/

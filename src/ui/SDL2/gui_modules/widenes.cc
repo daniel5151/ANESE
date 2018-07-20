@@ -50,13 +50,18 @@ WideNESModule::WideNESModule(SharedState& gui)
   this->menu_submodule = new MenuSubModule(gui, this->sdl.window, this->sdl.renderer);
 }
 
+#include <unordered_set>
+
 WideNESModule::~WideNESModule() {
   fprintf(stderr, "[GUI][wideNES] Shutting down...\n");
 
-  for (auto col : this->tiles) {
-    for (auto row : col.second) {
-      const Tile* tile = row.second;
-      delete tile;
+  // delete all saved-tiles
+  for (auto p : this->scenes) {
+    Scene& scene = p.second;
+    for (auto col : scene.tiles) {
+      for (auto row : col.second) {
+        delete row.second;
+      }
     }
   }
 
@@ -109,12 +114,6 @@ void WideNESModule::input(const SDL_Event& event) {
     bool mod_shift = event.key.keysym.mod & KMOD_SHIFT;
     switch (event.key.keysym.sym) {
     case SDLK_ESCAPE: forward_to_emu_module = false; break;
-    case SDLK_k: {
-      for (auto col : this->tiles)
-        for (auto row : col.second)
-          delete row.second;
-      this->tiles.clear();
-    } break;
     case SDLK_e: this->pad.offset.t += mod_shift ? 1 : 8; break;
     case SDLK_3: this->pad.offset.t -= mod_shift ? 1 : 8; break;
     case SDLK_d: this->pad.offset.b += mod_shift ? 1 : 8; break;
@@ -165,45 +164,29 @@ WideNESModule::Tile::~Tile() {
 
 /*------------------------------  Frame-Hashes  ------------------------------*/
 
-int WideNESModule::frame_hash_unique(const u8* fb) const {
-  int hash = 0;
+int WideNESModule::frame_hash_unique(const u8* nescolor_fb) const {
+  uint hash = 0;
   for (int x = this->pad.total.l; x < 256 - this->pad.total.r; x++) {
     // hash individual columns
-    int chash = 0;
-    for (int y = this->pad.total.t; y < 240 - this->pad.total.b; y++) {
-      const uint px_i = (256 * 4 * y) + (4 * x);
-      chash = (chash + (324723947 + fb[px_i + 0])) ^ 93485734985;
-      chash = (chash + (324723947 + fb[px_i + 1])) ^ 93485734985;
-      chash = (chash + (324723947 + fb[px_i + 2])) ^ 93485734985;
-      // chash = (chash + (324723947 + fb[px_i + 3])) ^ 93485734985;
+    uint chash = 0;
+    for (int y = this->pad.total.t; y < 240 - this->pad.total.b; y++)
+      chash = (chash + (324723947 + nescolor_fb[y * 256 + x] * 2)) ^ 93485734985;
 
-      // add some bias
-      chash = (chash + (324723947 + y)) ^ 93485734985;
-    }
-
-    // add some more bias...
-    chash = (chash + (324723947 + x)) ^ 93485734985;
-
-    // hash entire image using column hashes
+    // use column hashes to make a full-frame hash
     hash = (hash + (324723947 + chash)) ^ 93485734985;
   }
+
   return hash;
 }
 
-int WideNESModule::frame_hash_percept(const u8* fb) const {
+int WideNESModule::frame_hash_percept(const u8* nescolor_fb) const {
   // TODO: make this less bad lol
 
   int hash = 0;
   for (int x = this->pad.total.l; x < 256 - this->pad.total.r; x++) {
     for (int y = this->pad.total.t; y < 240 - this->pad.total.b; y++) {
-      const uint px_i = (256 * 4 * y) + (4 * x);
-      hash += fb[px_i + 0];
-      hash += fb[px_i + 1];
-      hash += fb[px_i + 2];
-      // hash += fb[px_i + 3];
+      hash += nescolor_fb[y * 256 + x];
     }
-    // add some bias...
-    hash += x * 10;
   }
   return hash;
 }
@@ -242,17 +225,13 @@ void WideNESModule::cb_ppu_frame_end(void* self) {
 #include "nes/ppu/ppu.h"
 
 void WideNESModule::savestate_loaded_handler() {
-  const PPU& ppu = this->gui.nes._ppu();
-
   fprintf(stderr, "savestate loaded...\n");
 
-  const u8* framebuffer;
-  ppu.getFramebuffBgr(&framebuffer);
-  int hash = frame_hash_unique(framebuffer);
+  this->scroll = {0,0,0,0};
+  this->last_scroll = {0,0};
 
-  (void)hash;
-  // TODO: the easiest way to have save-states work with wideNES is to associate
-  // save-states with scenes directly...
+  this->scene_id = -1;
+  this->stitch_timer = 10;
 }
 
 void WideNESModule::ppu_write_start_handler(u16 addr, u8 val) {
@@ -269,14 +248,19 @@ void WideNESModule::ppu_write_end_handler(u16 addr, u8 val) {
 
   switch (addr) {
   case PPUSCROLL: {
-    if (ppu_reg.scroll_latch == 1) this->h.ppuscroll.curr.x = val;
-    if (ppu_reg.scroll_latch == 0) this->h.ppuscroll.curr.y = val;
+    this->h.ppuscroll.did_change = true;
+    this->h.ppuscroll.changed.while_rendering = ppu_reg.ppumask.is_rendering;
+    this->h.ppuscroll.changed.on_scanline = ppu._scanline();
+    this->h.ppuscroll.changed.on_scancycle = ppu._scancycle();
+
+    if (ppu_reg.scroll_latch == 1) this->h.ppuscroll.new_scroll.x = val;
+    if (ppu_reg.scroll_latch == 0) this->h.ppuscroll.new_scroll.y = val;
   } break;
   case PPUADDR: {
     this->h.ppuaddr.did_change = true;
-
     this->h.ppuaddr.changed.while_rendering = ppu_reg.ppumask.is_rendering;
     this->h.ppuaddr.changed.on_scanline = ppu._scanline();
+    this->h.ppuaddr.changed.on_scancycle = ppu._scancycle();
 
     if (ppu_reg.scroll_latch == 1) this->h.ppuaddr.new_scroll.x = 8 * ppu_reg.t.coarse_x;
     if (ppu_reg.scroll_latch == 0) this->h.ppuaddr.new_scroll.y = 8 * ppu_reg.t.coarse_y;
@@ -287,7 +271,9 @@ void WideNESModule::ppu_write_end_handler(u16 addr, u8 val) {
 void WideNESModule::mmc3_irq_handler(Mapper_004* mmc3, bool irq_enabled) {
   this->h.mmc3_irq.active = true;
 
-  this->h.mmc3_irq.scroll_pre_irq = this->h.ppuscroll.curr;
+  // taking value from ppuscroll
+  // TODO: investigate if some games use ppuaddr value instead?
+  this->h.mmc3_irq.scroll_pre_irq = this->h.ppuscroll.new_scroll;
   this->h.mmc3_irq.on_scanline = irq_enabled
     ? mmc3->peek_irq_latch()
     : 239; // cancels out later, give 0 padding
@@ -300,17 +286,40 @@ void WideNESModule::fix_padding() {
   // artifacts, so we can slice that bit off.
   this->pad.guess.l = ppu._reg().ppumask.m ? 0 : 8;
 
-  // - Zelda scrolling: writes to PPUADDR midframe are probably some creative
-  // scroll implementation?
+  // - If the PPUSCROLL register changes mid-frame, note where that happened,
+  // since that probably indicates a status-bar?
+  if (this->h.ppuscroll.did_change) {
+    if (this->h.ppuscroll.changed.on_scanline < 241 &&
+        this->h.ppuscroll.changed.while_rendering) {
+      this->h.ppuaddr.active = true;
+
+      this->h.ppuscroll.cut_scanline = this->h.ppuscroll.changed.on_scanline;
+      if (this->h.ppuscroll.changed.on_scancycle > 256 / 3)
+        this->h.ppuscroll.cut_scanline++;
+
+      // lob off the chunk of the screen not being scrolled...
+      if (this->h.ppuscroll.cut_scanline < 240 / 2) {
+        // top of screen
+        this->pad.guess.t = this->h.ppuscroll.cut_scanline;
+      } else {
+        // bottom of screen
+        this->pad.guess.b = 239 - this->h.ppuscroll.cut_scanline;
+      }
+    }
+  }
+
+  // - most games use PPUSCROLL to scroll mid-frame, but some games (like TLOZ)
+  // are sneakybois and use PPUADDR instead
   if (this->h.ppuaddr.did_change) {
     // ppuaddr is written to a lot, but we only care about writes that occur
     // mid-frame, since those are the one that lead to scrolling / status bars.
     if (this->h.ppuaddr.changed.on_scanline < 241 &&
         this->h.ppuaddr.changed.while_rendering) {
-      // cool, this heuristic is in-play
       this->h.ppuaddr.active = true;
 
       this->h.ppuaddr.cut_scanline = this->h.ppuaddr.changed.on_scanline;
+      if (this->h.ppuaddr.changed.on_scancycle > 256 / 3)
+        this->h.ppuaddr.cut_scanline++;
 
       // lob off the chunk of the screen not being scrolled...
       if (this->h.ppuaddr.cut_scanline < 240 / 2) {
@@ -318,7 +327,7 @@ void WideNESModule::fix_padding() {
         this->pad.guess.t = this->h.ppuaddr.cut_scanline;
       } else {
         // bottom of screen
-        this->pad.guess.b = 239 - this->h.mmc3_irq.on_scanline;
+        this->pad.guess.b = 239 - this->h.ppuaddr.cut_scanline;
       }
     }
   }
@@ -348,12 +357,14 @@ void WideNESModule::fix_padding() {
 
 void WideNESModule::fix_scrolling() {
   // - the OG - set current scroll values based off of the PPUSCROLL register
-  this->curr_scroll.x = this->h.ppuscroll.curr.x;
-  this->curr_scroll.y = this->h.ppuscroll.curr.y;
+  this->curr_scroll.x = this->h.ppuscroll.new_scroll.x;
+  this->curr_scroll.y = this->h.ppuscroll.new_scroll.y;
 
   // - Zelda-like scrolling
   if (this->h.ppuaddr.active) {
     this->curr_scroll.y = this->h.ppuaddr.new_scroll.y;
+    // this->curr_scroll.x = this->h.ppuaddr.new_scroll.x;
+    // TODO: ^ breaks zelda for some reason... investigate
   }
 
   // - MMC3 screen-split
@@ -415,9 +426,10 @@ void WideNESModule::ppu_frame_end_handler() {
   }
 
   // Zelda scroll heuristic
-  // not entirely sure why this works... but hey, it works?
-  if (this->h.ppuaddr.active) {
-    if (::abs(scroll_dy) > (int)this->h.ppuaddr.cut_scanline) {
+  // not entirely sure why zelda does this jumping behavior, but this seems to
+  // fix it... whatever works right?
+  if (this->h.ppuaddr.active && this->h.mmc3_irq.active == false) {
+    if (::abs(scroll_dy) >= (int)this->h.ppuaddr.cut_scanline) {
       scroll_dy = 0;
     }
   }
@@ -432,64 +444,106 @@ void WideNESModule::ppu_frame_end_handler() {
 
   /*----------------------------  Frame Hashing  ---------------------------*/
 
-  // We want to calculate 2 different hashes per frame
-  // 1) an true, unique hash
-  // 2) a perceptual hash
+  // Instead of using the full RGB framebuffer, we use the smaller raw NES color
+  // framebuffer, since it's less data to hash
+  const u8* nes_color_framebuffer;
+  ppu.getFramebuffNESColorBgr(&nes_color_framebuffer);
 
-  // 1) the unique hash allows us to detect exact-duplicated
-  // 2) the perceptual hash keeps track of what a scene "looks" like, and notes
-  // whenever a scene transition occurs
+  // We want to calculate 2 different hashes for each frame
+  // 1) a true, unique hash of the frame
+  //     - used to detect identical-frames, for re-entering scenes
+  // 2) a perceptual hash of the frame
+  //     - used to detect scene-changes
 
-  // TODO: normalize the frame wrt the palette
-  // TODO: normalize the frame wrt tiles
+  int hash  = frame_hash_unique(nes_color_framebuffer);
+  int phash = frame_hash_percept(nes_color_framebuffer);
 
-  // 1) unique hash
-  int hash = frame_hash_unique(framebuffer);
-  auto& scroll_hash = this->scenes[this->scene_id].scroll_hash;
-  if (scroll_hash.find(hash) != scroll_hash.end()) {
-    if (scroll_hash[hash].first.x != this->scroll.x ||
-        scroll_hash[hash].first.y != this->scroll.y) {
-      fprintf(stderr, " hash collision | %3d %3d | %3d %3d\n",
-        scroll_hash[hash].first.x, scroll_hash[hash].first.y,
-        this->scroll.x, this->scroll.y);
+  // printf("%d\n", hash);
+  // printf("%d\n", phash);
+
+  // Why do we have this "stitch timer"?
+  // TL;DR: re-entry into the same scene isn't always obvious from one frame
+  //
+  // Consider SMB2 level 1.
+  //
+  // There is a point where you enter a door (scene 1), do some stuff (scene 2),
+  // and exit _back into_ scene 1! This shouldn't be a problem, except for the
+  // fact that there are animated elements in the background...
+  //
+  // The tricky about animated backgrounds is that there is a good chance the
+  // that hash taken when entering a scene won't match-up exactly with any
+  // hashes of an existing scene, unless you there was a frame in the original
+  // scene that has the _exact same animation cycle_
+  // To compensate for this, a couple of frames "grace period" is enabled
+  // upon scene transition where every frame has it's hash checked, and tries
+  // to stitch together scenes.
+  //
+  // Consider The Legend of Zelda
+  //
+  // There are times when zelda "fades in" in such a way that the perceptual
+  // hash doesn't detect the fade, and as such, doesn't trigger a scene change.
+  // Once it fades in though, the frame matches perfectly with a previously seen
+  // frame, and everything works great.
+  //
+  // This brings up a question though: why not do this stitching on _every_
+  // frame? Why even have a grace period in the first place?
+  // Well, because some games *cough* Metroid *cough* like to reuse the _exact
+  // same screens_ in different parts of the level, which means having a
+  // contiuous check would keep "clipping back" to earlier parts of the map
+  if (this->stitch_timer) {
+    this->stitch_timer--;
+
+    // check if scene already exists
+    // not that slow tbh, basically linear wrt #scenes (since unordered_map is
+    // O(1) lookup)
+    Scene* match = nullptr;
+    int match_id = -1;
+    int match_hash = -1;
+    for (auto& p : this->scenes) {
+      int scene_id = p.first;
+      Scene& scene = p.second;
+
+      if (scene_id == this->scene_id) continue;
+
+      if (scene.scroll_hash.find(hash) != scene.scroll_hash.end()) {
+        fprintf(stderr, "found match in existing scene: %d - %d %d\n",
+          scene_id,
+          scene.scroll_hash[hash].scroll.x,
+          scene.scroll_hash[hash].scroll.y);
+        match = &scene;
+        match_id = scene_id;
+        match_hash = hash;
+      }
     }
-  } else {
-    scroll_hash[hash].first = this->scroll;
-    scroll_hash[hash].second = this->last_scroll;
+
+    if (match) {
+      // Discard anything we've learned so far...
+      for (auto col : this->scenes[this->scene_id].tiles) {
+        for (auto row : col.second) {
+          const Tile* tile = row.second;
+          delete tile;
+        }
+      }
+      this->scenes.erase(this->scene_id);
+
+      // Set the scene
+      this->scene_id = match_id;
+      this->scroll = match->scroll_hash[match_hash].scroll;
+      this->last_scroll = match->scroll_hash[match_hash].last_scroll;
+
+      this->stitch_timer = 0; // clear the stitch timer
+    }
   }
-  // printf("th | %d\n", hash);
 
-  // 2) perceptual hash
-  int phash = frame_hash_percept(framebuffer);
-
+  // TODO: find more robust method of detecting difference phash_dx threshold
+  // current value is pulled out of thing air (based off observation)
+  // it works alright for games that fade to black, but it fails when games
+  // fade to another straight-color
   int phash_dx = ::abs(this->phash.last - phash);
+  // fprintf(stderr, "%d\n", phash_dx);
+  if (phash_dx > 100000) {
+    this->stitch_timer = 60 * 3;
 
-  this->phash.last = phash;
-
-  this->phash.min = this->phash.min < phash ? this->phash.min : phash;
-  this->phash.max = this->phash.max > phash ? this->phash.max : phash;
-
-  this->phash.total -= this->phash.vals[this->phash.vals_i];
-  this->phash.total += phash;
-  this->phash.vals[this->phash.vals_i] = phash;
-  this->phash.vals_i = (this->phash.vals_i + 1) % 60;
-
-  auto& scroll_phash = this->scenes[this->scene_id].scroll_phash;
-  if (scroll_phash.find(phash) != scroll_phash.end()) {
-    if (scroll_phash[phash].first.x != this->scroll.x ||
-        scroll_phash[phash].first.y != this->scroll.y) {
-      fprintf(stderr, "phash collision | %3d %3d | %3d %3d\n",
-        scroll_phash[phash].first.x, scroll_phash[phash].first.y,
-        this->scroll.x, this->scroll.y);
-    }
-  } else {
-    scroll_phash[phash].first = this->scroll;
-    scroll_phash[phash].second = this->last_scroll;
-  }
-
-  // TODO: find more robust method of detecting difference b/w phash_dx
-  // current value is gathered from manual tweaking...
-  if (phash_dx > 1000000) {
     fprintf(stderr, "\nSCENE CHANGE:\n"
       "  avg: %d\n"
       "  min: %d\n"
@@ -498,15 +552,6 @@ void WideNESModule::ppu_frame_end_handler() {
       this->phash.total / 60,
       this->phash.min,
       this->phash.max);
-
-    // TODO: check if scene already exists
-    // use hashes... somehow.
-
-    // clear existing tiles
-    for (auto col : this->tiles)
-      for (auto row : col.second)
-        delete row.second;
-    this->tiles.clear();
 
     // reset phash
     this->phash.vals_i = 0;
@@ -517,20 +562,69 @@ void WideNESModule::ppu_frame_end_handler() {
     // reset heuristics
     memset(&this->h, 0, sizeof this->h);
 
-    // reset padding guesses?
-    // enabling this kinda borks zelda...
-    // memset(&this->pad.guess, 0, sizeof this->pad.guess);
+    // check if scene already exists
+    // not that slow tbh, basically linear wrt #scenes (since unordered_map is
+    // O(1) lookup)
+    Scene* match = nullptr;
+    int match_id = -1;
+    int match_hash = -1;
+    for (auto& p : this->scenes) {
+      int scene_id = p.first;
+      Scene& scene = p.second;
 
-    // reset scroll stats
-    this->scroll = {0,0,0,0};
-    this->last_scroll = {0,0};
+      if (scene.scroll_hash.find(hash) != scene.scroll_hash.end()) {
+        fprintf(stderr, "found match in existing scene: %d - %d %d\n",
+          scene_id,
+          scene.scroll_hash[hash].scroll.x,
+          scene.scroll_hash[hash].scroll.y);
+        match = &scene;
+        match_id = scene_id;
+        match_hash = hash;
+      }
+    }
 
-    this->scene_id = this->gen_scene_id();
+    if (match) {
+      this->scene_id = match_id; // set current scene to that scene
+      this->scroll = match->scroll_hash[match_hash].scroll;
+      this->last_scroll = match->scroll_hash[match_hash].last_scroll;
 
-    return;
+      // TODO: save padding guesses with scene data
+      memset(&this->pad.guess, 0, sizeof this->pad.guess);
+    } else { // new scene
+      this->scene_id = this->gen_scene_id(); // fresh scene id
+      this->scroll = {0,0,0,0};
+      this->last_scroll = {0,0};
+
+      memset(&this->pad.guess, 0, sizeof this->pad.guess);
+    }
   }
 
-  // printf("%d\n", phash);
+  // TEMP: check for duplicate uniqe hashes
+  auto& scroll_hashh = this->scenes[this->scene_id].scroll_hash;
+  if (scroll_hashh.find(hash) != scroll_hashh.end()) {
+    if (scroll_hashh[hash].scroll.x != this->scroll.x ||
+        scroll_hashh[hash].scroll.y != this->scroll.y) {
+      fprintf(stderr, " hash collision | %3d %3d | %3d %3d\n",
+        scroll_hashh[hash].scroll.x, scroll_hashh[hash].scroll.y,
+        this->scroll.x, this->scroll.y);
+    }
+  }
+
+  // update scroll-hash map
+  auto& scroll_hash = this->scenes[this->scene_id].scroll_hash;
+  scroll_hash[hash].scroll = this->scroll;
+  scroll_hash[hash].last_scroll = this->last_scroll;
+
+  // update perceptual hash values
+  this->phash.last = phash;
+
+  this->phash.min = this->phash.min < phash ? this->phash.min : phash;
+  this->phash.max = this->phash.max > phash ? this->phash.max : phash;
+
+  this->phash.total -= this->phash.vals[this->phash.vals_i];
+  this->phash.total += phash;
+  this->phash.vals[this->phash.vals_i] = phash;
+  this->phash.vals_i = (this->phash.vals_i + 1) % 60;
 
   /*----------------------------  Tile Updates  ----------------------------*/
 
@@ -548,9 +642,11 @@ void WideNESModule::ppu_frame_end_handler() {
       // tx/ty = "big tile" that sx/sy is currently in
       const int tx = ::floor((this->scroll.x + sx) / 256.0);
       const int ty = ::floor((this->scroll.y + sy) / 240.0);
-      Tile* tile = this->tiles[tx][ty];
-      if (!tile)
-        tile = this->tiles[tx][ty] = new Tile (this->sdl.renderer, tx, ty);
+      Tile* tile = this->scenes[this->scene_id].tiles[tx][ty];
+      if (!tile) {
+        tile = new Tile (this->sdl.renderer, tx, ty);
+        this->scenes[this->scene_id].tiles[tx][ty] = tile;
+      }
 
       // dx/dy = destination pixel within big-tile
       const uint dx = (this->scroll.x - tx * 256) + sx;
@@ -590,8 +686,11 @@ void WideNESModule::ppu_frame_end_handler() {
   const int ty = ::floor(this->scroll.y / 240.0);
   for (int dx : {0, 1}) {
     for (int dy : {0, 1}) {
-      Tile* tile = this->tiles[tx + dx][ty + dy];
-      if (tile == nullptr) continue;
+      Tile* tile = this->scenes[this->scene_id].tiles[tx + dx][ty + dy];
+      if (!tile) {
+        tile = new Tile (this->sdl.renderer, tx + dx, ty + dy);
+        this->scenes[this->scene_id].tiles[tx + dx][ty + dy] = tile;
+      }
 
       for (int bx = 0; bx < 16; bx++) {
         for (int by = 0; by < 15; by++) {
@@ -620,8 +719,11 @@ void WideNESModule::ppu_frame_end_handler() {
   // 3) Actually update the textures
   for (int dx : {0, 1}) {
     for (int dy : {0, 1}) {
-      Tile* tile = this->tiles[tx + dx][ty + dy];
-      if (tile == nullptr) continue;
+      Tile* tile = this->scenes[this->scene_id].tiles[tx + dx][ty + dy];
+      if (!tile) {
+        tile = new Tile (this->sdl.renderer, tx + dx, ty + dy);
+        this->scenes[this->scene_id].tiles[tx + dx][ty + dy] = tile;
+      }
 
       SDL_UpdateTexture(tile->texture_curr, nullptr, tile->fb_new, 256 * 4);
       SDL_UpdateTexture(tile->texture_done, nullptr, tile->fb,     256 * 4);
@@ -648,11 +750,11 @@ void WideNESModule::output() {
   SDL_RenderClear(this->sdl.renderer);
 
   // wideNES tiles
-  for (auto col : this->tiles) {
+  for (auto col : this->scenes[this->scene_id].tiles) {
     for (auto row : col.second) {
       const Tile* tile = row.second;
 
-      if (tile == nullptr) continue;
+      assert(tile != nullptr);
 
       SDL_Rect offset = origin;
       offset.x -= this->pan.zoom * (this->scroll.x - tile->x * 256);
@@ -716,11 +818,13 @@ void WideNESModule::output() {
 
   // debug values
   this->sdl.inprint->set_color(0xff0000);
-  char buf [128];
+  char buf [256];
   sprintf(buf,
+    "    scene id: %d\n\n"
     "total scroll: %-3d %-3d\n"
     " last scroll: %-3d %-3d\n"
     "       dx dy: %-3d %-3d\n",
+    this->scene_id,
     this->scroll.x, this->scroll.y,
     this->last_scroll.x, this->last_scroll.y,
     this->scroll.dx, this->scroll.dy
