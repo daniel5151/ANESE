@@ -56,13 +56,14 @@
 #include <string.h> // strerror, strncpy, strrchr
 
 // change to 0 to compile out any debug checks
-#define CUTE_FILES_DEBUG_CHECKS 1
+#define CUTE_FILES_DEBUG_CHECKS 0
+
+#include <errno.h>
 
 #if CUTE_FILES_DEBUG_CHECKS
 
   #include <stdio.h>  // printf
   #include <assert.h> // assert
-  #include <errno.h>
   #define CUTE_FILES_ASSERT assert
 
 #else
@@ -131,9 +132,11 @@ void cf_do_unit_tests();
 #if !defined _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #endif
-#define NOMINMAX // breaks args library, #thankswindows
 #include <Windows.h>
-#undef NO_ERROR // breaks my own code, #thankswindows
+// Thanks windows for all these helpful defines that break my code!
+#undef NO_ERROR
+#undef max
+#undef min
 
   struct cf_file_t
   {

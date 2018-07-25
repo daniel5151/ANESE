@@ -50,6 +50,8 @@ bool NES::loadCartridge(Mapper* cart) {
   this->cpu_mmu.loadCartridge(this->cart);
   this->ppu_mmu.loadCartridge(this->cart);
 
+  _callbacks.cart_changed.run(this->cart);
+
   return true;
 }
 
@@ -60,6 +62,8 @@ void NES::removeCartridge() {
 
   this->cpu_mmu.removeCartridge();
   this->ppu_mmu.removeCartridge();
+
+  _callbacks.cart_changed.run(nullptr);
 }
 
 void NES::attach_joy(uint port, Memory* joy) { this->joy.attach_joy(port, joy); }
@@ -143,10 +147,10 @@ void NES::step_frame() {
   }
 }
 
-void NES::getFramebuff(const u8*& framebuffer) const {
+void NES::getFramebuff(const u8** framebuffer) const {
   this->ppu.getFramebuff(framebuffer);
 }
 
-void NES::getAudiobuff(float*& samples, uint& len) {
+void NES::getAudiobuff(float** samples, uint* len) {
   this->apu.getAudiobuff(samples, len);
 }

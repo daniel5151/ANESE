@@ -18,10 +18,6 @@ PPU::PPU(
   fogleman_nmi_hack(params.ppu_timing_hack)
 {
   this->power_cycle();
-
-#ifdef DEBUG_PPU
-  this->init_debug_windows();
-#endif
 }
 
 void PPU::power_cycle() {
@@ -32,9 +28,6 @@ void PPU::power_cycle() {
   this->scan.cycle = 0;
 
   this->cpu_data_bus = 0x00;
-
-  this->odd_frame_latch = 0; // ?
-  this->latch = 0;
 
   memset(&this->bgr, 0, sizeof this->bgr);
   memset(&this->spr, 0, sizeof this->spr);
@@ -63,8 +56,8 @@ void PPU::reset() {
   // this->reg.oamaddr   is unchanged
   // this->reg.oamdata   is unchanged?
 
-  this->odd_frame_latch = 0; // ?
-  this->latch = 0;
+  this->reg.odd_frame_latch = 0; // ?
+  this->reg.scroll_latch = 0;
   // this->reg.v is unchanged
   // this->reg.t is unchanged?
   // this->reg.x is unchanged?
@@ -87,36 +80,21 @@ void PPU::nmiChange() { // hack
 /*--------------------------  Framebuffer Methods  ---------------------------*/
 
 uint PPU::getNumFrames() const { return this->frames; }
-void PPU::getFramebuff(const u8*& framebuffer) const {
-  framebuffer = this->framebuff;
-}
 
-void PPU::draw_dot(Color color, uint x, uint y) {
-  assert(x < 256 && y < 240);
+void PPU::getFramebuff   (const u8** fb) const { if (fb) *fb = this->framebuffer;     }
+void PPU::getFramebuffSpr(const u8** fb) const { if (fb) *fb = this->framebuffer_spr; }
+void PPU::getFramebuffBgr(const u8** fb) const { if (fb) *fb = this->framebuffer_bgr; }
 
-  const uint offset = (256 * 4 * y) + x * 4;
-  assert(offset + 3 < 240 * 256 * 4);
-  // This array caused me a lot of heartache and headache.
-  //
-  // I spent ~1h trying to debug why this->scan.line and this->scan.cycle were
-  // being overwritten with bogus values, and in the end, I figured out why...
-  //
-  // I was indexing into this pixels array incorrectly, writing past the end of
-  // it, but lucky for me, the way that the PPU class is laid out in memory,
-  // this->scan immediately followed the pixels array, and was writable.
-  //
-  // Why the hell did I decide to write this in C++ again?
-
-  /* b */ this->framebuff[offset + 0] = color.b;
-  /* g */ this->framebuff[offset + 1] = color.g;
-  /* r */ this->framebuff[offset + 2] = color.r;
-  /* a */ this->framebuff[offset + 3] = color.a;
-}
+void PPU::getFramebuffNESColor   (const u8** fb) const { if (fb) *fb = this->framebuffer_nes_color;     }
+void PPU::getFramebuffNESColorSpr(const u8** fb) const { if (fb) *fb = this->framebuffer_nes_color_spr; }
+void PPU::getFramebuffNESColorBgr(const u8** fb) const { if (fb) *fb = this->framebuffer_nes_color_bgr; }
 
 /*----------------------------  Memory Interface  ----------------------------*/
 
 u8 PPU::read(u16 addr) {
   assert((addr >= 0x2000 && addr <= 0x2007) || addr == 0x4014);
+
+  _callbacks.read_start.run(addr);
 
   using namespace PPURegisters;
 
@@ -128,9 +106,12 @@ u8 PPU::read(u16 addr) {
                     // on the cpu data line
                     retval = (this->reg.ppustatus.raw & 0xE0)
                            | (this->cpu_data_bus      & 0x1F);
+                    // race condition
+                    if (this->scan.line == 241 && this->scan.cycle == 0)
+                      retval &= ~0x80; // set V to 0 in the retval
                     this->reg.ppustatus.V = false;
                     this->nmiChange(); // hack
-                    this->latch = false;
+                    this->reg.scroll_latch = false;
   /*   0x2004  */ } break;
   case OAMDATA:   { // Extra logic for handling reads during sprite evaluation
                     // https://wiki.nesdev.com/w/index.php/PPU_sprite_evaluation
@@ -176,6 +157,10 @@ u8 PPU::read(u16 addr) {
                   } break;
   }
 
+  this->cpu_data_bus = retval;
+
+  _callbacks.read_end.run(addr, retval);
+
   return retval;
 }
 
@@ -201,6 +186,8 @@ u8 PPU::peek(u16 addr) const {
                     } else {
                       retval = this->oam.peek(this->reg.oamaddr);
                     }
+  /*   0x2001  */ } break;
+  case PPUMASK:   { retval = this->reg.ppumask.raw;
   /*   0x2007  */ } break;
   case PPUDATA:   { if (this->reg.v.val <= 0x3EFF) {
                       retval = this->reg.ppudata;
@@ -226,12 +213,9 @@ u8 PPU::peek(u16 addr) const {
 }
 
 void PPU::write(u16 addr, u8 val) {
-   //if (!this->reg.ppustatus.V) {
-   //  fprintf(stderr, "wr to 0x%04X outside of vblank, at %d : %d\n", addr, this->scan.line, this->scan.cycle);
-   //  this->draw_dot(Color(0x00FF00));
-   //}
-
   assert((addr >= 0x2000 && addr <= 0x2007) || addr == 0x4014);
+
+  _callbacks.write_start.run(addr, val);
 
   using namespace PPURegisters;
 
@@ -265,46 +249,46 @@ void PPU::write(u16 addr, u8 val) {
                     this->nmiChange(); // hack
                     // t: ....BA.. ........ = d: ......BA
                     this->reg.t.nametable = val & 0x03;
-  /*   0x2001  */ } return;
+  /*   0x2001  */ } break;
   case PPUMASK:   { this->reg.ppumask.raw = val;
-  /*   0x2002  */ } return;
+  /*   0x2002  */ } break;
   case PPUSTATUS: { fprintf(stderr, "[PPU] Write to PPUSTATUS is undefined!\n");
-  /*   0x2003  */ } return;
+  /*   0x2003  */ } break;
   case OAMADDR:   { this->reg.oamaddr = val;
-  /*   0x2004  */ } return;
+  /*   0x2004  */ } break;
   case OAMDATA:   { this->oam[this->reg.oamaddr++] = val;
-  /*   0x2005  */ } return;
-  case PPUSCROLL: { if (this->latch == 0) {
+  /*   0x2005  */ } break;
+  case PPUSCROLL: { if (this->reg.scroll_latch == 0) {
                       // t: ........ ...HGFED = d: HGFED...
                       this->reg.t.coarse_x = val >> 3;
                       // x:               CBA = d: .....CBA
                       this->reg.x = val & 0x07;
                     }
-                    if (this->latch == 1) {
+                    if (this->reg.scroll_latch == 1) {
                       // t: .CBA..HG FED..... = d: HGFEDCBA
                       this->reg.t.coarse_y = val >> 3;
                       this->reg.t.fine_y   = val & 0x07;
                     }
-                    this->latch = !this->latch;
-  /*   0x2006  */ } return;
-  case PPUADDR:   { if (this->latch == 0) {
+                    this->reg.scroll_latch = !this->reg.scroll_latch;
+  /*   0x2006  */ } break;
+  case PPUADDR:   { if (this->reg.scroll_latch == 0) {
                       // t: ..FEDCBA ........ = d: ..FEDCBA
                       // t: .X...... ........ = 0
                       this->reg.t.hi = val & 0x3F;
                     }
-                    if (this->latch == 1) {
+                    if (this->reg.scroll_latch == 1) {
                       // t: ........ HGFEDCBA = d: HGFEDCBA
                       this->reg.t.lo = val;
                       // v                    = t
                       this->reg.v.val = this->reg.t.val;
                     }
-                    this->latch = !this->latch;
-  /*   0x2007  */ } return;
+                    this->reg.scroll_latch = !this->reg.scroll_latch;
+  /*   0x2007  */ } break;
   case PPUDATA:   { this->mem[this->reg.v.val] = val;
                     // (0: add 1, going across; 1: add 32, going down)
                     if (this->reg.ppuctrl.I == 0) this->reg.v.val += 1;
                     if (this->reg.ppuctrl.I == 1) this->reg.v.val += 32;
-  /*   0x4014  */ } return;
+  /*   0x4014  */ } break;
   case OAMDMA:    { // The CPU stalls during DMA, but the PPU keeps running!
                     // DMA takes 513 / 514 CPU cycles:
                     #define CPU_CYCLE() \
@@ -324,14 +308,16 @@ void PPU::write(u16 addr, u8 val) {
                       this->oam[this->reg.oamaddr++] = cpu_val; CPU_CYCLE();
                     }
                     #undef CPU_CYCLE
-                  } return;
+                  } break;
   default:        { fprintf(stderr,
                       "[PPU] Unhandled Write to addr: 0x%04X\n <- 0x%02X",
                       addr,
                       val
                     );
-                  } return;
+                  } break;
   }
+
+  _callbacks.write_end.run(addr, val);
 }
 
 /*----------------------------  Helper Functions  ----------------------------*/
@@ -400,7 +386,7 @@ void PPU::spr_fetch() {
       BitField<6> flip_horizontal;
       BitField<7> flip_vertical;
     } attributes  { this->oam2[sprite * 4 + 2] };
-    u8 x_pos      = this->oam2[sprite * 4 + 4];
+    u8 x_pos      = this->oam2[sprite * 4 + 3];
 
     const bool is_dummy = (
       0xFF == y_pos &&
@@ -590,7 +576,11 @@ PPU::Pixel PPU::get_bgr_pixel() {
   if (this->reg.ppumask.b == false || this->scan.line >= 240)
     return Pixel();
 
-  return Pixel { pixel_type != 0, this->mem[0x3F00 + palette * 4 + pixel_type], 0 };
+  return Pixel {
+    pixel_type != 0,
+    this->mem[0x3F00 + palette * 4 + pixel_type],
+    0
+  };
 }
 
 // TODO: make this more "hardware" accurate.
@@ -685,9 +675,9 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
 
     // Otherwise, fetch which pallete color to use, and return the pixel!
     return Pixel {
-      /* is_on    */ true,
-      /* palette  */ this->mem.peek(0x3F10 + attributes.palette * 4 + pixel_type),
-      /* priority */ bool(attributes.priority)
+      true,
+      this->mem.peek(0x3F10 + attributes.palette * 4 + pixel_type),
+      bool(attributes.priority)
     };
   }
 
@@ -698,11 +688,7 @@ PPU::Pixel PPU::get_spr_pixel(PPU::Pixel& bgr_pixel) {
 /*----------------------------  Core Render Loop  ----------------------------*/
 
 void PPU::cycle() {
-#ifdef DEBUG_PPU
-  this->update_debug_windows();
-#endif
-
-  // ---- Core Loop ---- //
+  _callbacks.cycle_start.run();
 
   if (this->scan.line < 240 || this->scan.line == 261) {
     // Calculate Pixels
@@ -728,17 +714,38 @@ void PPU::cycle() {
     const bool bgr_on = bgr_pixel.is_on;
     const bool spr_on = spr_pixel.is_on;
 
-    u8 palette = 0x00;
-    /**/ if (!bgr_on && !spr_on) palette = this->mem[0x3F00];
-    else if (!bgr_on &&  spr_on) palette = spr_pixel.palette;
-    else if ( bgr_on && !spr_on) palette = bgr_pixel.palette;
-    else if ( bgr_on &&  spr_on) palette = spr_pixel.priority
-                                              ? bgr_pixel.palette
-                                              : spr_pixel.palette;
+    u8 nes_color = 0x00;
+    /**/ if (!bgr_on && !spr_on) nes_color = this->mem[0x3F00];
+    else if (!bgr_on &&  spr_on) nes_color = spr_pixel.nes_color;
+    else if ( bgr_on && !spr_on) nes_color = bgr_pixel.nes_color;
+    else if ( bgr_on &&  spr_on) nes_color = spr_pixel.priority
+                                              ? bgr_pixel.nes_color
+                                              : spr_pixel.nes_color;
+
+    u8 nes_color_bgr = bgr_on ? bgr_pixel.nes_color : this->mem.peek(0x3F00);
+    u8 nes_color_spr = spr_on ? spr_pixel.nes_color : this->mem.peek(0x3F00);
 
     const uint x = (this->scan.cycle - 2);
-    if (x < 256 && this->scan.line != 261) {
-      this->draw_dot(this->palette[palette % 64], x, this->scan.line);
+    const uint y = this->scan.line;
+
+    if (x < 256 && y != 261) {
+      framebuffer_nes_color    [y * 256 + x] = nes_color;
+      framebuffer_nes_color_bgr[y * 256 + x] = nes_color_bgr;
+      framebuffer_nes_color_spr[y * 256 + x] = nes_color_spr;
+
+      // raw NES colors are hard to render, so let's also do RGB translation.
+      // that way, we can directly pass the framebuffer to our rendering layer
+      const uint offset = (256 * 4 * y) + (4 * x);
+      #define draw_dot(buf, color) \
+        /* b */ buf[offset + 0] = color.b; \
+        /* g */ buf[offset + 1] = color.g; \
+        /* r */ buf[offset + 2] = color.r; \
+        /* a */ buf[offset + 3] = color.a;
+
+      draw_dot(framebuffer,     this->palette[nes_color     % 64]);
+      draw_dot(framebuffer_bgr, this->palette[nes_color_bgr % 64]);
+      draw_dot(framebuffer_spr, this->palette[nes_color_spr % 64]);
+      #undef draw_dot
     }
   }
 
@@ -756,8 +763,11 @@ void PPU::cycle() {
   if (this->scan.cycle == 1) {
     // vblank start on line 241...
     if (this->scan.line == 241) {
+      _callbacks.frame_end.run();
+
       // MAJOR KEY: The vblank flag is _always_ set!
       this->reg.ppustatus.V = true;
+
       this->nmiChange(); // hack
       // Only the interrupt is affected by ppuctrl.V (not the flag!)
       if (this->reg.ppuctrl.V) {
@@ -767,6 +777,8 @@ void PPU::cycle() {
 
     // ...and is cleared in the pre-render line
     if (this->scan.line == 261) {
+      _callbacks.frame_start.run();
+
       this->reg.ppustatus.V = false;
       this->reg.ppustatus.S = false;
       this->reg.ppustatus.O = false;
@@ -782,7 +794,7 @@ void PPU::cycle() {
 
   // Odd-Frame skip cycle
   if (
-    this->odd_frame_latch &&
+    this->reg.odd_frame_latch &&
     this->scan.cycle == 340 &&
     this->scan.line == 261 &&
     this->reg.ppumask.is_rendering
@@ -790,17 +802,20 @@ void PPU::cycle() {
 
   // Check to see if the cycle has finished
   if (this->scan.cycle > 340) {
+    _callbacks.scanline.run();
     // update scanline tracking vars
     this->scan.cycle = 0;
     this->scan.line += 1;
     // check for rollover
     if (this->scan.line > 261) {
       this->scan.line = 0;
-      this->odd_frame_latch ^= 1;
+      this->reg.odd_frame_latch ^= 1;
 
       this->frames++;
     }
   }
+
+  _callbacks.cycle_end.run();
 }
 
 /*---------------------------------  Palette  --------------------------------*/

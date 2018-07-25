@@ -255,6 +255,6 @@ public:
     return stall;
   }
 
-  void getAudiobuff(float*& samples, uint& len);
+  void getAudiobuff(float** samples, uint* len);
   void set_speed(float speed);
 };

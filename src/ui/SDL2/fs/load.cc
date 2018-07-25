@@ -82,7 +82,8 @@ static bool load_zipped_nes_file(const char* filepath, u8*& data, uint& data_len
     std::string file_ext = get_file_ext(file_stat.m_filename);
 
     if (file_ext == ".nes") {
-      printf("[Load][.zip][UnZip] Found .nes file in archive: '%s'\n", file_stat.m_filename);
+      fprintf(stderr, "[Load][.zip][UnZip] Found .nes file in archive: '%s'\n",
+        file_stat.m_filename);
 
       size_t uncomp_size;
       void* p = mz_zip_reader_extract_file_to_heap(
@@ -93,7 +94,8 @@ static bool load_zipped_nes_file(const char* filepath, u8*& data, uint& data_len
       );
 
       if (!p) {
-        printf("[Load][.zip][UnZip] Could not decompress '%s'\n", filepath);
+        fprintf(stderr, "[Load][.zip][UnZip] Could not decompress '%s'\n",
+          filepath);
         mz_free(p);
         mz_zip_reader_end(&zip_archive);
         return false;

@@ -18,7 +18,7 @@ void Config::load(int argc, char* argv[]) {
         ("Output CPU execution over STDOUT")
     | clara::Opt(this->cli.no_sav)
         ["--no-sav"]
-        ("Don't load/create sav files")
+        ("Don't load/create sav/savestate files")
     | clara::Opt(this->cli.ppu_timing_hack)
         ["--alt-nmi-timing"]
         ("Enable NMI timing fix \n"
@@ -32,6 +32,12 @@ void Config::load(int argc, char* argv[]) {
     | clara::Opt(this->cli.config_file, "path")
         ["--config"]
         ("Use custom config file")
+    | clara::Opt(this->cli.ppu_debug)
+        ["--ppu-debug"]
+        ("show ppu debug windows")
+    | clara::Opt(this->cli.widenes)
+        ["--widenes"]
+        ("enable wideNES")
     | clara::Arg(this->cli.rom, "rom")
         ("an iNES rom");
 

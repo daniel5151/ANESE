@@ -5,6 +5,10 @@
 
 #include "module.h"
 
+#include "submodules/menu.h"
+
+#include "common/callback_manager.h"
+
 #include "nes/cartridge/cartridge.h"
 #include "nes/joy/controllers/standard.h"
 #include "nes/joy/controllers/zapper.h"
@@ -16,29 +20,18 @@
 #include "../util/Sound_Queue.h"
 
 class EmuModule : public GUIModule {
-public:
+private:
   struct {
-    const uint RES_X = 256;
-    const uint RES_Y = 240;
-    const uint SAMPLE_RATE = 96000;
-
     SDL_Renderer* renderer = nullptr;
     SDL_Window*   window   = nullptr;
 
-    SDL_Rect     screen;
+    SDL_Rect screen_rect;
     SDL_Texture* screen_texture = nullptr;
     // SDL_AudioDeviceID nes_audiodev;
     Sound_Queue  sound_queue;
   } sdl;
 
-private:
   int speed_counter = 0;
-
-public:
-  NES_Params params;
-  NES nes;
-  char current_rom_file [256] = { 0 };
-  Cartridge* cart = nullptr;
 
   JOY_Standard joy_1 { "P1" };
   JOY_Standard joy_2 { "P2" };
@@ -48,15 +41,15 @@ public:
   FM2_Replay fm2_replay;
   FM2_Record fm2_record;
 
-  const Serializable::Chunk* savestate [4] = { nullptr };
+  MenuSubModule* menu_submodule;
 
 public:
   virtual ~EmuModule();
-  EmuModule(const SDLCommon& sdl_common, Config& config);
+  EmuModule(SharedState& gui);
+
   void input(const SDL_Event&) override;
   void update() override;
   void output() override;
 
-  int load_rom(const char* rompath);
-  int unload_rom(Cartridge* cart);
+  uint get_window_id() override { return SDL_GetWindowID(this->sdl.window); }
 };

@@ -11,9 +11,9 @@ $cmake_status = $(cmake -DDEBUG_PPU=ON -DNESTEST=OFF .. | Out-Host;$?;)
 $build_status = $(MSBuild.exe /p:Configuration=Release .\anese.sln | Out-Host;$?;)
 if ($cmake_status -and $build_status -and $run) {
     if ($rom -eq "") {
-        invoke-expression "cmd /c start powershell -Command { .\Release\anese.exe }"
+        invoke-expression "cmd /c start powershell -Command { .\Release\anese.exe --widenes }"
     } else {
-        invoke-expression "cmd /c start powershell -Command { .\Release\anese.exe '..\$rom' }"
+        invoke-expression "cmd /c start powershell -Command { .\Release\anese.exe --widenes '..\$rom' }"
     }
 }
 Set-Location -Path ..;

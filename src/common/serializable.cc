@@ -48,6 +48,12 @@ void Serializable::Chunk::collate(const u8*& data, uint& len, const Chunk* co) {
     }
   }
 
+  if (total_len == 0) {
+    data = nullptr;
+    len = 0;
+    return;
+  }
+
   // create a new output buffer
   u8* output = new u8 [total_len];
 

@@ -3,6 +3,7 @@
 #include "nes/generic/ram/ram.h"
 #include "nes/generic/rom/rom.h"
 #include "common/bitfield.h"
+#include "common/callback_manager.h"
 #include "common/util.h"
 #include "../mapper.h"
 
@@ -165,4 +166,8 @@ public:
   void setBatterySave(const Serializable::Chunk* c) override {
     this->prg_ram.deserialize(c);
   }
+
+  u8 peek_irq_latch() const { return this->reg.irq_latch; }
+
+  CallbackManager<Mapper_004*, bool> _did_irq_callbacks;
 };

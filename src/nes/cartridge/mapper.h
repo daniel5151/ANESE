@@ -9,6 +9,7 @@
 
 #include "nes/wiring/interrupt_lines.h"
 
+#include "common/callback_manager.h"
 #include "common/serializable.h"
 
 // Base Mapper Interface
@@ -80,8 +81,8 @@ private:
 
 protected:
   // Services provided to all mappers
-  void irq_trigger() const;
-  void irq_service() const;
+  void irq_trigger();
+  void irq_service();
   uint get_prg_bank_len() const;
   uint get_chr_bank_len() const;
   ROM&    get_prg_bank(uint bank) const;
@@ -109,6 +110,9 @@ public:
   // ---- Battery Backed Saving ---- //
   virtual const Serializable::Chunk* getBatterySave() const { return nullptr; }
   virtual void setBatterySave(const Serializable::Chunk* c) { return (void)c; }
+
+  // ---- Callbacks ---- //
+  CallbackManager<Mapper*> irq_callbacks;
 
   /*------------------------  Core Mapper Interface  -------------------------*/
 

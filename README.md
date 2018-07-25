@@ -1,56 +1,73 @@
 <p align="center">
   <a href="https://prilik.com/ANESE">
-    <img height="128px" src="resources/icons/anese.ico" alt="ANESE Logo">
+    <img height="128px" src="resources/icons/anese.ico"
+      alt="ANESE Logo">
   </a>
 </p>
 <p align="center">
   <a href="https://ci.appveyor.com/project/daniel5151/anese">
-    <img src="https://ci.appveyor.com/api/projects/status/qgy19m8us3ss6ilt?svg=true" alt="Build Status Windows">
+    <img src="https://ci.appveyor.com/api/projects/status/qgy19m8us3ss6ilt?svg=true"
+      alt="Build Status Windows">
   </a>
   <a href="https://travis-ci.org/daniel5151/ANESE">
-    <img src="https://travis-ci.org/daniel5151/ANESE.svg?branch=master" alt="Build Status macOS/Linux">
+    <img src="https://travis-ci.org/daniel5151/ANESE.svg?branch=master"
+      alt="Build Status macOS/Linux">
   </a>
 </p>
 
 **ANESE** (**A**nother **NES** **E**mulator) is a Nintendo Entertainment System
 Emulator written for fun and learning.
 
-While accuracy and performance are long-term goals, ANESE's primary focus is to
-get some of the more popular titles up and running. Most basic Mappers have
-been implemented, so many popular titles should be working! :smile:
+Accuracy and performance are long-term goals, but the primary focus is getting
+popular titles up and running. There are still a lot of bugs, but many games are
+working quite well already.
 
-ANESE is built with _cross-platform_ in mind, and is regularly tested on all
-major platforms (macOS, Windows, and Linux). ANESE doesn't use any
-vendor-specific language extensions, and is compiled with strict compiler flags.
-It is also linted (fairly) regularly.
+ANESE is _cross-platform_, and is regularly tested on macOS, Windows, and Linux.
 
-Lastly, ANESE strives to keep a clean and _interesting_ C++11 codebase,
-emphasizing _readability_, _maintainability_, and _approachability_. The code
-is well commented, providing sources and insights for much of the logic.
+ANESE core uses clean and _interesting_ C++11, emphasizing _readability_,
+_maintainability_, and _approachability_. It is well commented, providing
+in-line sources and insights for much of the implementation. It is also
+dependency free (aside from stdlib), making it easy to embed in other projects.
+
+## WideNES
+
+**wideNES** is a novel technique that can automatically "map-out" levels and
+worlds in NES games. Check out the [wideNES Readme](/ANESE/wideNES) for details.
+
+A GIF is worth a 1000 words:
+
+<p align="center">
+  <img src="resources/web/wideNES_metroid.gif" alt="wideNES on Metroid">
+</p>
+
+Pretty cool huh? Here's another one:
+
+<p align="center">
+  <img src="resources/web/wideNES_smb1.gif" alt="wideNES on SMB1">
+</p>
 
 ## Downloads
 
-Official releases can be found on the Releases tab on GitHub.
+Official releases of ANESE can be found on the Releases tab on GitHub.
 
-Alternatively, for the most up-to-date version of ANESE, you can download
-nightly builds. These are compiled directly from the latest ANESE commit,
-so there may (will) be bugs.
+Alternatively, for the most up-to-date version of ANESE, nightly builds are
+available. These are compiled directly from the latest ANESE commit, so there
+may/will be bugs.
 
-**Windows:** You can download nightly versions of ANESE from
+**Windows:** You can download builds of ANESE from
 [AppVeyor](https://ci.appveyor.com/project/daniel5151/anese)'s build artifacts
 page.
 
-**macOS:** Travis uploads nightly ANESE.app bundles to
+**macOS:** Travis uploads ANESE.app bundles to
 [this GDrive folder](https://drive.google.com/drive/folders/1GWiinQ4tjDSZlhjReVMdElwK1b-Zvagf).
 
 ## Building
 
 ### Dependencies
 
-While ANESE's emulation core (src/nes) doesn't have any major dependencies,
-there are a couple of libraries the UI uses. Most of these dependencies are
-bundled with ANESE (see: /thirdparty), although some do require additional
-installation:
+ANESE's emulation core (src/nes) doesn't have any major dependencies, but the UI
+does use a couple. Most of these dependencies are bundled with ANESE
+(see: /thirdparty), although some require additional installation:
 
 - **SDL2** (video/audio/controls)
   - _Linux_: `apt-get install libsdl2-dev` (on Ubuntu)
@@ -65,18 +82,20 @@ installation:
 
 ### Generating + Compiling
 
-ANESE builds with **CMake**. Nothing too fancy here.
+ANESE builds with **CMake**
 
+On macOS / Linux
 ```bash
 # in ANESE root
 mkdir build
 cd build
 cmake ..
 make
+
 make install # on macOS: creates ANESE.app in ANESE/bin/
 ```
 
-On Windows, building is very similar:
+On Windows:
 ```bat
 mkdir build
 cd build
@@ -84,18 +103,13 @@ cmake ..
 msbuild anese.sln /p:Configuration=Release
 ```
 
-If you're interested in looking under the hood of the PPU, you can pass the
-`-DDEBUG_PPU` flag to cmake and have ANESE display PPU debug windows.
-
 ## Running
 
-Running ANESE with no arguments throws you into a directory-browser, from which
-you can navigate to your ROM and launch it.
+ANESE opens to a directory-browser, from which ROMs can be launched.
 
-Alternatively, ANESE can run from the shell using `anese [rom.nes]` syntax.
-Certain features are only accessible from the command-line at the moment (e.g:
-movie recording / playback, PPU timing hacks). For a full list of switches,
-run `anese -h`
+ANESE can run from the shell using `anese [rom.nes]` syntax. Certain features
+are _only_ accessible from the command-line at the moment (e.g: movie recording
+/ playback, PPU timing hacks). For a full list of switches, run `anese -h`
 
 **Windows Users:** make sure the executable can find `SDL2.dll`! Download the
 runtime DLLs from the SDL website, and plop them in the same directory as
@@ -103,8 +117,7 @@ anese.exe
 
 ## Mappers
 
-There aren't too many mappers implemented at the moment, but the ones that are
-cover a sizable chunk of the popular NES library.
+Most popular Mappers are implemented:
 
  \#  | Name  | Some Games
 -----|-------|--------------------------------------------------
@@ -116,8 +129,7 @@ cover a sizable chunk of the popular NES library.
  007 | AxROM | Marble Madness, Battletoads
  009 | MMC2  | Punch Out!!
 
-If a game you love doesn't work in ANESE, feel free to implement it's mapper
-and open a PR for it :D
+Feel free to open a PR for any mappers you implement :)
 
 ## Controls
 
@@ -304,11 +316,12 @@ referenced while implementing some particularly tricky parts of the PPU). While
 I actively avoided looking at the source codes of other NES emulators while
 writing my initial implementations of the CPU and PPU, I did sneak a peek at how
 others solved some problems once I got stuck.
-- These awesome libraries make ANESE a lot nicer to use:
+- These awesome libraries are used throughout ANESE's UI and in WideNES:
+  - [cfg_path](https://github.com/Malvineous/cfgpath) - cross-platform config file
+  - [clara](https://github.com/catchorg/Clara) - argument Parsing
+  - [cute_headers](https://github.com/RandyGaul/cute_headers/) - cross-platform directory browsing
+  - [miniz](https://github.com/richgel999/miniz) - zipped ROM support
   - [sdl2](https://www.libsdl.org/) - A/V and Input
   - [SDL_inprint](https://github.com/driedfruit/SDL_inprint/) - SDL fonts, without SDL_ttf
-  - [clara](https://github.com/catchorg/Clara) - argument Parsing
-  - [miniz](https://github.com/richgel999/miniz) - zipped ROM support
-  - [cute_headers](https://github.com/RandyGaul/cute_headers/) - cross-platform directory browsing
-  - [cfg_path](https://github.com/Malvineous/cfgpath) - cross-platform config file
   - [simpleini](https://github.com/brofield/simpleini) - ini config parsing / saving
+  - [stb](https://github.com/nothings/stb) - image loading / writing

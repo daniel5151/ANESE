@@ -3,16 +3,16 @@
 #include "common/serializable.h"
 #include "common/util.h"
 
-#include "cartridge/mapper.h"
-#include "nes/generic/ram/ram.h"
-#include "joy/joy.h"
 #include "apu/apu.h"
+#include "cartridge/mapper.h"
 #include "cpu/cpu.h"
+#include "generic/ram/ram.h"
+#include "joy/joy.h"
 #include "ppu/dma.h"
 #include "ppu/ppu.h"
 #include "wiring/cpu_mmu.h"
-#include "wiring/ppu_mmu.h"
 #include "wiring/interrupt_lines.h"
+#include "wiring/ppu_mmu.h"
 
 #include "params.h"
 
@@ -74,6 +74,18 @@ private:
     SERIALIZE_SERIALIZABLE(interrupts)
   SERIALIZE_END(10)
 
+public:
+  virtual Serializable::Chunk* serialize() const override {
+    Serializable::Chunk* c = this->Serializable::serialize();
+    _callbacks.savestate_created.run();
+    return c;
+  }
+  virtual const Serializable::Chunk* deserialize(const Serializable::Chunk* c) override {
+    c = this->Serializable::deserialize(c);
+    _callbacks.savestate_loaded.run();
+    return c;
+  }
+private:
   const NES_Params& params;
 public:
   NES(const NES_Params& new_params);
@@ -93,8 +105,20 @@ public:
   void cycle();      // Run a single clock cycle
   void step_frame(); // Cycle the NES until there is a new frame to display
 
-  void getFramebuff(const u8*& framebuffer) const;
-  void getAudiobuff(float*& samples, uint& len);
+  void getFramebuff(const u8** framebuffer) const;
+  void getAudiobuff(float** samples, uint* len);
 
   bool isRunning() const { return this->is_running; }
+
+  /*---------------  Debugging / Instrumentation  --------------*/
+
+  APU& _apu() { return this->apu; }
+  CPU& _cpu() { return this->cpu; }
+  PPU& _ppu() { return this->ppu; }
+
+  struct {
+    CallbackManager<Mapper*> cart_changed;
+    CallbackManager<> savestate_created;
+    CallbackManager<> savestate_loaded;
+  } _callbacks;
 };
