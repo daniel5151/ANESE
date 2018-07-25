@@ -4,6 +4,10 @@
 #include <cmath>
 #include <cstdio>
 
+#include <stb_image_write.h>
+#include <stb_image.h>
+#include <cute_files.h>
+
 WideNESModule::WideNESModule(SharedState& gui)
 : GUIModule(gui)
 {
@@ -50,20 +54,11 @@ WideNESModule::WideNESModule(SharedState& gui)
   this->menu_submodule = new MenuSubModule(gui, this->sdl.window, this->sdl.renderer);
 }
 
-#include <unordered_set>
-
 WideNESModule::~WideNESModule() {
   fprintf(stderr, "[GUI][wideNES] Shutting down...\n");
 
-  // delete all saved-tiles
-  for (auto p : this->scenes) {
-    Scene& scene = p.second;
-    for (auto col : scene.tiles) {
-      for (auto row : col.second) {
-        delete row.second;
-      }
-    }
-  }
+  this->save_scenes();
+  this->clear_scenes();
 
   /*------------------------------  SDL Cleanup  -----------------------------*/
 
@@ -73,6 +68,164 @@ WideNESModule::~WideNESModule() {
 
   SDL_DestroyRenderer(this->sdl.renderer);
   SDL_DestroyWindow(this->sdl.window);
+}
+
+void WideNESModule::clear_scenes() {
+  // delete all saved-tiles
+  for (auto p : this->scenes) {
+    Scene& scene = p.second;
+    for (auto col : scene.tiles) {
+      for (auto row : col.second) {
+        if (!row.second) continue;
+        delete row.second;
+      }
+    }
+  }
+  this->scenes.clear();
+}
+
+#include "../fs/util.h"
+
+void WideNESModule::save_scenes() {
+  ANESE_fs::util::create_directory(this->scenes_path.c_str());
+
+  FILE* hashes = fopen((this->scenes_path + "/hashes.txt").c_str(), "wb");
+  for (auto p : this->scenes) {
+    int scene_id = p.first;
+    Scene& scene = p.second;
+
+    // save all tiles
+    for (auto col : scene.tiles) {
+      for (auto row : col.second) {
+        if (!row.second) continue;
+        Tile* tile = row.second;
+
+        u8* png_fb = new u8 [256 * 240 * 4];
+        for (uint i = 0; i < 256 * 240; i++) {
+          png_fb[i * 4 + 0] = tile->fb_new[i * 4 + 2];
+          png_fb[i * 4 + 1] = tile->fb_new[i * 4 + 1];
+          png_fb[i * 4 + 2] = tile->fb_new[i * 4 + 0];
+          png_fb[i * 4 + 3] = tile->fb_new[i * 4 + 3];
+        }
+
+        char buf [256];
+        sprintf(buf, "%s/scene_%d_%d_%d.png", this->scenes_path.c_str(),
+          scene_id, tile->x, tile->y);
+
+        stbi_write_png(buf, 256, 240, 4, png_fb, 256 * 4);
+
+        delete[] png_fb;
+      }
+    }
+
+    // save hashes
+    for (auto p : scene.scroll_hash) {
+      int hash = p.first;
+      auto data = p.second;
+
+      fprintf(hashes, "%d : %d | %d %d | %d %d\n",
+        scene_id,
+        hash,
+        data.scroll.x, data.scroll.y,
+        data.last_scroll.x, data.last_scroll.y);
+    }
+  }
+  fclose(hashes);
+}
+
+#include <climits>
+
+void WideNESModule::load_scenes() {
+  int max_scene_id = INT_MIN;
+
+  this->scenes_path = this->gui.current_rom_file + "_scenes";
+
+  cf_dir_t dir;
+  int success = cf_dir_open(&dir, this->scenes_path.c_str());
+  if (!success) return;
+
+  while (dir.has_next) {
+    cf_file_t file;
+    cf_read_file(&dir, &file);
+
+    std::string fullpath = this->scenes_path + "/" + file.name;
+
+    if (!strcmp(file.name, "hashes.txt")) {
+      FILE* hashes = fopen(fullpath.c_str(), "r");
+      int scene_id, hash, scroll_x, scroll_y, last_x, last_y;
+
+      while(fscanf(hashes, "%d : %d | %d %d | %d %d\n",
+        &scene_id,
+        &hash,
+        &scroll_x, &scroll_y,
+        &last_x, &last_y) != EOF
+      ) {
+        this->scenes[scene_id].scroll_hash[hash].scroll.x = scroll_x;
+        this->scenes[scene_id].scroll_hash[hash].scroll.y = scroll_y;
+        this->scenes[scene_id].scroll_hash[hash].last_scroll.x = last_x;
+        this->scenes[scene_id].scroll_hash[hash].last_scroll.y = last_y;
+      };
+    }
+
+    if (!strcmp(file.ext, "png")) {
+      // janky way to extract info from string lel
+      int i = 0;
+      int a [3];
+      char* p = file.name;
+      while (*p) {
+        if (::isdigit(*p) || *p == '-') {
+          a[i++] = ::strtol(p, &p, 10);
+        } else {
+          p++;
+        }
+      }
+      int scene_id = a[0];
+      int tx = a[1];
+      int ty = a[2];
+
+      max_scene_id = std::max(max_scene_id, scene_id);
+
+      Tile* tile = this->scenes[scene_id].tiles[tx][ty];
+      if (!tile) {
+        tile = new WideNESModule::Tile (this->sdl.renderer, tx, ty);
+        this->scenes[scene_id].tiles[tx][ty] = tile;
+      }
+
+      // Load PNG using stb_image
+      int x, y, comp;
+      u8* data = stbi_load(fullpath.c_str(), &x, &y, &comp, 4);
+      if (!data) {
+        fprintf(stderr, "%s\n", stbi_failure_reason());
+        assert(false);
+      }
+
+      // a long, long time ago in development, I decided to use
+      // SDL_PIXELFORMAT_ARGB8888 as the standard pixel ordering in ANESE.
+      // Why? No reason. Totally arbitrary.
+      // As long as it remained consistent, it didn't bother me.
+      // Except stb_image doesn't support anything but RGBA, so instead of this
+      // being a straigt memcpy, we need to switch some bytes around...
+      for (uint i = 0; i < 256 * 240; i++) {
+        tile->fb_new[i * 4 + 0] = data[i * 4 + 2];
+        tile->fb_new[i * 4 + 1] = data[i * 4 + 1];
+        tile->fb_new[i * 4 + 2] = data[i * 4 + 0];
+        tile->fb_new[i * 4 + 3] = data[i * 4 + 3];
+      }
+      SDL_UpdateTexture(tile->texture_curr, nullptr, tile->fb_new, 256 * 4);
+
+      // no need to update tile->fb (?)
+
+      stbi_image_free(data);
+    }
+
+    cf_dir_next(&dir);
+  }
+
+  // this prevents new scene_ids from overlapping with loaded one.
+  // it's not great, but it gets the job done.
+  this->gen_scene_id.next_id = max_scene_id + 1;
+
+  cf_dir_close(&dir);
 }
 
 void WideNESModule::input(const SDL_Event& event) {
@@ -188,6 +341,7 @@ int WideNESModule::frame_hash_percept(const u8* nescolor_fb) const {
       hash += nescolor_fb[y * 256 + x];
     }
   }
+
   return hash;
 }
 
@@ -206,6 +360,8 @@ void WideNESModule::cb_savestate_loaded(void* self) {
 }
 
 void WideNESModule::cb_mapper_changed(void* self, Mapper* mapper) {
+  if (mapper) ((WideNESModule*)self)->load_scenes();
+
   if (mapper && mapper->mapper_number() == 4) {
     Mapper_004* mmc3 = static_cast<Mapper_004*>(mapper);
     mmc3->_did_irq_callbacks.add_cb(WideNESModule::cb_mmc3_irq, self);
@@ -230,7 +386,7 @@ void WideNESModule::savestate_loaded_handler() {
   this->scroll = {0,0,0,0};
   this->last_scroll = {0,0};
 
-  this->scene_id = -1;
+  this->scene_id = this->gen_scene_id();
   this->stitch_timer = 10;
 }
 
@@ -544,14 +700,14 @@ void WideNESModule::ppu_frame_end_handler() {
   if (phash_dx > 100000) {
     this->stitch_timer = 60 * 3;
 
-    fprintf(stderr, "\nSCENE CHANGE:\n"
-      "  avg: %d\n"
-      "  min: %d\n"
-      "  max: %d\n"
-      "\n",
-      this->phash.total / 60,
-      this->phash.min,
-      this->phash.max);
+    // fprintf(stderr, "\nSCENE CHANGE:\n"
+    //   "  avg: %d\n"
+    //   "  min: %d\n"
+    //   "  max: %d\n"
+    //   "\n",
+    //   this->phash.total / 60,
+    //   this->phash.min,
+    //   this->phash.max);
 
     // reset phash
     this->phash.vals_i = 0;
@@ -637,14 +793,13 @@ void WideNESModule::ppu_frame_end_handler() {
   // sx/sy = soruce pixel (from NES screen)
   for (int sx = this->pad.total.l; sx < 256 - this->pad.total.r; sx++) {
     for (int sy = this->pad.total.t; sy < 240 - this->pad.total.b; sy++) {
-      assert(sx >= 0 && sx < 256 && sy >= 0 && sy < 240);
-
       // tx/ty = "big tile" that sx/sy is currently in
       const int tx = ::floor((this->scroll.x + sx) / 256.0);
       const int ty = ::floor((this->scroll.y + sy) / 240.0);
+
       Tile* tile = this->scenes[this->scene_id].tiles[tx][ty];
       if (!tile) {
-        tile = new Tile (this->sdl.renderer, tx, ty);
+        tile = new WideNESModule::Tile (this->sdl.renderer, tx, ty);
         this->scenes[this->scene_id].tiles[tx][ty] = tile;
       }
 
@@ -687,10 +842,7 @@ void WideNESModule::ppu_frame_end_handler() {
   for (int dx : {0, 1}) {
     for (int dy : {0, 1}) {
       Tile* tile = this->scenes[this->scene_id].tiles[tx + dx][ty + dy];
-      if (!tile) {
-        tile = new Tile (this->sdl.renderer, tx + dx, ty + dy);
-        this->scenes[this->scene_id].tiles[tx + dx][ty + dy] = tile;
-      }
+      if (!tile) continue;
 
       for (int bx = 0; bx < 16; bx++) {
         for (int by = 0; by < 15; by++) {
@@ -720,10 +872,7 @@ void WideNESModule::ppu_frame_end_handler() {
   for (int dx : {0, 1}) {
     for (int dy : {0, 1}) {
       Tile* tile = this->scenes[this->scene_id].tiles[tx + dx][ty + dy];
-      if (!tile) {
-        tile = new Tile (this->sdl.renderer, tx + dx, ty + dy);
-        this->scenes[this->scene_id].tiles[tx + dx][ty + dy] = tile;
-      }
+      if (!tile) continue;
 
       SDL_UpdateTexture(tile->texture_curr, nullptr, tile->fb_new, 256 * 4);
       SDL_UpdateTexture(tile->texture_done, nullptr, tile->fb,     256 * 4);
@@ -753,8 +902,7 @@ void WideNESModule::output() {
   for (auto col : this->scenes[this->scene_id].tiles) {
     for (auto row : col.second) {
       const Tile* tile = row.second;
-
-      assert(tile != nullptr);
+      if (!tile) continue;
 
       SDL_Rect offset = origin;
       offset.x -= this->pan.zoom * (this->scroll.x - tile->x * 256);

@@ -56,13 +56,14 @@
 #include <string.h> // strerror, strncpy, strrchr
 
 // change to 0 to compile out any debug checks
-#define CUTE_FILES_DEBUG_CHECKS 1
+#define CUTE_FILES_DEBUG_CHECKS 0
+
+#include <errno.h>
 
 #if CUTE_FILES_DEBUG_CHECKS
 
   #include <stdio.h>  // printf
   #include <assert.h> // assert
-  #include <errno.h>
   #define CUTE_FILES_ASSERT assert
 
 #else

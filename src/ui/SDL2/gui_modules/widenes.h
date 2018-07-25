@@ -54,7 +54,7 @@ private:
     Tile(SDL_Renderer* renderer, int x, int y);
   };
 
-  /*---------------------------  Recording state  --------------------------*/
+  /*------------------------  Current Recording State  -----------------------*/
 
   // Many games restrict the play-area to a limited subset of the screen, and
   //   as such, parts of the screen unrelated to the map should be masked-off
@@ -80,10 +80,11 @@ private:
     int dx, dy;
   } scroll { 0, 0, 0, 0 };
 
-  /*---------------------------  Scene Detection  --------------------------*/
+  /*------------------------------  Scene Data  ------------------------------*/
 
   int frame_hash_unique(const u8* fb) const;
   int frame_hash_percept(const u8* fb) const;
+
 
   struct Scene {
     struct _scroll_data {
@@ -96,10 +97,19 @@ private:
     std::unordered_map<int, std::unordered_map<int, Tile*>> tiles;
   };
 
-  int gen_scene_id() { static int id = 0; return ++id; }
+  std::string scenes_path;
+  void save_scenes();
+  void load_scenes();
+  void clear_scenes();
+
+  // TODO: make this less-bad
+  struct {
+    int next_id;
+    int operator()() { return this->next_id++; }
+  } gen_scene_id;
 
   int scene_id = 0;
-  std::unordered_map<int, Scene> scenes;
+  std::unordered_map<int, Scene> scenes; // <- this is what gets saved / loaded
 
   uint stitch_timer = 0;
 

@@ -1,14 +1,17 @@
 <p align="center">
   <a href="https://prilik.com/ANESE">
-    <img height="128px" src="resources/icons/anese.ico" alt="ANESE Logo">
+    <img height="128px" src="resources/icons/anese.ico"
+      alt="ANESE Logo">
   </a>
 </p>
 <p align="center">
   <a href="https://ci.appveyor.com/project/daniel5151/anese">
-    <img src="https://ci.appveyor.com/api/projects/status/qgy19m8us3ss6ilt?svg=true" alt="Build Status Windows">
+    <img src="https://ci.appveyor.com/api/projects/status/qgy19m8us3ss6ilt?svg=true"
+      alt="Build Status Windows">
   </a>
   <a href="https://travis-ci.org/daniel5151/ANESE">
-    <img src="https://travis-ci.org/daniel5151/ANESE.svg?branch=master" alt="Build Status macOS/Linux">
+    <img src="https://travis-ci.org/daniel5151/ANESE.svg?branch=master"
+      alt="Build Status macOS/Linux">
   </a>
 </p>
 
@@ -34,13 +37,13 @@ worlds in NES games. Check out the [wideNES Readme](/ANESE/wideNES) for details.
 A GIF is worth a 1000 words:
 
 <p align="center">
-  <img src="resources/web/wideNES_smb1.gif" alt="wideNES on SMB1">
+  <img src="resources/web/wideNES_metroid.gif" alt="wideNES on Metroid">
 </p>
 
 Pretty cool huh? Here's another one:
 
 <p align="center">
-  <img src="resources/web/wideNES_metroid.gif" alt="wideNES on Metroid">
+  <img src="resources/web/wideNES_smb1.gif" alt="wideNES on SMB1">
 </p>
 
 ## Downloads
@@ -313,11 +316,12 @@ referenced while implementing some particularly tricky parts of the PPU). While
 I actively avoided looking at the source codes of other NES emulators while
 writing my initial implementations of the CPU and PPU, I did sneak a peek at how
 others solved some problems once I got stuck.
-- These awesome libraries make ANESE a lot nicer to use:
+- These awesome libraries are used throughout ANESE's UI and in WideNES:
+  - [cfg_path](https://github.com/Malvineous/cfgpath) - cross-platform config file
+  - [clara](https://github.com/catchorg/Clara) - argument Parsing
+  - [cute_headers](https://github.com/RandyGaul/cute_headers/) - cross-platform directory browsing
+  - [miniz](https://github.com/richgel999/miniz) - zipped ROM support
   - [sdl2](https://www.libsdl.org/) - A/V and Input
   - [SDL_inprint](https://github.com/driedfruit/SDL_inprint/) - SDL fonts, without SDL_ttf
-  - [clara](https://github.com/catchorg/Clara) - argument Parsing
-  - [miniz](https://github.com/richgel999/miniz) - zipped ROM support
-  - [cute_headers](https://github.com/RandyGaul/cute_headers/) - cross-platform directory browsing
-  - [cfg_path](https://github.com/Malvineous/cfgpath) - cross-platform config file
   - [simpleini](https://github.com/brofield/simpleini) - ini config parsing / saving
+  - [stb](https://github.com/nothings/stb) - image loading / writing

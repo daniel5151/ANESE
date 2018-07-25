@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#define CUTE_FILES_IMPLEMENTATION
 #include <cute_files.h>
 #include <SDL_inprint2.h>
 #include <SDL.h>

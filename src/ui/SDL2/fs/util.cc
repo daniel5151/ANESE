@@ -1,9 +1,13 @@
 #include "util.h"
 
+#include <stdlib.h>
+#include <errno.h>
+
 #ifdef WIN32
   #include <Windows.h>
+  #include <direct.h>
 #else
-  #include <stdlib.h>
+  #include <sys/stat.h>
 #endif
 
 namespace ANESE_fs {
@@ -17,6 +21,18 @@ void get_abs_path(char* abs_path, const char* path, unsigned int n) {
   (void)n;
   (void)realpath(path, abs_path);
 #endif
+}
+
+int create_directory(const char* path) {
+#ifdef WIN32
+  int status = _mkdir(path);
+#else
+  int status = mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
+  if (status == -1)
+    if (errno == EEXIST)
+      return 0;
+  return status;
 }
 
 }}
