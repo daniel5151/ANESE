@@ -28,12 +28,6 @@ u8 Mapper_001::peek(u16 addr) const {
 }
 
 void Mapper_001::write(u16 addr, u8 val) {
-  if (this->write_just_happened) return;
-  // Why is it set to 6?
-  // Next CPU cycle, it will be decremented to 3, which causes the early return.
-  // One more CPU cycle, and it's back at 0, and writing is reenabled.
-  this->write_just_happened = 6;
-
   // If writing to RAM, do it, and then return
   if (in_range(addr, 0x0000, 0x0FFF)) return this->chr_lo->write(addr - 0x0000, val);
   if (in_range(addr, 0x1000, 0x1FFF)) return this->chr_hi->write(addr - 0x1000, val);
@@ -46,6 +40,9 @@ void Mapper_001::write(u16 addr, u8 val) {
   }
 
   // Otherwise, handle writing to registers
+
+  if (this->write_just_happened) return;
+  this->write_just_happened = 6;
 
   // "Unlike almost all other mappers, the MMC1 is configured through a serial
   //  port in order to reduce pin count." - Wiki
