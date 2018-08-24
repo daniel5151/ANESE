@@ -12,6 +12,7 @@
   - Contain the various frontends to ANESE
     - At the moment, there is only one: `ui/SDL2`
     - In the future: LibRetro core?
+  - Contains all the wideNES code!
   - Handles all code not-directly related to emulating NES
     - ex: saving/loading files, outputting audio/video, reading input
 
