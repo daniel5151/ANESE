@@ -8,9 +8,6 @@ It's not the cleanest code, but it works, and is pretty modular.
   - Initializes and routes events / output to and from `GUIModules`
 - `gui_modules` - Individual components of the UI
   - Implement simple interface (accept input, update self, render output)
-  - `EmuModule` - ANESE core
-    - Owns, updates, and presents the output of ANESE core
-    - Handles loading / unloading ROMs, Movies, and savs
-  - `MenuModule` - Menu system
-    - Runs the menu system
-    - Has reference to `EmuModule` (to load ROMs)
+  - `emu` - Basic NES output. Handles keyboard input and such.
+  - `ppu-debug` - A collection of debug windows for the PPU
+  - `widenes` - ANESE's wideNES implementation
