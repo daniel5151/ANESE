@@ -8,7 +8,8 @@ That's a lot of work.
 
 Wouldn't it be cool to automate that?
 
-Enter **wideNES**, a novel method to map-out NES games automatically.
+Enter [**wideNES**](http://prilik.com/blog/wideNES), a novel method to map-out 
+NES games automatically.
 
 <p align="center">
   <img src="resources/web/wideNES_metroid.gif" alt="wideNES on Metroid">
@@ -77,6 +78,9 @@ recorded.
 
 It's not quite _that_ simple, since there are lots of additional heuritics that
 are used to smooth out edge-cases, but at a high level, that's the gist of it!
+
+If you're really interested in the gory details, check out the writeup on
+[my blog!](http://prilik.com/blog/wideNES)
 
 ## Caveats
 
