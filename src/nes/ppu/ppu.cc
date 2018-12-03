@@ -442,7 +442,7 @@ void PPU::bgr_fetch() {
 
       this->bgr.shift.at_latch[0] = this->bgr.at_byte & 1;
       this->bgr.shift.at_latch[1] = this->bgr.at_byte & 2;
-    }
+    } break;
     // 1) Fetch Nametable Byte
     // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Tile_and_attribute_fetching
     case 2: {

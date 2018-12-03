@@ -60,8 +60,10 @@ void CPU::service_interrupt(Interrupts::Type interrupt, bool brk /* = false */) 
   this->cycles += 7;
 
   switch (interrupt) {
-  case Interrupts::IRQ: if (brk || !this->reg.p.i)
-                          this->reg.pc = this->read16(0xFFFE); break;
+  case Interrupts::IRQ:
+    if (brk || !this->reg.p.i)
+      this->reg.pc = this->read16(0xFFFE);
+    break;
   case Interrupts::RESET: this->reg.pc = this->read16(0xFFFC); break;
   case Interrupts::NMI:   this->reg.pc = this->read16(0xFFFA); break;
   default: break;
@@ -424,7 +426,7 @@ u16 CPU::peek16(u16 addr) const {
 u16 CPU::read16(u16 addr) {
   return this->mem.read(addr + 0) |
         (this->mem.read(addr + 1) << 8);
-};
+}
 
 u16 CPU::peek16_zpg(u16 addr) const {
   return this->mem.peek(addr + 0) |

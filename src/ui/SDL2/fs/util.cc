@@ -18,8 +18,9 @@ void get_abs_path(char* abs_path, const char* path, unsigned int n) {
 #ifdef WIN32
   GetFullPathName(path, n, abs_path, nullptr);
 #else
+  const char* _ = realpath(path, abs_path);
   (void)n;
-  (void)realpath(path, abs_path);
+  (void)_;
 #endif
 }
 

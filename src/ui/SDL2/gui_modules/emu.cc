@@ -204,7 +204,7 @@ void EmuModule::input(const SDL_Event& event) {
     // Use CMD on macOS, and CTRL on windows / linux
     bool mod_ctrl = strcmp(SDL_GetPlatform(), "Mac OS X") == 0
       ? event.key.keysym.mod & (KMOD_LGUI | KMOD_RGUI)
-      : mod_ctrl = event.key.keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
+      : event.key.keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
 
     // Regular 'ol keys
     switch (event.key.keysym.sym) {

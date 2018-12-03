@@ -110,14 +110,11 @@ void MenuSubModule::update() {
     // Get file-listing
     cf_dir_t dir;
     cf_dir_open(&dir, this->nav.directory);
-    bool skip_first = true;
     while (dir.has_next) {
       cf_file_t file;
       cf_read_file(&dir, &file);
-      if (!skip_first)
-        files.push_back(file);
+      files.push_back(file);
       cf_dir_next(&dir);
-      skip_first = false;
     }
     cf_dir_close(&dir);
 
