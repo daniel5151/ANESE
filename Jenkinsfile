@@ -10,6 +10,7 @@ pipeline {
     stage('Test') {
       steps {
         echo 'Testing..'
+        echo 'Put sh resources here to run tests'
       }
     }
   }
