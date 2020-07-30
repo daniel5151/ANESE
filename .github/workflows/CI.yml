@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - '*.yml'
+  pull_request:
+    paths-ignore:
+      - '*.yml'
+
+jobs:
+  build-windows:
+    name: build-windows (${{ matrix.configuration }}, ${{ matrix.arch }})
+    env:
+      SDL2: SDL2-${{ matrix.SDL2_ver }}
+      POWERSHELL_TELEMETRY_OPTOUT: 1
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Release, Debug]
+        arch: [x86, x64]
+        SDL2_ver: [2.0.12]
+        include:
+          - arch: x86
+            platform: Win32
+          - arch: x64
+            platform: x64
+    steps:
+    - uses: actions/checkout@v2
+    #- uses: actions/cache@v2
+    #  id: cache
+    #  with:
+    #    path: |
+    #      SDL2-devel-${{ matrix.SDL2_ver }}-VC.zip
+    #      SDL2-${{ env.SDL2_ver }}-win32-${{ matrix.arch }}.zip
+    #    key: ${{ env.SDL2_ver }}_1
+    - name: Download SDL2
+      #if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        curl -LJO https://www.libsdl.org/release/SDL2-devel-${{ matrix.SDL2_ver }}-VC.zip -LJO https://www.libsdl.org/release/SDL2-${{ matrix.SDL2_ver }}-win32-${{ matrix.arch }}.zip
+        7z x -r -y SDL2-devel-${{ matrix.SDL2_ver }}-VC.zip
+    - name: CMake generate
+      run: |
+        mkdir build && cd build
+        cmake .. -A ${{ matrix.platform }}
+    - name: Build
+      working-directory: build
+      run: cmake --build . --config ${{ matrix.configuration }} -j $env:NUMBER_OF_PROCESSORS
+    - if: matrix.configuration == 'Release'
+      name: Prepare artifacts
+      run: |
+        7z x -r -y SDL2-${{ matrix.SDL2_ver }}-win32-${{ matrix.arch }}.zip -oartifacts
+        mv build\${{ matrix.configuration }}\anese.exe, roms\demos\* artifacts
+    - if: matrix.configuration == 'Release'
+      uses: actions/upload-artifact@v2
+      with:
+        name: ANESE-${{ runner.os }}-${{ matrix.arch }}
+        path: artifacts
+
+  build-linux:
+    runs-on: ubuntu-latest
+    env:
+      compiler: ${{ matrix.compiler }}
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+        configuration: [Release, RelWithDebInfo, MinSizeRel, Debug]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install SDL2
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install libsdl2-dev
+      - name: CMake generate
+        run: |
+          mkdir build && cd build
+          cmake ..
+      - name: Build
+        working-directory: build
+        run: cmake --build . --config ${{ matrix.configuration }} -j$(nproc)
+
+  build-macos:
+    runs-on: macos-latest
+    env:
+      compiler: ${{ matrix.compiler }}
+      HOMEBREW_NO_ANALYTICS: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+        configuration: [Release, RelWithDebInfo, MinSizeRel, Debug]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install SDL2
+        run: brew install SDL2
+      - name: CMake generate
+        run: |
+          mkdir build && cd build
+          cmake ..
+      - name: Build
+        working-directory: build
+        run: cmake --build . --config ${{ matrix.configuration }} -j$(sysctl -n hw.ncpu)
+      - if: matrix.configuration == 'Release'
+        name: Prepare artifacts
+        working-directory: build
+        run: cmake --build . --config ${{ matrix.configuration }} --target install -j$(sysctl -n hw.ncpu)
+      - if: matrix.configuration == 'Release'
+        uses: actions/upload-artifact@v2
+        with:
+          name: ANESE-${{ runner.os }}-${{ matrix.compiler }}
+          path: bin

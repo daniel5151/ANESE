@@ -5,6 +5,10 @@
   </a>
 </p>
 <p align="center">
+  <a href="https://github.com/daniel5151/ANESE/actions?query=branch%3Amaster">
+    <img src="https://github.com/daniel5151/ANESE/workflows/CI/badge.svg?branch=master"
+      alt="Build Status GitHub Actions">
+  </a>
   <a href="https://ci.appveyor.com/project/daniel5151/anese">
     <img src="https://ci.appveyor.com/api/projects/status/qgy19m8us3ss6ilt?svg=true"
       alt="Build Status Windows">
