@@ -86,7 +86,7 @@ Mirroring::Type Mapper_009::mirroring() const {
 }
 
 void Mapper_009::reset() {
-  memset(&this->reg, 0, sizeof this->reg);
+  memset((char*)&this->reg, 0, sizeof this->reg);
   this->reg.latch[0] = 1;
   this->reg.latch[1] = 1;
 }
