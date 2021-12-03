@@ -183,5 +183,5 @@ void Mapper_004::power_cycle() {
 }
 
 void Mapper_004::reset() {
-  memset(&this->reg, 0, sizeof this->reg);
+  memset((char*)&this->reg, 0, sizeof this->reg);
 }

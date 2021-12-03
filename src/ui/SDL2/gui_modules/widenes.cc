@@ -716,7 +716,7 @@ void WideNESModule::ppu_frame_end_handler() {
     this->phash.max = INT_MIN;
 
     // reset heuristics
-    memset(&this->h, 0, sizeof this->h);
+    memset((char*)&this->h, 0, sizeof this->h);
 
     // check if scene already exists
     // not that slow tbh, basically linear wrt #scenes (since unordered_map is

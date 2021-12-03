@@ -71,7 +71,7 @@ APU::APU(const NES_Params& params, Memory& mem, InterruptLines& interrupt)
 
 // https://wiki.nesdev.com/w/index.php/CPU_power_up_state
 void APU::power_cycle() {
-  memset(&this->chan, 0, sizeof this->chan);
+  memset((char*)&this->chan, 0, sizeof this->chan);
 
   // https://wiki.nesdev.com/w/index.php/APU_Noise
   this->chan.noise.sr = 1;

@@ -150,7 +150,7 @@ void Mapper_001::power_cycle() {
 }
 
 void Mapper_001::reset() {
-  memset(&this->reg, 0, sizeof this->reg);
+  memset((char*)&this->reg, 0, sizeof this->reg);
   this->reg.sr = 0x10;
 
   // This isn't documented anywhere, but seems to be needed...

@@ -52,5 +52,5 @@ void Mapper_007::update_banks() {
 }
 
 void Mapper_007::reset() {
-  memset(&this->reg, 0, sizeof this->reg);
+  memset((char*)&this->reg, 0, sizeof this->reg);
 }
