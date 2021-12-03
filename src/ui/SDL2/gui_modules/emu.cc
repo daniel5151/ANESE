@@ -59,7 +59,7 @@ EmuModule::EmuModule(SharedState& gui)
   // this->sdl_common.nes_audiodev = SDL_OpenAudioDevice(NULL, 0, &as, &have, 0);
   // SDL_PauseAudioDevice(this->sdl_common.nes_audiodev, 0);
 
-//  this->sdl.sound_queue.init(this->gui.nes_params.apu_sample_rate);
+  this->sdl.sound_queue.init(this->gui.nes_params.apu_sample_rate);
 
   /*----------  Submodule Init  ----------*/
 
@@ -284,13 +284,13 @@ void EmuModule::update() {
 }
 
 void EmuModule::output() {
-/*  // output audio!
+  // output audio!
   float* samples = nullptr;
   uint   count = 0;
   this->gui.nes.getAudiobuff(&samples, &count);
   // SDL_QueueAudio(this->gui.sdl.nes_audiodev, samples, count * sizeof(float));
   if (count) this->sdl.sound_queue.write(samples, count);
-*/
+
   // output video!
   const u8* framebuffer;
   this->gui.nes.getFramebuff(&framebuffer);
