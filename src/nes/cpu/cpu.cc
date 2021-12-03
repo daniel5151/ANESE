@@ -61,8 +61,9 @@ void CPU::service_interrupt(Interrupts::Type interrupt, bool brk /* = false */) 
 
   switch (interrupt) {
   case Interrupts::IRQ:
-    if (brk || !this->reg.p.i)
+    if (brk || !this->reg.p.i) {
       this->reg.pc = this->read16(0xFFFE);
+    }
     break;
   case Interrupts::RESET: this->reg.pc = this->read16(0xFFFC); break;
   case Interrupts::NMI:   this->reg.pc = this->read16(0xFFFA); break;
