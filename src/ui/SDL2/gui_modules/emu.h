@@ -17,7 +17,7 @@
 #include "../movies/fm2/record.h"
 #include "../movies/fm2/replay.h"
 
-//#include "../util/Sound_Queue.h"
+#include "../util/Sound_Queue.h"
 
 class EmuModule : public GUIModule {
 private:
@@ -28,7 +28,7 @@ private:
     SDL_Rect screen_rect;
     SDL_Texture* screen_texture = nullptr;
     // SDL_AudioDeviceID nes_audiodev;
-//    Sound_Queue  sound_queue;
+    Sound_Queue  sound_queue;
   } sdl;
 
   int speed_counter = 0;
