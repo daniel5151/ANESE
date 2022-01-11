@@ -1,5 +1,5 @@
 # Exclude test-roms from GitHub language statistics
-roms/* linguist-documentation
+roms/** linguist-vendored
 
-# Explore research too
-research/* linguist-documentation
+# Exclude research too
+research/** linguist-vendored
