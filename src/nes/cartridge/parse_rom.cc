@@ -79,7 +79,14 @@ static ROM_File* parseROM_iNES(const u8* data, uint data_len) {
   if (rf->meta.is_VS)
     fprintf(stderr, "[File Parsing][iNES] This is a VS ROM\n");
 
-  rf->meta.mapper = data[6] >> 4 | (data[7] & 0xFF00);
+  if (is_NES2)
+  {
+    rf->meta.mapper = data[6] >> 4 | (data[7] & 0xF0) | ((data[8] & 0xF) << 8);
+  }
+  else
+  {
+    rf->meta.mapper = data[6] >> 4 | (data[7] & 0xF0);
+  }
 
   fprintf(stderr, "[File Parsing][iNES] Mapper: %d\n", rf->meta.mapper);
 

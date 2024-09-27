@@ -14,7 +14,7 @@ struct ROM_File {
   struct { // ROM metadata
     Mirroring::Type mirror_mode;
 
-    u8 mapper;
+    u16 mapper;
 
     bool has_battery; // Has battery backed SRAM at 0x6000 - 0x7FFF
     bool has_trainer; // Has 512 byte trainer at 0x7000 - 0x71FF

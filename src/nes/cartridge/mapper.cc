@@ -98,6 +98,7 @@ Mapper::Mapper(
 #include "mappers/mapper_004.h"
 #include "mappers/mapper_007.h"
 #include "mappers/mapper_009.h"
+#include "mappers/mapper_474.h"
 
 Mapper* Mapper::Factory(const ROM_File* rom_file) {
   if (rom_file == nullptr)
@@ -111,6 +112,7 @@ Mapper* Mapper::Factory(const ROM_File* rom_file) {
   case 4: return new Mapper_004(*rom_file);
   case 7: return new Mapper_007(*rom_file);
   case 9: return new Mapper_009(*rom_file);
+  case 474: return new Mapper_474(*rom_file);
   }
 
   return nullptr;
